@@ -27,7 +27,7 @@ report declarations for every bound that can bite.
   symbol, then walk. Throws `Symbol '<name>' not found` when nothing resolves.
 - `traverseGraph(projectId, root, options)` — walk from an already-resolved
   row (used when the caller has its own root).
-- `resolveGraphRootDetailed(projectId, name)` — the three-step resolver:
+- `resolveGraphRootDetailed(projectId, name, file?)` — the three-step resolver:
   exact name among traversable structural kinds → exact name among all kinds →
   `LIKE '%name%'` containment among structural kinds. The step that won is
   returned as `match` (`exact` / `exact-any-kind` / `containment`) beside
@@ -35,7 +35,8 @@ report declarations for every bound that can bite.
   the answer is about a symbol whose name CONTAINS the one asked for; a case
   difference also lands there because SQLite's `LIKE` is case-insensitive for
   ASCII. A name containing `%`, `_` or `\` is escaped by value and matched
-  literally.
+  literally. Supplying a file limits both exact steps and the candidate count
+  to that indexed path and skips containment.
 
 The engine opens the index **read-only** (`getRawInstance(projectId,
 { readonly: true })`): a graph question must not mutate the index by being
@@ -45,6 +46,7 @@ asked. A project with no index is a loud error, never an empty graph.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
+| `rootFile` | unset | Exact indexed project-relative or absolute path for root selection. |
 | `direction` | `"both"` | `callers`, `callees`, or `both`. A one-sided walk computes only that side; each tool surface says which ran in its scope echo. |
 | `maxDepth` | 5 (max 10) | Transitive traversal depth. `bb_graph` asks for 3 by default and declares it; the engine default applies when a caller passes nothing. |
 | `relationshipTypes` | **every kind the index stores**: `calls`, `extends`, `implements`, `uses`, `instantiates`, `overrides`, `contains`, `references`, `imports`, `exports`, `decorates`, `renders`, `mixes_in`, `part_of` | Edge kinds to follow. Deliberately NOT narrowed: `contains` is the parent→member edge, so excluding it stops a traversal rooted at a class from reaching that class's own methods. The consequence a reader must know is composition — a `callers` set is "who has a stored edge INTO this", not only who calls it (measured: lodash `baseConvert` 99 `calls` rows of 230 edges, cobra `getCompletions` 36 of 65, rake `standard_rake_options` 72 of 76). A consumer whose claim is about ONE kind must pass a filter — `["calls"]` for the pure call graph, or `["calls", "instantiates", "extends", "implements"]` for "what breaks". A filter is a REQUEST, not a bound: it is reported through `filterNarrowed`/`filterReason` and never sets `truncated`. The kinds a run actually searched come back as `relationshipTypesUsed`. |
@@ -84,8 +86,10 @@ when the answer has no position — never a fabricated line 0), `depth`, `rowId`
 `owner-cascade` when it names one of its members), `matchedMember` (the member
 the row actually named, for a cascade edge), `targetBasis`
 (`symbol`/`external`/`unresolved` — the stored resolution basis), and
-`metadata` (the declared pass-through fields: `evidenceClass` and index-computed
-enrichment).
+`metadata` (the declared pass-through fields: `evidenceClass`, `method`, and
+index-computed enrichment). Regex fallback edges carry `method: "regex"` and
+the `inferred` tier. The `bb_graph` tool exposes their origin as
+`extractionMethod: "regex"`.
 
 ### Summary declarations
 

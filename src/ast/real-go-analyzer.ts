@@ -915,7 +915,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = conf >= 1 ? "structural" : conf >= 0.85 ? "usage_contextual" : "inferred"
         continue
       }
-      if (t === "instantiates") { md.evidenceClass = "structural"; continue }
+      if (t === "instantiates") {
+        md.evidenceClass = md.relationshipType === "go_instantiation" || md.relationshipType === "go_package_scope_instantiation"
+          ? "inferred" : "structural"
+        continue
+      }
       md.evidenceClass = "usage_contextual"
     }
     // VERIFY_GO9 — contract section 4, requirement 1. Every relationship with

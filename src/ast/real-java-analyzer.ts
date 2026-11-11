@@ -86,45 +86,42 @@ function isPlainJavaIdentifier(name: string): boolean {
   return true
 }
 
-/**
- * #904: does a parameter signature carry a GENERIC TYPE VARIABLE — Java's
- * single-capital-letter convention (`E`, `T`, `K`, `V`)? Char-scan, no regex:
- * analyzers carry no regex literals (R2 register).
- *
- * This is a DELIBERATE mirror of the differential's own `hasTypeVar`
- * (differential.ts, used by its scala `sigCompatible`), boundary-for-boundary:
- * a type variable is recognised only at `(`, `,`, `:`, `|`, `[`, `<`, `&` or
- * string start. Widening it is not free — an earlier revision of this helper
- * also treated a bare SPACE as a boundary, which made `Map<? extends K, ...>`
- * count as generic. That pairing is semantically right (erasure-equivalence,
- * JLS 8.4.2), but the judge cannot derive the edge, so emitting it turned a
- * true override into an UNEXPLAINED row on the lane (measured on
- * `t3943`-style interop file `J_1.java`). The analyzer mirrors the judge so the
- * differential keeps measuring the same question; the judge's blindness to
- * type variables in wildcard (`? extends K`) and nested (`List<E>`) positions
- * is registered as oracle debt, not paid for with a fabricated red row.
- */
-function javaSigHasTypeVar(sig: string): boolean {
-  const n = sig.length
-  let i = 0
-  while (i < n) {
-    const c = sig[i]
-    if (c === "(" || c === "," || c === ":" || c === "|" || c === "[" || c === "<" || c === "&" || i === 0) {
-      let j = i
-      while (j < n && (sig[j] === "(" || sig[j] === "[" || sig[j] === " " || sig[j] === ":" || sig[j] === ",")) j++
-      if (j < n && sig[j] >= "A" && sig[j] <= "Z") {
-        let end = j + 1
-        while (end < n && ((sig[end] >= "A" && sig[end] <= "Z") || (sig[end] >= "a" && sig[end] <= "z") || (sig[end] >= "0" && sig[end] <= "9") || sig[end] === "_")) end++
-        if (end === j + 1) return true
-        i = end
-        continue
-      }
-      i = j > i ? j : i + 1
+type JavaTypeBindings = ReadonlyMap<string, string | undefined>
+type JavaOverrideParent = { name: string; typeArguments: readonly string[] }
+type JavaOverrideTask = {
+  fqn: string
+  methodName: string
+  signature: string
+  ownerFqn: string
+  explicit?: boolean
+  line: number
+}
+
+/** Substitute declared variables in a type spelling. An unbound variable makes the comparison inconclusive. */
+function substituteJavaType(type: string, bindings: JavaTypeBindings): string | undefined {
+  const identifierStart = (c: string) => isPlainJavaIdentifier(c) || c.charCodeAt(0) > 127
+  let result = ""
+  for (let i = 0; i < type.length;) {
+    const start = i++
+    if (!identifierStart(type[start])) {
+      result += type[start]
       continue
     }
-    i++
+    while (i < type.length) {
+      const c = type[i]
+      if (!identifierStart(c) && !(c >= "0" && c <= "9")) break
+      i++
+    }
+    const name = type.slice(start, i)
+    if (result.trimEnd().endsWith(".") || !bindings.has(name)) {
+      result += name
+      continue
+    }
+    const replacement = bindings.get(name)
+    if (replacement === undefined) return undefined
+    result += replacement
   }
-  return false
+  return result
 }
 
 /** Split on a single delimiter character by walk (no regex). */
@@ -645,17 +642,9 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // O(1) Quick Lookups
     const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
     const classHierarchy = new Map<string, string[]>()
-    // `arity` is carried on the task because the generic-substitution pairing in
-    // resolveOverrides must refuse an OVERLOAD (same name, different parameter
-    // count) — parsing it back out of the signature text would be fragile.
-    const overrideTasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; arity: number; explicit?: boolean; line: number }[] = []
-    // #904: members of every IN-FILE class, keyed by the declaring class (FQN and
-    // its leaf) and then by method name. Pass 1's exact-signature lookup is
-    // keyed by `OwnerFqn.name(sig)` for methods, which is exactly right for the
-    // package/qualified form of a method fqn but unreachable for a parent that is
-    // written BARE (a nested class referenced as `new Inner()`), and it can only
-    // ever see the ONE signature it was handed. This index is how pass 1 reaches
-    // the other declared overloads of the same name without a name-only lookup.
+    const overrideParents = new Map<string, JavaOverrideParent[]>()
+    const overrideTasks: JavaOverrideTask[] = []
+    // Index overloads by declaring type so their substituted signatures can be compared.
     const methodsByOwner: Map<string, Map<string, ASTEngine.UniversalSymbol[]>> = new Map()
 
     interface Scope {
@@ -944,6 +933,11 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (inheritance.implementsInterfaces[i].name) parents.push(inheritance.implementsInterfaces[i].name)
           }
           classHierarchy.set(fqn, parents)
+          overrideParents.set(fqn, [
+            ...(inheritance.extendsClass ? [inheritance.extendsClass] : []),
+            ...inheritance.extendsInterfaces,
+            ...inheritance.implementsInterfaces,
+          ])
 
           // ONTOLOGY (M60 java, 2026-10-02): the `exports` LABEL for an ordinary
           // type. JLS 7.6 — a type in a NAMED package is exported iff it is
@@ -1443,7 +1437,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // @Override on most overrides (two-corpus gate finding 2026-09:
           // SubVector.iterator() vs APersistentVector.iterator()). Implicit
           // tasks are resolved by resolveOverrides but emitted ONLY on a
-          // verified exact-signature in-file match (pass 1) — the explicit
+          // in-file signature match, including class type substitution. The explicit
           // @Override tasks keep the pass-2 companion / pass-3 first-parent
           // guess tiers, so overloads like `nth(int)` against a base
           // `nth(int, Object)` never fabricate an override edge.
@@ -1453,7 +1447,6 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
                methodName: name,
                signature,
                ownerFqn: parentContext.fqn,
-               arity: parameters.length,
                explicit: true,
                // M59 (#825): the OVERRIDING declaration's own line (annotations
                // skipped, so an `@Override` method does not report the
@@ -1468,7 +1461,6 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               methodName: name,
               signature,
               ownerFqn: parentContext.fqn,
-              arity: parameters.length,
               explicit: false,
                line: this.declarationLineNode(node).startPosition.row + 1,
              })
@@ -1538,15 +1530,15 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push(sym)
           symbolMap.set(fqn, sym)
           symbolMap.set(localOwnerPrefix, sym)
-          if (parentContext?.fqn) {
-            const leaf = parentContext.fqn.slice(parentContext.fqn.lastIndexOf(".") + 1)
-            for (const key of parentContext.fqn === leaf ? [leaf] : [parentContext.fqn, leaf]) {
-              let byName = methodsByOwner.get(key)
-              if (!byName) { byName = new Map(); methodsByOwner.set(key, byName) }
-              const arr = byName.get(name)
-              if (arr) arr.push(sym)
-              else byName.set(name, [sym])
+          if (parentContext?.fqn && !isConstructor) {
+            let byName = methodsByOwner.get(parentContext.fqn)
+            if (!byName) {
+              byName = new Map()
+              methodsByOwner.set(parentContext.fqn, byName)
             }
+            const members = byName.get(name)
+            if (members) members.push(sym)
+            else byName.set(name, [sym])
           }
 
           // JLS 8.4.4 / 4.4: a METHOD's own type parameters (`<T extends Number>
@@ -1978,7 +1970,8 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // — the override task fell out with no edge at all. Registering
             // the supertype gives the existing resolveOverrides machinery the
             // same in-file reach it has for named classes.
-            classHierarchy.set(anonFqn, typeName ? [typeName] : [])
+            classHierarchy.set(anonFqn, [typeName])
+            overrideParents.set(anonFqn, [{ name: typeName, typeArguments: this.overrideTypeArguments(typeNode) }])
             newContext = {
               node: classBody,
               name: anonName,
@@ -2455,7 +2448,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion, methodsByOwner)
+    this.resolveOverrides(overrideTasks, classHierarchy, symbolMap, relationships, context?.overrideCompanion, methodsByOwner, overrideParents)
 
     // Rewrite import-reference sources from the package name to the file's
     // primary type (the first top-level type declared). Imports precede the
@@ -2927,12 +2920,13 @@ currentPackage,
     }
   
   private resolveOverrides(
-    tasks: { fqn: string; methodName: string; signature: string; ownerFqn: string; arity: number; explicit?: boolean; line: number }[],
+    tasks: JavaOverrideTask[],
     classHierarchy: Map<string, string[]>,
     symbolMap: Map<string, ASTEngine.UniversalSymbol>,
     relationships: ASTEngine.UniversalRelationship[],
-    companion?: Map<string, Set<string>>,
-    methodsByOwner?: Map<string, Map<string, ASTEngine.UniversalSymbol[]>>,
+    companion: Map<string, Set<string>> | undefined,
+    methodsByOwner: Map<string, Map<string, ASTEngine.UniversalSymbol[]>>,
+    overrideParents: Map<string, JavaOverrideParent[]>,
   ) {
     // PERF (review 2026-09-08, claim 11): the suffix index is built ONCE per
     // file (O(C)) instead of per task (was O(T·C)); the BFS below uses an
@@ -2973,92 +2967,64 @@ currentPackage,
           else suffixIndex.set(bare, [fqn])
         }
       }
-      const queue: string[] = []
-      const ownerH = classHierarchy.get(task.ownerFqn)
-      if (ownerH) {
-         for (let i = 0; i < ownerH.length; i++) queue.push(ownerH[i])
-      }
-      const seen: Set<string> = new Set()
+      const parentsOf = (owner: string): JavaOverrideParent[] =>
+        overrideParents.get(owner) ?? (classHierarchy.get(owner) ?? []).map(name => ({ name, typeArguments: [] }))
+      const queue = parentsOf(task.ownerFqn).map(parent => ({ parent, bindings: new Map() as JavaTypeBindings }))
+      const seen = new Set<string>()
+      const unresolvedParents = new Set<string>()
       let head = 0
-
       while (head < queue.length && !targetFqn) {
-        const parent = queue[head++]
-        if (seen.has(parent)) continue
-        seen.add(parent)
-
-        const candidates = suffixIndex.get(parent) ?? [parent]
+        const { parent, bindings: childBindings } = queue[head++]
+        const candidates = classHierarchy.has(parent.name) ? [parent.name] : suffixIndex.get(parent.name) ?? []
+        if (task.explicit && parent.name && candidates.length === 0) unresolvedParents.add(parent.name)
         for (const cand of candidates) {
+          // Valid Java hierarchies cannot inherit conflicting instantiations.
+          // Key by declaration to bound the walk on malformed, cyclic source.
+          if (seen.has(cand)) continue
+          seen.add(cand)
+          const variables = symbolMap.get(cand)?.genericParameters ?? []
+          const bindings = new Map<string, string | undefined>()
+          for (const [i, variable] of variables.entries()) {
+            const arg = parent.typeArguments[i]
+            bindings.set(variable, candidates.length === 1 && arg !== undefined ? substituteJavaType(arg, childBindings) : undefined)
+          }
           const potentialTargetFqn = `${cand}.${task.methodName}${task.signature}`
           const baseSym = symbolMap.get(potentialTargetFqn)
-          if (baseSym) {
-            // JLS 8.4.8.1: a PRIVATE ancestor method is never overridden — a
-            // same-signature subclass method is independent. Keep walking up
-            // the hierarchy for a real (accessible) declaring ancestor.
-            if (baseSym.visibility !== "private") {
-              targetFqn = potentialTargetFqn
-              break
-            }
-            continue
+          if (variables.length === 0 && baseSym && baseSym.visibility !== "private" && !baseSym.isStatic) {
+            targetFqn = potentialTargetFqn
+            break
           }
-          // #904 generic substitution (JLS 8.4.8 + 8.8.7.1): when the ancestor
-          // declares the member under a TYPE VARIABLE, the subclass's signature
-          // is the instantiated form and can never match textually — measured on
-          // `tests/untried/pos/t3943/Outer_1.java`, where `Child extends
-          // Outer<String>` fixes `E := String`, so the anonymous `Inner` body's
-          // `foo(String)` implements `Inner.foo(E)` and the exact-signature
-          // lookup in the branch above misses it entirely. Pair by NAME under
-          // the judge's own rule (its sigCompatible: "Generic-substitution
-          // fallback: type-variable sigs cannot be compared textually across
-          // instantiation — name-only pairing (analyzer mirror)"), narrowed by
-          // two guards the judge does not apply, both of which exist to keep a
-          // true override from being confused with an overload:
-          //   - CLASS IDENTITY: the member must belong to the candidate class
-          //     (the index is keyed by the declaring class, so a same-leaf-named
-          //     class elsewhere in the file cannot answer for it), and
-          //   - ARITY: same name with a different parameter count is an
-          //     OVERLOAD, never an override (the family's standing rule; the
-          //     pass-2/pass-3 tiers are withheld from implicit tasks for exactly
-          //     this reason).
-          const members = methodsByOwner?.get(cand)?.get(task.methodName)
-          if (members) {
-            for (const member of members) {
-              if (member.visibility === "private") continue // JLS 8.4.8.1
-              const params = member.parameters ?? []
-              if (params.length !== task.arity) continue
-              const baseSig = `(${params.map((p) => p.type || "unknown").join(",")})`
-              if (!javaSigHasTypeVar(baseSig) && !javaSigHasTypeVar(task.signature)) continue
-              targetFqn = `${cand}.${task.methodName}${task.signature}`
+          for (const member of methodsByOwner.get(cand)?.get(task.methodName) ?? []) {
+            if (variables.length === 0 || member.visibility === "private" || member.isStatic) continue
+            // Method-level generics introduce a separate scope and require their own compatibility check.
+            if (member.genericParameters?.length || symbolMap.get(task.fqn)?.genericParameters?.length) continue
+            const original = (member.parameters ?? []).map(p => p.type ?? "unknown")
+            const resolved = original.map(type => substituteJavaType(type, bindings))
+            if (resolved.includes(undefined) || `(${resolved.join(",")})` !== task.signature) continue
+            targetFqn = `${cand}.${task.methodName}(${original.join(",")})`
+            if (original.some((type, i) => type !== resolved[i])) {
               confidence = 0.9
               reasonCode = "generic-substitution"
-              break
             }
-            if (targetFqn) break
+            break
           }
-        }
-        if (targetFqn) break
-        for (const cand of candidates) {
-          const pH = classHierarchy.get(cand)
-          if (pH) {
-             for (let i = 0; i < pH.length; i++) queue.push(pH[i])
-          }
+          if (targetFqn) break
+          for (const ancestor of parentsOf(cand)) queue.push({ parent: ancestor, bindings })
         }
       }
 
-      // Pass 2: declaring-parent resolution via the project companion index
-      // (cross-file parents, and generic-signature mismatches like save(T) vs
-      // save(User)). Matches Java semantics: the first ancestor in declaration
-      // order that actually declares the method — interface-over-superclass
-      // when the interface is the declaring parent.
-      if (!targetFqn && companion && ownerH && ownerH.length > 0) {
+      // The companion stores names only. An explicit annotation supplies the
+      // override intent and the companion suggests its external declaring type.
+      if (!targetFqn && companion && unresolvedParents.size > 0) {
         const declaring = findDeclaringParent(
           task.methodName,
-          ownerH,
+          [...unresolvedParents],
           companion,
           (t) => classHierarchy.get(t) ?? [],
         )
         if (declaring) {
           targetFqn = `${declaring}.${task.methodName}${task.signature}`
-          confidence = 0.85
+          confidence = 0.65
           reasonCode = "companion-index"
         }
       }
@@ -3071,8 +3037,9 @@ currentPackage,
       // fabricate an override that is really an overload (two-corpus finding
       // 2026-09). The explicit @Override annotation asserts intent, so its
       // tasks keep the guess tier.
-      if (!targetFqn && task.explicit && ownerH && ownerH.length > 0) {
-        targetFqn = `${ownerH[0]}.${task.methodName}${task.signature}`
+      const firstUnresolved = unresolvedParents.values().next().value
+      if (!targetFqn && firstUnresolved) {
+        targetFqn = `${firstUnresolved}.${task.methodName}${task.signature}`
         // Below the patterns.ts default confidenceThreshold (0.7): visible in
         // raw output, but never contaminating thresholded analysis.
         confidence = 0.5
@@ -5443,8 +5410,13 @@ currentPackage,
    * the first entry. Same rule as scala's `extractSupertypes` and the reason the
    * shape is pairs rather than names.
    */
+  private overrideTypeArguments(type: Node): string[] {
+    const args = this.findChildByType(type, "type_arguments")
+    return args?.namedChildren.flatMap(arg => arg && !arg.isExtra ? [arg.text] : []) ?? []
+  }
+
   private extractJavaInheritance(classNode: Node) {
-    type Parent = { name: string; line: number }
+    type Parent = JavaOverrideParent & { line: number }
     const inheritance = {
       extendsClass: null as Parent | null,
       // interface_declaration > extends_interfaces > type_list: EVERY parent is an extends (JLS 9.1.3)
@@ -5453,14 +5425,14 @@ currentPackage,
       // sealed class permits clause (JLS 8.1.1.2): permitted subtypes are
       // CHILDREN of the sealed class, not ancestors — kept out of parents[]
       // and surfaced separately so callers can emit directional edges.
-      permitsSubtypes: [] as Parent[]
+      permitsSubtypes: [] as { name: string; line: number }[]
     }
     const superclass = this.findChildByType(classNode, "superclass")
     if (superclass) {
       const typeIdentifier = this.findChildByType(superclass, "scoped_type_identifier") ||
                              this.findChildByType(superclass, "generic_type") ||
                              this.findChildByType(superclass, "type_identifier")
-      if (typeIdentifier) inheritance.extendsClass = { name: this.extractJavaTypeBaseName(typeIdentifier), line: typeIdentifier.startPosition.row + 1 }
+      if (typeIdentifier) inheritance.extendsClass = { name: this.extractJavaTypeBaseName(typeIdentifier), typeArguments: this.overrideTypeArguments(typeIdentifier), line: typeIdentifier.startPosition.row + 1 }
     }
     const superInterfaces = this.findChildByType(classNode, "super_interfaces") || this.findChildByType(classNode, "extends_interfaces")
     if (superInterfaces) {
@@ -5470,7 +5442,7 @@ currentPackage,
       for (let i = 0; i < targetList.namedChildCount; i++) {
         const interfaceType = targetList.namedChild(i)
         if (interfaceType && (interfaceType.type === "type_identifier" || interfaceType.type === "generic_type" || interfaceType.type === "scoped_type_identifier")) {
-          bucket.push({ name: this.extractJavaTypeBaseName(interfaceType), line: interfaceType.startPosition.row + 1 })
+          bucket.push({ name: this.extractJavaTypeBaseName(interfaceType), typeArguments: this.overrideTypeArguments(interfaceType), line: interfaceType.startPosition.row + 1 })
         }
       }
     }

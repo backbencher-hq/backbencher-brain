@@ -94,6 +94,7 @@ export interface RubyTruthEdge {
   label: "calls" | "contains" | "exports" | "extends" | "imports" | "instantiates" | "mixes_in" | "overrides" | "references" | "uses"
   target: string
   from?: string
+  targetUnverified?: boolean
   line: number
 }
 
@@ -127,15 +128,15 @@ export const RUBY_BUILTINS = new Set(
     // Kernel path intrinsics. PROBED: `def m; __dir__; end` publishes NOTHING, and
     // `File.expand_path('../G', __dir__)` publishes only `calls:expand_path`. These
     // are builtins, so the read is suppressed.
-    "__dir__", "__FILE__", "at_exit", "block_given?", "caller_locations", "freeze",
+    "__dir__", "__FILE__", "at_exit", "caller_locations", "freeze",
     // Visibility modifiers. PROBED: `def a; end; private :a` publishes `contains:a`
     // and NOTHING for `private` - it is a modifier, not a call. Same for its siblings.
-    "private", "public", "protected", "module_function", "private_class_method",
+    "private", "public", "protected", "module_function",
     // `define_method` is suppressed as a CALL but still DECLARES a member - see the
     // define_method branch. PROBED: `define_method(:go) { }` -> contains:go, no calls.
     "define_method", "define_singleton_method",
     "alias_method",
-    "public_class_method", "private_constant",
+    "private_constant",
     "respond_to", "respond_to?",
     "initialize_copy", "initialize_dup", "initialize_clone",
     "send", "__send__", "freeze", "frozen?", "dup", "clone",
@@ -558,26 +559,22 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
   const bindings = collectBindings(root)
 
   const bases = new Map<string, string>()
+  const namespaces = new Map<string, Set<string>>()
   /** Members declared by each class in THIS file, for implicit `overrides`. */
   const members = new Map<string, Set<string>>()
 
-  // `calls`, `uses` and `contains` edges carry NO `from`. The analyzer's edge for
-  // `def m; @a; end` is `uses:>@a` and for `def m; b; end` is `calls:>b` - the
-  // enclosing method is implied by containment and never restated. Threading the
-  // method name through as `from` (which an earlier version of this file did, and
-  // which the SHARED oracle also does) put a `from` on every edge in the corpus:
-  // 4,178 `calls` and 674 `uses` disagreed purely because of it.
-  //
-  // `from` is still carried, because two cases genuinely need it: an anonymous
-  // scope's `contains` (which anonymous class), and an implicit `overrides`
-  // (subclass.method -> superclass.method).
+  // A bare method name identifies a caller only when it is unique in this file.
+  const methodCounts = new Map<string, number>()
+  for (const declaration of root.descendantsOfType(["method", "singleton_method"])) {
+    const name = declaration?.childForFieldName("name")?.text
+    if (name) methodCounts.set(name, (methodCounts.get(name) ?? 0) + 1)
+  }
   const push = (label: RubyTruthEdge["label"], target: string, line: number, from?: string): void => {
     if (!target || target.length === 0) return
     edges.push(from === undefined ? { label, target, line } : { label, target, from, line })
   }
 
   const stack: Frame[] = [{ n: root, parent: null, suppress: undefined, inBody: false, scopes: [], cls: undefined, methodId: undefined, selfType: "top" }]
-  const emittedCallTargets = new Set<string>()
 
   while (stack.length > 0) {
     const f = stack.pop()!
@@ -585,6 +582,8 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
     const t = n.type
     const line = n.startPosition.row + 1
     const parent = f.parent
+    const caller = f.methodId && methodCounts.get(f.methodId) === 1 ? f.methodId : undefined
+    const callSource = f.methodId ? caller : f.cls ?? "Global"
 
     // ---------------------------------------------------------------- classes
     if (t === "singleton_class") {
@@ -646,6 +645,11 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       }
       const superNode = n.childForFieldName("superclass")
       const superName = constantPath(superNode)
+      if (t === "class" && clsName) {
+        const declarations = namespaces.get(clsName) ?? new Set<string>()
+        declarations.add(scopePrefix ?? f.cls ?? "")
+        namespaces.set(clsName, declarations)
+      }
       if (clsName && superName) bases.set(clsName, superName)
 
       // DIRECTION matters: the analyzer emits `extends` with the SUPERCLASS as the
@@ -720,6 +724,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         if (q.type === "method" || q.type === "singleton_method") { parentIsDef = true; break }
       }
       const owner = parentIsDef ? undefined : f.cls
+      if (name && parentIsDef && f.methodId) push("contains", name, line, caller)
       // The `from` of a `contains` edge is UNDEFINED whenever the enclosing scope
       // is namable. The analyzer emits `contains:>m` - the owner is implied by
       // lexical containment, and naming it again duplicated it on every member.
@@ -776,12 +781,14 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         stack.push({
           n: c, parent: n,
           suppress: f.suppress, inBody: isReceiver || !isParams ? inBody : false,
-          scopes: [...f.scopes, n.id], cls: owner, methodId,
+          scopes: isReceiver ? f.scopes : [n.id],
+          cls: isReceiver ? f.cls : owner,
+          methodId: isReceiver ? f.methodId : methodId,
           // `def m` runs with `self` bound to an INSTANCE of the enclosing class;
           // `def self.m` runs with `self` bound to the CLASS. A `def` nested in
           // another `def` is still an instance method of the receiver, so the
           // def's own kind - not the enclosing scope's - decides.
-          selfType: t === "singleton_method" ? "singleton" : "instance",
+          selfType: isReceiver ? f.selfType : t === "singleton_method" ? "singleton" : "instance",
         })
       }
       void bodyIsValue
@@ -962,9 +969,10 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         writeNames = new Set<string>()
         const collected: Set<string> = writeNames
         const collectIndex = (nd: Node): void => {
+          const receiver = nd.id === left.id ? nd.childForFieldName("object") : null
           for (let i = 0; i < nd.namedChildCount; i++) {
             const ch = nd.namedChild(i)
-            if (!ch) continue
+            if (!ch || ch.id === receiver?.id) continue
             if (ch.type === "identifier" || ch.type === "instance_variable" ||
                 ch.type === "class_variable") collected.add(ch.text)
             else collectIndex(ch)
@@ -1000,7 +1008,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         const c = n.namedChild(i)
         if (!c) continue
         const isLeft = left !== null && c.id === left.id
-        if (isLeft) continue
+        if (isLeft && c.type !== "element_reference" && c.type !== "call") continue
         if (right !== null && c.id === right.id) {
           stack.push({ n: c, parent: n, suppress: f.suppress, inBody: true, scopes: f.scopes, cls: f.cls, methodId: f.methodId, selfType: f.selfType })
           continue
@@ -1020,13 +1028,12 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
     // CLASS-BODY scope, where `inBody` is false. The name in an alias is a declaration
     // being read, not an expression in a body, so the body-context test does not apply.
     if (t === "alias") {
-      // Only an IDENTIFIER-shaped new name is read. PROBED: `alias foo? bar` gives
-      // `calls:foo?`; `alias << push` gives nothing at all - an operator target is not
-      // a method name that can be called, so the generalisation "the new name is read"
-      // is wrong for operators and only a fixture shows it.
+      // The published alias edge names the new identifier or literal symbol.
       const firstA = n.namedChild(0)
-      if (firstA && firstA.type === "identifier" && !RUBY_BUILTINS.has(firstA.text)) {
-        push("calls", firstA.text, firstA.startPosition.row + 1)
+      const name = firstA?.type === "simple_symbol" ? symbolName(firstA.text)
+        : firstA && ["identifier", "operator", "setter"].includes(firstA.type) ? firstA.text : undefined
+      if (firstA && name) {
+        push("calls", name, firstA.startPosition.row + 1, f.methodId ? undefined : f.cls ?? "Global")
       }
       continue
     }
@@ -1082,10 +1089,12 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       // `path_info = Utils.clean_path_info(path_info)` ⇒ `calls:clean_path_info` unpublished;
       // `request.path_info` ⇒ `calls:path_info` unpublished; `stat.mtime.httpdate` ⇒
       // `calls:mtime` unpublished; `params[k].class.name` ⇒ `calls:name` unpublished.
-      const hasCallReceiver = n.childForFieldName("receiver") !== null
-      if (methodName && !RUBY_BUILTINS.has(methodName) && !isKernelConversion &&
-          methodNode !== null && (hasCallReceiver || !isBound(bindings, f.scopes, methodName))) {
-        push("calls", methodName, line)
+      const receiver = n.childForFieldName("receiver")
+      const classVisibility = !!f.cls && !f.methodId
+        && (methodName === "private_class_method" || methodName === "public_class_method")
+        && (!receiver || receiver.type === "self")
+      if (methodName && !RUBY_BUILTINS.has(methodName) && !isKernelConversion && !classVisibility && methodNode !== null) {
+        push("calls", methodName, line, callSource)
       }
       // ONLY A RECEIVERLESS call is a require. PROBED: `params.require("body-mime")`
       // publishes NOTHING - it is a Rails strong-parameters call, not a file load,
@@ -1119,17 +1128,17 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
             if (hasInterpolation(a.text)) continue
             const name = unquote(a.text)
             if (name.length > 0) {
-              push("references", name, line, methodName === "autoload" ? "ruby-autoload" : `ruby-${methodName}`)
+              push("references", name, line, "Global")
               // THE LOAD-FACT PAIR: the analyzer publishes the required path as an `imports` edge AND
               // a `references` edge (one-for-one, measured 1,304 = 1,304 at whole population). The
               // oracle derives both from the same literal, with the path AS WRITTEN (the shared
               // matcher now compares path-like imports exactly — a `./` prefix is part of the target
               // and must not be normalised away here, or the audit manufactures a spelling diff).
-              push("imports", name, line)
+              push("imports", name, line, "Global")
             }
           }
         }
-        continue
+        // The load itself is represented above. Its argument expressions can still call methods.
       }
       // The FACTORY form (`K = X.new`) already emitted its `instantiates` in the
       // assignment branch above, with the correct receiver. Emitting it again here
@@ -1138,8 +1147,11 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       // assignment branch handles factories, this one handles every other `.new`.
       const inFactoryAssignment = parent !== null && parent.type === "assignment" &&
         parent.childForFieldName("right")?.id === n.id
-      if ((methodName === "new" || methodName === "allocate") && !inFactoryAssignment) {
+      if (methodName === "new" || methodName === "allocate") {
         const recvNode = n.childForFieldName("receiver")
+        if (recvNode?.type === "identifier") {
+          push("calls", methodName, line, callSource)
+        }
         const recv = constantPath(recvNode)
         // An UPPERCASE receiver instantiates a known class; a lowercase receiver
         // is a local whose class is unknowable, so it stays a plain call.
@@ -1154,17 +1166,9 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         // enclosing class was 626 MISSING `instantiates` - every
         // `current_account.account_notes.new(…)` in the Rails controllers, which
         // builds a collection rather than a class.
-        if (recv) push("instantiates", leafName(recv), line)
-        else if (recvNode !== null) {
-          // A lowercase RECEIVER keeps the call; an instance variable keeps `new`.
-          if (recvNode.type === "identifier") push("calls", "new", line)
-          // `self.new` inside a class constructs THAT class — the explicit spelling of the
-          // receiverless rule. PROBED on rack/builder.rb `def self.app; self.new(...)`:
-          // `instantiates:Builder`. Without this the row reads as UNEXPLAINED.
-          else if (recvNode.type === "self" && f.cls) push("instantiates", f.cls, line)
-        } else {
-          // A receiverless `new` constructs the ENCLOSING class (probed).
-          if (f.cls) push("instantiates", f.cls, line)
+        if (!inFactoryAssignment) {
+          if (recv) push("instantiates", leafName(recv), line)
+          else if ((!recvNode || recvNode.type === "self") && f.cls) push("instantiates", f.cls, line)
         }
       }
       if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
@@ -1419,10 +1423,10 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         parent.parent !== null && parent.parent.type === "assignment" &&
         parent.parent.childForFieldName("left")?.id === parent.id
       if (isIndexOperand) continue
-      if (f.inBody && !parentIsNameField && !NON_BARE_PARENTS.has(parentType) &&
+      const callReceiver = parentType === "call" && parent?.childForFieldName("receiver")?.id === n.id
+      if (f.inBody && !parentIsNameField && (callReceiver || !NON_BARE_PARENTS.has(parentType)) &&
           !RUBY_BUILTINS.has(text) && !isBound(bindings, f.scopes, text)) {
-        emittedCallTargets.add(text)
-        push("calls", text, line)
+        push("calls", text, line, caller)
       }
       continue
     }
@@ -1486,7 +1490,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       // — **⇒ THAT COMMENT WAS RIGHT ABOUT THE INTENT AND FALSE ABOUT THE EFFECT**, which is the
       // fleet's own recurring defect: a comment stating a fact the code does not bear out. The
       // parity is now REAL, and it is real on the ORACLE's side, which is where it was missing.
-      if (!isWrite && !inMultiWrite) push("uses", n.text, line)
+      if (!isWrite && !inMultiWrite) push("uses", n.text, line, callSource)
       void isReceiver
       continue
     }
@@ -1522,27 +1526,24 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
   // visible to a single-file oracle, and inventing it would be a guess.
   for (const [cls, base] of bases) {
     const own = members.get(cls)
-    const inherited = members.get(base)
-    if (!own || !inherited) continue
-    for (const m of own) {
-      if (inherited.has(m)) {
-        push("overrides", `${base}.${m}`, 0, `${cls}.${m}`)
+    const ownerScopes = namespaces.get(cls)
+    if (!own || ownerScopes?.size !== 1 || base === cls) continue
+    const leaf = leafName(base)
+    const baseScopes = namespaces.get(leaf)
+    const written = base.replace(/^::/, "")
+    const local = leaf !== cls && baseScopes?.size === 1 && [...baseScopes].some(scope =>
+      base.includes("::") ? written === (scope ? `${scope}::${leaf}` : leaf) : !scope || ownerScopes.has(scope))
+    if (local) {
+      const inherited = members.get(leaf)
+      for (const method of own) {
+        if (inherited?.has(method)) push("overrides", `${leaf}.${method}`, 0, `${cls}.${method}`)
       }
+      continue
     }
-  }
-  // EXTERNAL-BASE FIRST-PARENT GUESS (the analyzer's 0.5 channel): when the superclass is NOT
-  // declared in this file, the analyzer emits `overrides:Base.m` for EVERY member m of the subclass
-  // with `reasonCode: first-parent-guess` — a declared cause, not a verification claim. The oracle
-  // derives the same rows; without them, 113 of rack's 114 overrides read as UNEXPLAINED and the D4
-  // draw would call the analyzer's declared-cause channel a divergence. A base declared in the file
-  // is handled by the loop above (the analyzer emits nothing there unless the base declares the
-  // method), and a self-inheriting name is excluded exactly as the analyzer excludes it.
-  for (const [cls, base] of bases) {
-    const own = members.get(cls)
-    if (!own) continue
-    if (members.has(base)) continue
-    if (base === cls) continue
-    for (const m of own) push("overrides", `${base}.${m}`, 0, `${cls}.${m}`)
+    // External candidates describe the written base while leaving its member unverified.
+    for (const m of own) {
+      edges.push({ label: "overrides", from: `${cls}.${m}`, target: `${base}.${m}`, line: 0, targetUnverified: true })
+    }
   }
 
   // ---------------------------------------------------------------- exports

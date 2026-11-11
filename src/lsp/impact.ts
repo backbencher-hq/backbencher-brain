@@ -923,6 +923,7 @@ export async function computeImpact(
   const callStartedAt = Date.now()
   const walk = {
     direction: "callers" as const,
+    ...(memberFile ? { rootFile: memberFile } : {}),
     maxDepth: IMPACT_BUDGET.maxDepth,
     relationshipTypes: [...relationshipTypes],
     timeBudgetMs: IMPACT_WALK_TIME_CEILING_MS,
@@ -945,7 +946,7 @@ export async function computeImpact(
       }
       throw error
     }
-    result = await traverse(projectId, owner.name, walk)
+    result = await traverse(projectId, owner.name, { ...walk, rootFile: owner.file })
     if (!result.root || !result.root.id) {
       // The owner row exists but the traversal cannot root it (should not
       // happen — the owner passed the traversable-type rule): the original
@@ -1043,7 +1044,7 @@ export async function computeImpact(
           }${candidates})`,
       )
     }
-    result = await traverse(projectId, owner.name, walk)
+    result = await traverse(projectId, owner.name, { ...walk, rootFile: owner.file })
     if (!result.root || !result.root.id) throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error)`)
     resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
   } else if (memberFile && result.root && rootType && IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {

@@ -2745,7 +2745,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
         continue
       }
-      if (type === "overrides") { md.evidenceClass = "structural"; continue }
+      if (type === "overrides") { md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"; continue }
       // M60 CS3: `exports` is written in the file — a `public` keyword on a
       // top-level type declaration — so it is a structural fact and not a guess.
       // Without this line it fell through to the default `usage_contextual`,
@@ -3200,6 +3200,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     for (const task of tasks) {
       let targetFqn: string | null = null
+      let declaringType: string | undefined
+      let confidence = 1.0
+      let reasonCode = "in-file-verified"
       const memberKind = task.memberKind ?? "method"
       const isMethod = memberKind === "method"
 
@@ -3220,12 +3223,15 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         if (isMethod) {
           const potentialTargetFqn = `${parent}.${task.methodName}${task.signature}`
-          if (symbolMap.has(potentialTargetFqn)) {
+          const candidate = symbolMap.get(potentialTargetFqn)
+          if (candidate && candidate.visibility !== "private" && !candidate.isStatic) {
             targetFqn = potentialTargetFqn
+            declaringType = parent
             break
           }
         } else if (membersByOwner.get(parent)?.has(task.methodName)) {
           targetFqn = `${parent}.${task.methodName}`
+          declaringType = parent
           break
         }
         const pH = classHierarchy.get(parent)
@@ -3243,12 +3249,20 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           companion,
           (t) => classHierarchy.get(t) ?? [],
         )
-        if (declaring) targetFqn = `${declaring}.${task.methodName}${task.signature}`
+        if (declaring) {
+          targetFqn = `${declaring}.${task.methodName}${task.signature}`
+          declaringType = declaring
+          confidence = 0.65
+          reasonCode = "companion-index"
+        }
       }
 
       // Pass 3: deterministic per-file fallback — first hierarchy parent.
       if (!targetFqn && ownerH && ownerH.length > 0) {
         targetFqn = `${ownerH[0]}.${task.methodName}${isMethod ? task.signature : ""}`
+        declaringType = ownerH[0]
+        confidence = 0.5
+        reasonCode = "first-parent-guess"
       }
 
       if (targetFqn) {
@@ -3267,12 +3281,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: localSource,
           target: localTarget,
           type: ASTEngine.RelationshipType.Overrides,
-          confidence: 1.0,
+          confidence,
           line_number: task.line,
           metadata: {
             relationshipType: isMethod ? "method_override" : `${memberKind}_override`,
             isCSharpOverride: true,
             overriddenMemberKind: memberKind,
+            declaringType,
+            reasonCode,
           },
         })
       }

@@ -2737,15 +2737,16 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
     // loudly when there is no index instead of creating an empty one.
     const db = await BrainDatabase.getReadOnlyInstance(projectId as any)
     const { BrainSymbolTable, BrainFileTable } = await import("../brain/brain.sql")
-    const { eq, and, like } = await import("drizzle-orm")
+    const { eq, and, like, or } = await import("drizzle-orm")
 
     const conditions = [eq(BrainSymbolTable.project_id, projectId as any), eq(BrainSymbolTable.name, symbolName)]
 
     if (filePath) {
-      const fp = filePath.replace(/\\/g, "/")
+      const fp = filePath.replace(/\\/g, "/").replace(/^\.\//, "")
       if (fp.includes("/")) {
-        // Exact path match first (precise), then LIKE as fallback
-        conditions.push(eq(BrainFileTable.path, fp))
+        // A directory-bearing path identifies one file. Suffix matching
+        // would also find archive/src/foo.ts for src/foo.ts.
+        conditions.push(or(eq(BrainFileTable.path, fp), eq(BrainFileTable.relative_path, fp))!)
       } else {
         conditions.push(like(BrainFileTable.path, `%/${fp}`))
       }
@@ -2777,7 +2778,7 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       relativePath: string
     }
 
-    let results: SymbolRow[] = await db
+    const results: SymbolRow[] = await db
       .select({
         id: BrainSymbolTable.id,
         fileId: BrainFileTable.path,
@@ -2798,33 +2799,6 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
       .where(and(...conditions))
       .all()
 
-    // If exact path match returned nothing but we have a full path, retry with LIKE
-    if (results.length === 0 && filePath && filePath.includes("/")) {
-      const fp = filePath.replace(/\\/g, "/")
-      results = await db
-        .select({
-          id: BrainSymbolTable.id,
-          fileId: BrainFileTable.path,
-          name: BrainSymbolTable.name,
-          symbolType: BrainSymbolTable.symbol_type,
-          lineStart: BrainSymbolTable.line_start,
-          byteStart: BrainSymbolTable.byte_start,
-          byteEnd: BrainSymbolTable.byte_end,
-          // This fallback SELECT omitted the file columns entirely, so a match
-          // resolved through a relative `filePath` came back with no language
-          // and could not be noise-classified by its relative path.
-          language: BrainFileTable.language,
-          relativePath: BrainFileTable.relative_path,
-        })
-        .from(BrainSymbolTable)
-        .innerJoin(BrainFileTable, eq(BrainSymbolTable.file_id, BrainFileTable.id))
-        .where(and(
-          eq(BrainSymbolTable.project_id, projectId as any),
-          eq(BrainSymbolTable.name, symbolName),
-          like(BrainFileTable.path, `%${fp}`),
-        ))
-        .all()
-    }
 
     // Auto-fill missing byte offsets from file content
     for (const r of results) {

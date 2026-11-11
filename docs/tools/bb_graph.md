@@ -28,6 +28,10 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
       "type": "string",
       "description": "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases). Required; a blank name is refused as missing. An unknown name is refused after the resolver's declared containment fallback runs: that fallback is a substring scan, and on the 11,440-file reference index it costs about 5 s before answering not-found. It is a documented step of the resolver, not a silent budget breach; an exact-name miss does not run it."
     },
+    "file": {
+      "type": "string",
+      "description": "exact indexed project-relative or absolute path of the root symbol. When set, the resolver requires an exact symbol name in that file."
+    },
     "maxDepth": {
       "type": "number",
       "description": "traversal depth bound (default 5, max 10). Must be a whole number: a fractional depth is refused rather than floored."

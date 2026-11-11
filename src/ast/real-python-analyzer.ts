@@ -1163,6 +1163,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const nm of this.collectModuleRebindings(rootNode)) {
       ctx.moduleImportBindings.delete(nm)
       ctx.moduleImportBindingShape.delete(nm)
+      IMPORT_BINDINGS.dataclasses.delete(nm)
     }
 
     // PY-D14 (round 7): the local binding set of every function, computed before the walk for the
@@ -1186,7 +1187,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // DATACLASS FIELD TYPES, same pre-walk reason: a field's declared type is a fact about the
     // class body, and the emission site needs it before it walks any method body.
-    this.collectClassFieldOwners(rootNode, ctx, context)
+    this.collectClassFieldOwners(rootNode, ctx, IMPORT_BINDINGS.dataclasses, context)
 
     // #748 (M49 dup-key family ruling, Option A — the same rule js/ts/vue
     // pinned): python binds the LAST definition of a name in one container
@@ -4023,7 +4024,12 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Keyed by `currentClassKey` (`name@line`), not by name: two same-name classes in one file are
    * two different field sets.
    */
-  private collectClassFieldOwners(rootNode: Node, ctx: PythonContext, context?: ASTEngine.AnalyzeContext): void {
+  private collectClassFieldOwners(
+    rootNode: Node,
+    ctx: PythonContext,
+    dataclasses: ReadonlyMap<string, { kind: "item" | "module"; endIndex: number }>,
+    context?: ASTEngine.AnalyzeContext,
+  ): void {
     const index = context?.projectIndex
     const classLike = (name: string): boolean => {
       if (name === "") return false
@@ -4032,21 +4038,29 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const isDataclass = (def: Node): boolean => {
       const parent = def.parent
-      if (!parent || parent.type !== "decorated_definition") return false
+      // Class decorators run at declaration time. A class-local namespace would
+      // need a separate binding check, so require a module-level declaration.
+      if (!parent || parent.type !== "decorated_definition" || parent.parent?.id !== rootNode.id) return false
       for (let i = 0; i < parent.namedChildCount; i++) {
         const c = parent.namedChild(i)
         if (!c || c.type !== "decorator") continue
         let inner: Node | null = c.namedChild(0)
         if (!inner) continue
         // `@dataclass(...)` — the decorator is a CALL; the name is its function child.
-        while (inner && (inner.type === "call" || inner.type === "subscript")) {
+        if (inner.type === "call") {
           inner = inner.childForFieldName("function") ?? inner.namedChild(0)
         }
         if (!inner) continue
-        if (inner.type === "identifier" && inner.text === "dataclass") return true
+        if (inner.type === "identifier") {
+          const binding = dataclasses.get(inner.text)
+          if (binding?.kind === "item" && binding.endIndex <= c.startIndex) return true
+        }
         if (inner.type === "attribute") {
-          const leaf = inner.childForFieldName("attribute") ?? inner.namedChild(inner.namedChildCount - 1)
-          if (leaf?.type === "identifier" && leaf.text === "dataclass") return true
+          const object = inner.childForFieldName("object")
+          const leaf = inner.childForFieldName("attribute")
+          if (object?.type !== "identifier" || leaf?.text !== "dataclass") continue
+          const binding = dataclasses.get(object.text)
+          if (binding?.kind === "module" && binding.endIndex <= c.startIndex) return true
         }
       }
       return false
@@ -4748,16 +4762,28 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * names, so an alias or a namespace binding has no evidence to be found in. See
    * `PythonContext.moduleImportBindingShape`.
    */
-  private collectModuleImportBindings(rootNode: Node): { bindings: Map<string, string>; shapes: Map<string, "item" | "alias" | "namespace"> } {
+  private collectModuleImportBindings(rootNode: Node) {
     const out = new Map<string, string>()
     const shapes = new Map<string, "item" | "alias" | "namespace">()
-    const put = (bound: string, module: string, shape: "item" | "alias" | "namespace"): void => {
+    const dataclasses = new Map<string, { kind: "item" | "module"; endIndex: number }>()
+    const seenBindings = new Set<string>()
+    let hasWildcard = false
+    const put = (bound: string, module: string, shape: "item" | "alias" | "namespace", statement: Node, item?: string): void => {
       if (bound.length === 0 || module.length === 0) return
-      if (!out.has(bound)) { out.set(bound, module); shapes.set(bound, shape) }
+      if (!module.startsWith(".") && !out.has(bound)) { out.set(bound, module); shapes.set(bound, shape) }
+      if (seenBindings.has(bound)) dataclasses.delete(bound)
+      else if (statement.parent?.id === rootNode.id && module === "dataclasses" && (item === undefined || item === "dataclass")) {
+        dataclasses.set(bound, { kind: item === undefined ? "module" : "item", endIndex: statement.endIndex })
+      }
+      seenBindings.add(bound)
     }
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
+      if (n.type === "function_definition" || n.type === "class_definition") {
+        const name = n.childForFieldName("name")?.text
+        if (name) { seenBindings.add(name); dataclasses.delete(name) }
+      }
       if (n.type === "function_definition" || n.type === "class_definition" || n.type === "lambda" ||
           n.type === "list_comprehension" || n.type === "set_comprehension" ||
           n.type === "dictionary_comprehension" || n.type === "generator_expression") continue
@@ -4768,13 +4794,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c) continue
           if (c.type === "dotted_name") {
             const first = c.namedChild(0)
-            if (first?.type === "identifier") put(first.text, c.text, "namespace")
+            if (first?.type === "identifier") put(first.text, c.text, "namespace", n)
           } else if (c.type === "aliased_import") {
             const nm = c.childForFieldName("name") ?? c.namedChild(0)
             const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
             const module = nm?.text ?? ""
             const bound = alias?.type === "identifier" ? alias.text : module.split(".")[0] ?? ""
-            if (module.length > 0 && bound.length > 0) put(bound, module, "alias")
+            if (module.length > 0 && bound.length > 0) put(bound, module, "alias", n)
           }
         }
         continue
@@ -4799,21 +4825,21 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         // A relative import names this project's own tree; `__future__` handles itself above.
-        if (module.length === 0 || module.startsWith(".")) continue
+        if (module.length === 0) continue
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (!c) continue
           if (moduleId !== undefined && c.id === moduleId) continue
           if (c.type === "identifier" || c.type === "dotted_name") {
-            put(c.text, module, "item")
+            put(c.text, module, "item", n, c.text)
           } else if (c.type === "aliased_import") {
             const nm = c.childForFieldName("name") ?? c.namedChild(0)
             const alias = c.childForFieldName("alias") ?? c.namedChild(c.namedChildCount - 1)
             const item = nm?.text ?? ""
             const bound = alias?.type === "identifier" ? alias.text : item
-            if (item.length > 0) put(bound, module, "alias")
+            if (item.length > 0) put(bound, module, "alias", n, item)
           }
-          // `wildcard_import` binds no single name: nothing to record.
+          if (c.type === "wildcard_import") hasWildcard = true
         }
         continue
       }
@@ -4822,7 +4848,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c) stack.push(c)
       }
     }
-    return { bindings: out, shapes }
+    if (hasWildcard) dataclasses.clear()
+    return { bindings: out, shapes, dataclasses }
   }
 
   /**

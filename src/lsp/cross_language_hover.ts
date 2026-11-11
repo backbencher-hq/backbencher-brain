@@ -30,7 +30,7 @@
 //   the no-regex policy.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { classifyTier, type EvidenceTier } from "./evidence_tier"
+import { classifyTier, evidenceClassOf as parseEvidenceClass, type EvidenceTier } from "./evidence_tier"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The hover projection
@@ -154,16 +154,6 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
     .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
   for (const r of callees) rows.push({ ...r, direction: "callee", evidence_class: parseEvidenceClass(r.metadata) })
   return rows
-}
-
-function parseEvidenceClass(metadata: string | null): string | null {
-  if (!metadata) return null
-  try {
-    const parsed = JSON.parse(metadata) as Record<string, unknown>
-    return typeof parsed["evidenceClass"] === "string" ? (parsed["evidenceClass"] as string) : null
-  } catch {
-    return null
-  }
 }
 
 /** Per-pair coverage over the whole project: the generated reality table for docs.

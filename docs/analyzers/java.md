@@ -62,7 +62,7 @@ serialises to `"extends"`, `Implementation` to `"implements"`, and `Imports` to
 | instantiates | ✅ | `object_creation_expression` → `type_identifier`; plus PascalCase `method_invocation` heuristics | 0.95 (typed), 0.6 (heuristic) |
 | uses | ✅ | field accesses resolved to the enclosing METHOD (M49 W15 #814: `this`/`super` receivers used to resolve to the enclosing type, the JAD2 exception, which the family-wide ruling removed — a class-level read falls back to the type); Spring DB mappings (entity table, mapped column, `@Value` config keys) | 0.6 field access, 1.0 framework-derived, 1.0/0.6 conditional on `tableNameIsDeclared` / `columnNameIsDeclared` |
 | exports | ✅ | public top-level symbols; Spring MVC endpoints (`Exports` with route, httpMethod) | 1.0 |
-| overrides | ✅ | `@Override` + a three-tier BFS over `classHierarchy` (type-arg-clean parents): exact in-file signature match, then generic substitution, then the project companion index, then the first-parent guess. Each tier sets BOTH a confidence and a machine-readable `metadata.reasonCode` — `exact-in-file`, `generic-substitution`, `companion-index`, `first-parent-guess` — which is what contract §4 asks for | **1.0 / 0.9 / 0.85 / 0.5**, matching the reason-code ladder. This file previously claimed "1.0 (exact / companion-resolved) / 0.9 (fallback)", which was wrong twice: the companion tier is **0.85**, not 1.0, and the first-parent fallback is **0.5**, not 0.9. The 0.5 tier is deliberate — it sits below `patterns.ts`'s 0.7 `confidenceThreshold` so a guessed override cannot reach pattern analysis |
+| overrides | ✅ | Walks in-file ancestors and compares parameter signatures after substituting declared class type arguments. For an explicit `@Override` with an external parent, the companion index suggests a declaring type from method names, or the analyzer guesses the first unresolved parent. | `exact-in-file` 1.0, `generic-substitution` 0.9, `companion-index` 0.65, `first-parent-guess` 0.5. Method type-parameter compatibility and raw-type erasure are outside the substitution check. |
 | references | ✅ | import edges and the post-pass that rewrites their source from the package name to the file's primary type (first top-level class/interface/enum); also type references (`references:getStatus:String`, `references:Mapper:B`, `references:genericBound:T` in the recorded differential) | 0.9, 0.95, 1.0 |
 | contains | ✅ | owner → owned symbols (deduped against engine-generated contains in `storeResults`) | 1.0, or 0.6 when the member is a phantom |
 | **imports** | ✅ **EMITTED** | `import_declaration` → the module name as a `RelationshipType.Imports` edge at **1.0** (`metadata.relationshipType: "import_declaration"`, `isWildcard`/`isStatic`), **and** an `ImportInfo[]` entry on the import-site channel; a JLS 7.7.1 `requires` clause is the same edge (1.0, **0.9** for `requires static`, which is optional at compile time). The same directive also publishes the dotted path as a `references` edge at 0.9 — the family's deliberate pairing: `imports` is the DEPENDENCY, `references` is the MENTION. This row read "**never referenced by this analyzer**" from 2026-10-02, which was true of the analyzer that correction was written against and was falsified by the import-edge work that followed it; re-read against the source 2026-10-16 | 1.0 (import, module `requires`), 0.9 (`requires static`) |
@@ -133,15 +133,11 @@ direction; the full before/after tables and the intent census are in
 
 ## Unsupported / explicit-unknown constructs
 
-- **Cross-file override targets** (resolved, fixture `UserService.java`): the analyzer is
-  per-file, but accepts an optional project context (`AnalyzeContext.overrideCompanion` — owner
-  type → declared method names) built by the caller from previously parsed files
-  (`src/ast/override-context.ts`, shared with the Kotlin analyzer). With context, the override
-  target is resolved by the 0.85 `companion-index` tier. Without context the analyzer
-  deterministically falls to the 0.5 `first-parent-guess` tier — the honest per-file default,
-  since the true declaring parent is unknowable from one file alone. The M12 harness feeds the
-  companion index (pre-pass over the fixture corpus); production wiring of the same context from
-  the indexer's global symbol space is tracked by M12.44.
+- **Cross-file override targets** are inferred for explicit `@Override` methods. The
+  project context (`AnalyzeContext.overrideCompanion`) maps owner types to declared
+  method names. A name match suggests a declaring type at confidence 0.65. Without
+  a match, the first unresolved parent is a guess at confidence 0.5. Implicit
+  overrides require an in-file signature match.
 - Static imports of specific members: `import static` metadata captured; member-level import
   resolution is not expanded into per-member symbols (explicit non-goal for M12.02).
 - Annotation-processor-generated code (beyond the two phantom generators above) is not

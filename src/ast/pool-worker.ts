@@ -384,8 +384,8 @@ function extractBasicRelationships(
 
   // Line-by-line: find function/method calls
   const lines = content.split("\n")
-  const callPattern = /(\w+)\s*\(/g
-  const methodCallPattern = /(\w+)\.(\w+)\s*\(/g
+  const callPattern = /\b(\w+)\s*\(/g
+  const methodCallPattern = /\b(\w+)\.(\w+)\s*\(/g
   const newPattern = /new\s+(\w+)\s*[\(<]/g  // new ClassName( or new ClassName<
 
   for (let i = 0; i < lines.length; i++) {
@@ -475,7 +475,7 @@ export function extractFallback(
     extractBasicRelationships(content, language, symbols, imports),
     language,
     new Set(symbols.map((s: any) => String(s?.name ?? "")).filter(Boolean)),
-  )
+  ).map(rel => ({ ...rel, metadata: { ...rel.metadata, method: "regex", evidenceClass: "inferred" } }))
 
   return {
     success: true,
@@ -1348,16 +1348,10 @@ export async function parseFile(filePath: string, projectPath: string, context?:
   const FULL_AST_LIMIT = 1 * 1024 * 1024 // 1 MB
   if (sizeBytes > FULL_AST_LIMIT) {
     const fsModule = await import("fs/promises")
-    // Read first 256KB for structural extraction
-    const fd = await fsModule.open(filePath, "r")
-    const buffer = Buffer.alloc(Math.min(sizeBytes, 256 * 1024))
-    await fd.read(buffer, 0, buffer.length, 0)
-    await fd.close()
-    // Decoded, not `toString("utf-8")` — see src/util/source-text.ts. A UTF-16
-    // file read as UTF-8 yields NUL-interleaved text that parses to nothing, and
-    // the read itself throws no error, so the loss is invisible here.
-    const content = decodeSourceText(buffer).text
-    const hash = createHash("sha256").update(content).digest("hex").slice(0, 16)
+    // Extract from the prefix and fingerprint the full file for freshness checks.
+    const bytes = await fsModule.readFile(filePath)
+    const content = decodeSourceText(bytes.subarray(0, 256 * 1024)).text
+    const hash = createHash("sha256").update(bytes).digest("hex").slice(0, 16)
     log(`Using structural extraction for large file: ${filePath} (${sizeBytes} bytes)`)
     return extractFallback(content, language, hash, sizeBytes, lastModified)
   }
@@ -2159,9 +2153,8 @@ process.on("message", async (msg: any) => {
     persistStartupDiagnostics()
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath, projectIndexes } = msg
-    // SOL-21. A project index, when the parent built one, deserialised ONCE per worker
-    // and cached for the worker's lifetime — a worker is forked once and then serves many
-    // batches, so rebuilding per batch would re-parse the project for every batch.
+    // SOL-21. Deserialize the parent's project indexes once for this batch and
+    // reuse them for every file in the batch.
     //
     // It arrives as a PLAIN object because `fork()` serialises IPC with JSON and JSON
     // cannot carry a `Map`; a `Map` would arrive as `{}` and the index would silently

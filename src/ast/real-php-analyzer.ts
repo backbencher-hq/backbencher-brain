@@ -634,6 +634,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const funcValues = new Set<string>()
     const constValues = new Set<string>()
     this.collectPhpFileScope(rootNode, fileScope.bound, funcValues, constValues)
+    const classAliases = new Map<string, string>()
     const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined, scope: fileScope }]
 
     while (stack.length > 0) {
@@ -641,6 +642,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const type = node.type
 
       if (type === "namespace_definition") {
+        classAliases.clear()
         const nameNode = this.findChildByType(node, "namespace_name")
         const nsName = nameNode?.text
         if (nsName) {
@@ -673,7 +675,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // emit NO extends for that unresolvable base.
         // The node that NAMES the extends edge: the first base-clause child (#929).
         const baseNode = baseClause?.namedChild(0) ?? null
-        const rawBase = baseClause?.namedChild(0)?.text
+        const rawBase = baseNode?.text
+        const baseIdentity = rawBase ? this.resolveClassIdentity(rawBase, ns, classAliases) : undefined
         const baseName = baseClause ? this.heritageTarget(rawBase ?? "", className) : undefined
         // PHPD43 (final review): the self-reference test is `baseName === className`, NOT
         // `rawBase !== baseName && baseName === className`.
@@ -786,6 +789,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             fqn: ns ? `${ns}\\${className}` : className,
             namespace: ns,
             baseClass: baseUnresolvable ? undefined : baseName,
+            baseIdentity,
             interfaces,
             // The hierarchy the store persists — see `superTypes` above for the mirror rule, the
             // self-loop omission and the trait boundary.
@@ -1044,7 +1048,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
           metadata: escapedMember
-            ? { phpSpecific: true, isMethod: true, isMagicMethod: fnName.startsWith("__"), recoveredFromBody: true }
+            ? { phpSpecific: true, namespace: ns, isMethod: true, isMagicMethod: fnName.startsWith("__"), recoveredFromBody: true }
             : { phpSpecific: true, fqn: ns ? `${ns}\\${fnName}` : fnName, namespace: ns },
         })
         const body = node.childForFieldName("body")
@@ -1096,6 +1100,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             phpSpecific: true,
             isMethod: true,
+            namespace: ns,
             isMagicMethod: methodName.startsWith("__"),
             isFinal: modifiers.includes("final"),
           },
@@ -1253,11 +1258,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!groupPrefix) continue
             for (let k = 0; k < child.namedChildCount; k++) {
               const member = child.namedChild(k)
-              if (member && member.type === "namespace_use_clause") this.emitUseClause(member, relationships, imports, detectedFrameworks, groupPrefix)
+              if (member && member.type === "namespace_use_clause") this.emitUseClause(member, relationships, imports, detectedFrameworks, groupPrefix, classAliases)
             }
             continue
           }
-          if (child && child.type === "namespace_use_clause") this.emitUseClause(child, relationships, imports, detectedFrameworks, "")
+          if (child && child.type === "namespace_use_clause") this.emitUseClause(child, relationships, imports, detectedFrameworks, "", classAliases)
         }
         continue
       }
@@ -2741,125 +2746,76 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  private resolveClassIdentity(raw: string, namespace: string | undefined, aliases: ReadonlyMap<string, string>): string {
+    if (raw.startsWith("\\")) return raw.slice(1).toLowerCase()
+    const [head, ...rest] = raw.split("\\")
+    const relative = head.toLowerCase() === "namespace"
+    const alias = relative ? undefined : aliases.get(head.toLowerCase())
+    if (alias) return [alias, ...rest].join("\\").toLowerCase()
+    return [namespace, ...(relative ? rest : [head, ...rest])].filter(Boolean).join("\\").toLowerCase()
+  }
+
   private resolveOverrides(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     context?: ASTEngine.AnalyzeContext,
   ): void {
-    const baseByClass = new Map<string, string>()
-    for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Class && s.metadata?.baseClass) {
-        // PHPD10: metadata.baseClass already holds the heritage-resolved
-        // target (qualified form kept when a same-leaf collision would
-        // fabricate a self-edge). Re-leafing here would collapse the
-        // qualified external base back onto the subclass name and re-create
-        // the self-override — use it verbatim.
-        baseByClass.set(s.name, String(s.metadata.baseClass))
-      }
+    const classes = new Map<string, ASTEngine.UniversalSymbol>()
+    const leafCounts = new Map<string, number>()
+    for (const symbol of symbols) {
+      if (symbol.kind !== ASTEngine.SymbolKind.Class) continue
+      const leaf = symbol.name.toLowerCase()
+      classes.set((symbol.metadata?.fqn ?? symbol.name).toLowerCase(), symbol)
+      leafCounts.set(leaf, (leafCounts.get(leaf) ?? 0) + 1)
     }
-    const methodsByOwner = new Map<string, Set<string>>()
-    // M60 round — VISIBILITY. A `private` method is not inherited, so a subclass method of
-    // the same name is a DIFFERENT method and never an override. This rule had no
-    // visibility filter at all, on EITHER path, and it was pre-existing rather than
-    // introduced here: the same-file prescan collected every `method` symbol regardless
-    // of modifiers, and `class A { private function p() {} } class B extends A { private
-    // function p() {} }` published `B.p -> A.p`. It stayed invisible because the corpora
-    // do not exercise it — MEASURED over both pinned repos with the cross-file companion
-    // built: of phpunit's 527 and phpmyadmin's 553 `overrides` edges, **0** name a private
-    // base method. A defect with a zero corpus footprint is exactly the class the
-    // hand-written fixture exists for, and the fixture that found it declares a private
-    // method on both sides on purpose.
-    const privateByOwner = new Map<string, Set<string>>()
-    for (const s of symbols) {
-      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
-      let names = methodsByOwner.get(s.ownerName)
-      if (!names) {
-        names = new Set<string>()
-        methodsByOwner.set(s.ownerName, names)
-      }
-      names.add(s.name)
-      if (s.visibility === "private") {
-        let priv = privateByOwner.get(s.ownerName)
-        if (!priv) {
-          priv = new Set<string>()
-          privateByOwner.set(s.ownerName, priv)
+    const methods = new Map<string, Map<string, ASTEngine.UniversalSymbol>>()
+    for (const symbol of symbols) {
+      if (symbol.kind !== ASTEngine.SymbolKind.Method || !symbol.ownerName || symbol.ownerKind !== ASTEngine.SymbolKind.Class) continue
+      const identity = [symbol.metadata?.namespace, symbol.ownerName].filter(Boolean).join("\\").toLowerCase()
+      const members = methods.get(identity) ?? new Map()
+      members.set(symbol.name.toLowerCase(), symbol)
+      methods.set(identity, members)
+    }
+    for (const [owner, members] of methods) {
+      const ownerClass = classes.get(owner)
+      // Stored member names are Owner.method. A duplicate owner leaf cannot
+      // identify a unique source or destination through that spelling.
+      if (!ownerClass || leafCounts.get(ownerClass.name.toLowerCase()) !== 1) continue
+      for (const method of members.values()) {
+        const visited = new Set([owner])
+        let current = ownerClass
+        while (current.metadata?.baseIdentity && !visited.has(current.metadata.baseIdentity)) {
+          const identity: string = current.metadata.baseIdentity
+          visited.add(identity)
+          const base = classes.get(identity)
+          const candidate = methods.get(identity)?.get(method.name.toLowerCase())
+          let target: string | undefined
+          if (base && candidate && candidate.visibility !== "private") {
+            if (leafCounts.get(base.name.toLowerCase()) === 1) target = `${base.name}.${candidate.name}`
+            else break
+          } else if (!base) {
+            const rawLeaf = current.metadata.baseClass
+            // The legacy companion is keyed by leaf, so it can only supply an
+            // inferred candidate. A conflicting local leaf makes even that ambiguous.
+            if (rawLeaf && !leafCounts.has(this.leafName(identity)) &&
+                this.leafName(rawLeaf).toLowerCase() === this.leafName(identity) &&
+                context?.overrideCompanion?.get(rawLeaf)?.has(method.name)) target = `${rawLeaf}.${method.name}`
+          }
+          if (target) {
+            relationships.push({
+              source: `${method.ownerName}.${method.name}`,
+              target,
+              type: ASTEngine.RelationshipType.Overrides,
+              confidence: base ? 0.95 : 0.65,
+              line_number: method.range?.startLine,
+              metadata: { phpSpecific: true, isOverride: true, reasonCode: base ? "in-file-verified" : "companion-index" },
+            })
+            break
+          }
+          if (!base) break
+          current = base
         }
-        priv.add(s.name)
       }
-    }
-    for (const s of symbols) {
-      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
-      const base = baseByClass.get(s.ownerName)
-      if (!base) continue
-      const inFileMethods = methodsByOwner.get(base)
-      const baseMethods = inFileMethods ?? context?.overrideCompanion?.get(base)
-      // Same-file bases are filtered from the analyzer's OWN symbols, where the
-      // modifiers are known. A CROSS-FILE base is filtered from
-      // `overrideCompanionVisibility` when the caller supplies it; absent, visibility is
-      // genuinely unknown and the edge is published as it always was. That asymmetry is
-      // deliberate and recorded rather than guessed around — see the Known-gaps entry.
-      // …and ONLY from the same-file reading. The CROSS-FILE visibility channel is
-      // deliberately NOT consulted for this decision, and the reason is the most important
-      // thing this round found.
-      //
-      // php keys every edge on the LEAF name, so a NAME-keyed index is ambiguous whenever
-      // two namespaces declare the same class name — and phpunit does that four times:
-      // three `TestSuite` classes (one with a PRIVATE `__construct`, two public) and two
-      // `Assert` classes, one of them a VENDORED library at
-      // `tools/.phpstan/vendor/webmozart/assert/src/Assert.php` with a private
-      // `__construct` while phpunit's own `abstract class Assert` has none.
-      //
-      // Every ambiguity rule tried here produced a wrong answer:
-      //   - take the MOST RESTRICTIVE reading -> suppressed 7 correct overrides;
-      //   - require UNANIMITY among observations -> still suppressed 1, because the two
-      //     `Assert` classes do not disagree, there is only one observation of the key and
-      //     it comes from the wrong class.
-      //
-      // So a cross-file lookup here is a GUESS, and the rule is that a rule acting on a
-      // guess defaults to the permissive reading: the permissive reading never removes a
-      // true edge, and it is the pre-M60 behaviour for this path. The channel stays on
-      // `AnalyzeContext` because the index itself is correct and a consumer holding
-      // QUALIFIED identity can use it — this analyzer cannot, because `baseClass` is a leaf.
-      //
-      // Same-file bases ARE exact, because the base's own symbols are right here, and that
-      // half is real: it is what stopped `B.p -> A.p` for a private `A::p`.
-      const baseIsPrivateInFile = privateByOwner.get(base)?.has(s.name) === true
-      if (inFileMethods && baseIsPrivateInFile) continue
-      // Referenced only to document that the channel is deliberately unused; the `void`
-      // keeps the parameter meaningful and stops a future reader from adding a use by
-      // accident. See the note above.
-      void context?.overrideCompanionVisibility
-      if (baseMethods?.has(s.name)) {
-        relationships.push({
-          source: `${s.ownerName}.${s.name}`,
-          target: `${base}.${s.name}`,
-          type: ASTEngine.RelationshipType.Overrides,
-          confidence: 0.95,
-          // The overriding METHOD's own declaration line (the node that names it).
-          line_number: s.range?.startLine,
-          metadata: { phpSpecific: true, isOverride: true },
-        })
-      }
-      // M12.PHP-OVERRIDE-AUDIT: the 0.5 "first-parent-guess" edge that used to
-      // stand here asserted an override for EVERY method of a class whose base
-      // lives in another file, without ever checking that the base declares
-      // that method. The companion index that could verify it is never
-      // populated in production (M37.10), so in production EVERY cross-file
-      // override was that guess. `script/m12/php-override-audit.ts` measured it
-      // on phpunit@c8d6921f: of the guesses it could decide against the real
-      // declaring file, 66.7% were FALSE — e.g.
-      // StringEqualsStringIgnoringWhitespace.normalizeWhitespace "overrides"
-      // Constraint.normalizeWhitespace, and Repeat.times "overrides"
-      // Metadata.times; neither method is declared on the base at all.
-      //
-      // The edge sat below the 0.7 threshold, so pool-worker already dropped
-      // it and it never reached the graph — meaning the guess bought no real
-      // cross-file override while manufacturing a large majority-false
-      // unverified bucket (369 edges across the two sampled corpora, all of it
-      // `overrides`). An `overrides` edge is now emitted ONLY when the base's
-      // declaration is actually visible — in this file, or via the project
-      // companion index — at confidence 0.95. Restoring cross-file coverage
-      // honestly means populating that companion, not guessing.
     }
   }
 
@@ -2974,6 +2930,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     imports: ASTEngine.ImportInfo[],
     detectedFrameworks: Set<string>,
     prefix: string,
+    classAliases: Map<string, string>,
   ): void {
     let fqn = ""
     let alias: string | undefined
@@ -2988,6 +2945,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!fqn) return
     if (prefix) fqn = `${prefix}\\${fqn}`
     const leaf = this.leafName(fqn)
+    const declaration = child.parent?.type === "namespace_use_group" ? child.parent.parent : child.parent
+    const nonClassImport = (node: Node | null) => node?.children.some(part => part?.type === "function" || part?.type === "const")
+    if (!nonClassImport(child) && !nonClassImport(declaration)) {
+      classAliases.set((alias ?? leaf).toLowerCase(), fqn.replace(/^\\/, ""))
+    }
     imports.push({
       module: fqn,
       items: [alias || leaf],

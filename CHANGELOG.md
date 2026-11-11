@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.1.2 — analyzer verification follow-up
+
+This release is the verification pass the analyzers needed after the first public
+release. Every change below is gated by the fixture lane (1,776 fixtures across
+all 50 languages, zero regressions) and by the new edge-identity differential gate.
+
+- **Java overrides now substitute generic type arguments.** `Child extends
+  Base<String>` resolving `save(T)` is compared as `save(String)`, not by name and
+  parameter count; the old generic pairing helper is gone and the new fixture
+  `java/generic-override-signatures` pins the behavior.
+- **Python resolves the `@dataclass` decorator before inferring fields.** A local
+  or project-indexed class named `dataclass` no longer triggers stdlib field rules.
+- **C++ macro recovery is verified against Clang**, with the recovery arms recorded
+  against real declarations rather than against the oracle's own helper.
+- **The differential now has a source-and-target edge identity gate.** It compares
+  `label`, `from`, `target` and edge multiplicity instead of label+target only, and
+  fails the run when identities are missing or unexpected.
+- **Regex fallback is disclosed, not silent.** Graph evidence for a degraded file is
+  marked inferred, and `bb index` prints the count of files where AST analysis fell
+  back to regex extraction.
+- **Endpoint identity reconciliation across Swift, Rust, Ruby, C#, PHP, Go, Kotlin,
+  JavaScript and TypeScript**, including nested Rust containment ownership, Ruby
+  superclass/alias identities, receiver shadowing, and incremental import parity.
+- **`bb_search` respects exact file scope and declares stale symbol misses.**
+
+## 0.1.1 — startup signal and cancellation
+
+- `bb index` prints the discovered file count and the size expectation *before*
+  worker startup, so a cold start is never a silent screen; worker startup announces
+  itself.
+- Ctrl+C during discovery or worker startup cancels cleanly (exit 130) instead of
+  waiting out the worker probe.
+- The public repository's CI verifies the filtered release tree on its own terms.
+
 ## 0.1.0 — first public release
 
 The first public release of Backbencher Brain (`backbencher-brain` on npm, `bb` on

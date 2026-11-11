@@ -221,6 +221,7 @@ const SWIFT_FRAMEWORK_PATTERNS: Record<string, string[]> = {
 interface OverrideTask {
   fqn: string
   methodName: string
+  signature?: string
   ownerFqn: string
   /**
    * (#825 lineage, swift lane): the override DECLARATION's own line —
@@ -316,7 +317,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Override-resolution state (Java/C# M12.02-03 machinery).
     const overrideTasks: OverrideTask[] = []
     const classHierarchy = new Map<string, string[]>()
-    const symbolMap = new Map<string, ASTEngine.UniversalSymbol>()
+    const methodSignatures = new Map<string, Array<string | undefined>>()
 
     // In-file declared kinds (SWIFTD1): protocol names are knowable from the
     // parse tree itself, so `class X: LocalProtocol` resolves to implements
@@ -410,7 +411,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         newParentSymbol = this.handleDeclaration(curr, symbols, relationships, parentSymbol, patternsObj, classHierarchy, inFileKinds, cross.kinds, superByClass, localScope)
         if (newParentSymbol) newTypeName = newParentSymbol.name
       } else if (curr.type === "function_declaration" || curr.type === "protocol_function_declaration") {
-        newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, context?.overrideCompanion, localScope)
+        newParentSymbol = this.handleFunction(curr, symbols, relationships, parentSymbol, overrideTasks, methodSignatures, localScope)
       } else if (curr.type === "init_declaration") {
         // init -> constructor named "constructor" (Java/C# family convention)
         const vis = this.getVisibility(curr)
@@ -681,14 +682,6 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       framework: f,
       patterns: SWIFT_FRAMEWORK_PATTERNS[f] ?? ["usage"],
     }))
-
-    // Build symbol map for override resolution: `Owner.method` -> symbol.
-    for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor || s.kind === ASTEngine.SymbolKind.Function) {
-        const owner = s.ownerName || "root"
-        symbolMap.set(`${owner}.${s.name}`, s)
-      }
-    }
 
     // Post-loop: contains (real ownership only) + references (imports).
     for (const s of symbols) {
@@ -971,7 +964,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.resolveOverrides(
       overrideTasks,
       classHierarchy,
-      symbolMap,
+      methodSignatures,
       relationships,
       context?.overrideCompanion ?? cross.companion,
       cross.getParents(classHierarchy),
@@ -1393,7 +1386,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     parent: ASTEngine.UniversalSymbol | null,
     overrideTasks: OverrideTask[],
-    companion?: OverrideCompanion,
+    methodSignatures: Map<string, Array<string | undefined>>,
     localScope: boolean = false,
   ): ASTEngine.UniversalSymbol | null {
     const nameNode = this.findChildByType(node, "simple_identifier") || this.findChildByType(node, "identifier")
@@ -1420,6 +1413,14 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // #264 / dart #265 waves; same node set as the file-level counter).
     symbol.complexity = this.calculateCyclomaticComplexity(node)
 
+    const signature = isMethod ? this.overrideParameterSignature(node) : undefined
+    if (isMethod && parent) {
+      const key = `${parent.name}.${symbol.name}`
+      const overloads = methodSignatures.get(key) ?? []
+      overloads.push(vis === "private" ? undefined : signature)
+      methodSignatures.set(key, overloads)
+    }
+
     // override keyword -> Overrides task (qualified resolution deferred to
     // the post-loop with the hierarchy + companion, Java/C# semantics).
     // The grammar nests the token: modifiers > member_modifier [override].
@@ -1427,6 +1428,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       overrideTasks.push({
         fqn: `${parent.name}.${symbol.name}`,
         methodName: symbol.name,
+        signature,
         ownerFqn: parent.name,
         line: symbol.range?.startLine,
       })
@@ -1810,7 +1812,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     // reachability. A read at CLASS level (a property initializer) has no
     // method, so typeName remains the fallback.
     const source =
-      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Constructor)
+      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Function ||
+        parent.kind === ASTEngine.SymbolKind.Constructor)
         ? parent.name
         : null) ||
       typeName ||
@@ -2132,10 +2135,28 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  private overrideParameterSignature(node: Node): string | undefined {
+    if (node.hasError || this.hasChildType(node, "type_parameters")) return undefined
+    const parameters: Array<[string, string[]]> = []
+    for (const parameter of node.namedChildren) {
+      if (parameter?.type !== "parameter") continue
+      const label = parameter.childForFieldName("external_name") ?? parameter.childForFieldName("name")
+      const children = parameter.children
+      const colon = children.findIndex(child => child?.type === ":")
+      // Tokens preserve variadics and modifiers while ignoring whitespace and local names.
+      const type = children.slice(colon + 1).filter((child): child is Node => !!child && child.type !== "comment")
+      if (!label || colon < 0 || type.length === 0) return undefined
+      parameters.push([this.stripNameQuoting(label.text), type.map(child => child.text.replace(/\s+/g, ""))])
+    }
+    const returnType = this.findReturnType(node)?.text.replace(/\s+/g, "") ?? "Void"
+    const isAsync = node.children.some(child => child?.type === "async")
+    return JSON.stringify([parameters, returnType, isAsync])
+  }
+
   private resolveOverrides(
     tasks: OverrideTask[],
     classHierarchy: Map<string, string[]>,
-    symbolMap: Map<string, ASTEngine.UniversalSymbol>,
+    methodSignatures: Map<string, Array<string | undefined>>,
     relationships: ASTEngine.UniversalRelationship[],
     companion?: OverrideCompanion,
     getParents?: (typeName: string) => readonly string[],
@@ -2147,7 +2168,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       let confidence = 1.0
       let reasonCode: string | undefined
 
-      // Pass 1: BFS over the in-file hierarchy, exact name match.
+      // Pass 1: BFS over the in-file hierarchy, matching the written signature.
       const queue: string[] = []
       const ownerH = classHierarchy.get(task.ownerFqn)
       if (ownerH) {
@@ -2161,8 +2182,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         seen.add(parentName)
 
         const potentialTargetFqn = `${parentName}.${task.methodName}`
-        if (symbolMap.has(potentialTargetFqn)) {
+        const overloads = methodSignatures.get(potentialTargetFqn)
+        if (task.signature !== undefined && overloads?.includes(task.signature)) {
           targetFqn = potentialTargetFqn
+          if (overloads.length > 1) {
+            confidence = 0.65
+            reasonCode = "overloaded-target-name"
+          }
           break
         }
         for (const next of parentsOf(parentName)) queue.push(next)
@@ -2173,9 +2199,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         const declaring = findDeclaringParent(task.methodName, ownerH, companion, parentsOf)
         if (declaring) {
           targetFqn = `${declaring}.${task.methodName}`
-          // Companion-verified declaring parent — high confidence, below
-          // the exact-in-file 1.0 (matches kotlin/scala's 0.9 tier).
-          confidence = 0.9
+          // The companion knows method names, without overload signatures.
+          confidence = 0.65
           reasonCode = "companion-index"
         }
       }
@@ -3246,7 +3271,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     if (this.hasSelfReceiver(node)) return
     const source =
-      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Constructor)
+      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Function ||
+        parent.kind === ASTEngine.SymbolKind.Constructor)
         ? parent.name
         : null) ||
       typeName ||
@@ -3315,7 +3341,8 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     emittedUses: Set<string>,
   ): void {
     const source =
-      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Constructor)
+      (parent && (parent.kind === ASTEngine.SymbolKind.Method || parent.kind === ASTEngine.SymbolKind.Function ||
+        parent.kind === ASTEngine.SymbolKind.Constructor)
         ? parent.name
         : null) ||
       typeName ||

@@ -33,6 +33,7 @@ import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { checkpointWal } from "./index-space"
 import {
+  relativeImporterFileIds,
   resolveDottedTargets,
   resolveImportTargets,
   resolveNameTargets,
@@ -671,6 +672,7 @@ export interface PostProcessingPhaseTiming {
 export interface FileResult {
   filePath: string
   success: boolean
+  fallback?: boolean
   timeout?: boolean
   error?: string
   symbols?: any[]
@@ -1225,10 +1227,7 @@ async function discoverAndFilterFiles(
       const tx = rawDb.transaction(() => {
         const deleteFileSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
         const deleteFileImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
-        const deleteFileRelationships = rawDb.prepare(`
-          DELETE FROM brain_relationship 
-          WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-        `)
+        const deleteFileRelationships = prepareOwnedRelationshipDelete(rawDb)
         const deleteFileTaints = rawDb.prepare(`
           DELETE FROM brain_taint_flow 
           WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
@@ -1240,7 +1239,7 @@ async function discoverAndFilterFiles(
           let relativePath = path.relative(projectPath, stale.path)
           const fileId = `${projectId}:${relativePath}`
 
-          deleteFileRelationships.run(fileId)
+          deleteFileRelationships.run(projectId, fileId, relativePath)
           deleteFileTaints.run(fileId, fileId)
           deleteFileSymbols.run(fileId)
           deleteFileImports.run(fileId)
@@ -3314,6 +3313,25 @@ export function makeStoreableName(
   return { denylist, isStoreable }
 }
 
+/**
+ * Delete relationships emitted by this file, including rows whose source
+ * could not be attached to a symbol. Their primary key carries the owner.
+ * Incoming edges from other files are outside this predicate.
+ */
+function prepareOwnedRelationshipDelete(rawDb: Awaited<ReturnType<typeof BrainDatabase.getRawInstance>>) {
+  const statement = rawDb.prepare(`
+    DELETE FROM brain_relationship
+    WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+       OR (source_symbol_id IS NULL AND id >= ? AND id < ?)
+  `)
+  return {
+    run(projectId: ProjectID, fileId: string, relativePath: string) {
+      const anchor = `${projectId}:rel:file:${relativePath}`
+      return statement.run(fileId, anchor + ":", anchor + ";")
+    },
+  }
+}
+
 export async function storeResults(
   projectId: ProjectID,
   projectPath: string,
@@ -3431,10 +3449,7 @@ export async function storeResults(
      DELETE FROM brain_semantic_embedding
      WHERE entity_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
    `)
-   const deleteFileRelationships = rawDb.prepare(`
-     DELETE FROM brain_relationship 
-     WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-   `)
+   const deleteFileRelationships = prepareOwnedRelationshipDelete(rawDb)
    // NOT deleted any more: the rows from OTHER files that target this file's
    // symbols. The comment this statement carried said deleteFileSymbols would hit
    // an FK violation without it, but the FK on `target_symbol_id` is declared
@@ -3711,7 +3726,7 @@ export async function storeResults(
          // Delete this file's prior rows (and edges touching them) BEFORE the
          // brain_file REPLACE below cascades — keeps REPLACE's ON DELETE
          // CASCADE reach empty, which is what makes FK-ON safe here.
-         stmt.deleteFileRelationships.run(fileId)
+         stmt.deleteFileRelationships.run(projectId, fileId, relativePath)
          // Inbound rows are intentionally LEFT ALIVE: the FK clears their target
          // pointer (`ON DELETE SET NULL`), and the bounded pass re-points them from
          // the pre-parse snapshot (repairInEdges pass 1) or the full pass
@@ -3859,6 +3874,7 @@ export async function storeResults(
          // members named `None`) and only the regex fallback path can pick
          // them up as noise (const None = ...), so they are gated on fallback.
          const isFallbackResult = !!result.fallback
+         const fallbackEvidence = isFallbackResult ? { method: "regex", evidenceClass: "inferred" } : undefined
          // ONE IMPLEMENTATION, TWO CALLERS: the same factory the companion pass calls. The denylist it
          // returns is built for THIS call and cannot leak into the next file — see the factory's note.
          const { denylist: SYMBOL_NAME_DENYLIST, isStoreable: storeableName } = makeStoreableName(
@@ -4395,7 +4411,7 @@ export async function storeResults(
                    null,          // source_external
                    symbol.name,   // target_external
                    "contains",
-                   1.0,
+                   isFallbackResult ? 0.5 : 1.0,
                    null,
                    // M59/#821: this auto-generated containment edge has no call
                    // site, but it does have a NAVIGABLE site — the member's own
@@ -4416,7 +4432,7 @@ export async function storeResults(
                    0,
                    0,
                    null,
-                   null,
+                   fallbackEvidence ? JSON.stringify(fallbackEvidence) : null,
                    now,
                    now,
                  ])
@@ -5152,7 +5168,7 @@ export async function storeResults(
                relIsCrossFile,
                rel.metadata?.isCrossLanguage || relIsCrossLanguage ? 1 : 0,
                rel.metadata?.bridgeMechanism || (relIsCrossLanguage ? "name-resolution" : null),
-               rel.metadata ? JSON.stringify(rel.metadata) : null,
+               fallbackEvidence ? JSON.stringify({ ...rel.metadata, ...fallbackEvidence }) : rel.metadata ? JSON.stringify(rel.metadata) : null,
                now,
                now,
              )
@@ -8531,7 +8547,7 @@ export async function purgeDeletedFiles(projectId: ProjectID, projectPath: strin
     log.warn("purgeDeletedFiles: refused to purge rows whose path is outside the project", { count: keptOutside, projectRoot })
   }
   if (deadIds.length === 0) return 0
-  const deleteRelBySource = rawDb.prepare(`DELETE FROM brain_relationship WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)
+  const deleteRelBySource = prepareOwnedRelationshipDelete(rawDb)
   const deleteRelByTarget = rawDb.prepare(`DELETE FROM brain_relationship WHERE target_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)
   const deleteTaints = rawDb.prepare(`DELETE FROM brain_taint_flow WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?) OR sink_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)`)
   const deleteSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
@@ -8539,7 +8555,7 @@ export async function purgeDeletedFiles(projectId: ProjectID, projectPath: strin
   const deleteFile = rawDb.prepare(`DELETE FROM brain_file WHERE id = ?`)
   const tx = rawDb.transaction((ids: string[]) => {
     for (const id of ids) {
-      deleteRelBySource.run(id)
+      deleteRelBySource.run(projectId, id, id.slice(projectId.length + 1))
       deleteRelByTarget.run(id)
       deleteTaints.run(id, id)
       deleteSymbols.run(id)
@@ -8722,46 +8738,28 @@ export async function runBoundedPostProcessing(
   //
   // These are CALLS to the shared deciders, not rules copied here: the name
   // strategies (own file → project, all four arms, in the full pass's order) and
-  // the `<module>:<item>` import resolver, each scoped to the files this run
-  // re-stored — the rows this run owns. Reads are project-wide either way, so the
-  // decision is the one the full pass would make; only the UPDATEs are bounded,
-  // which keeps a `--changed` run out of files it never touched.
+  // the `<module>:<item>` import resolver. Reads are project-wide and
+  // writes are scoped to changed files and importers of changed modules.
   if (touchedFileIds.length > 0) {
     const _t = Date.now()
     try {
-      const named = resolveNameTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
-      // 2b.ii — the DOTTED/COLON arms (the full pass's strategies 3, 3b, 3c), before the
-      // import planner, which is where the full pass runs them. MEASURED before this call
-      // existed (gate, lane `erlang`): a caller naming `a:ref_target_erlang` kept two
-      // unresolved `calls` rows after a refresh while a full index bound both to the
-      // declaration in `a.erl`, and the scoped import planner had scanned ZERO of them.
-      const dotted = resolveDottedTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
-      const imports = resolveImportTargets(rawDb as any, projectId, { onlySourceFileIds: touchedFileIds })
-      // 2b.iii — THE RANKED BARE-NAME ARM, last, which is where the full pass runs it.
-      //
-      // `resolveNameTargets` binds a bare name only when the project holds exactly ONE
-      // candidate, so it declines every name that is declared twice — which is what a
-      // prototype beside its definition IS, the ordinary C/C++/Objective-C/header-split
-      // shape, and what any duplicated name is anywhere else. The full pass decides those
-      // rows by RANKING candidates (a definition ahead of a declaration, then the row's
-      // own file, then its own language, then the lowest id) in its `_i13_pick` plan.
-      //
-      // MEASURED before this call existed (script/m65/verify-refresh-resolution.ts, lane
-      // `c`): the refreshed store held two `calls` rows for `ref_target_c` with no target
-      // while a full index of the same source bound both to the definition — so `bb_graph`
-      // answered 0 callers, `truncated: false`, for a function with two call sites.
-      //
-      // It runs AFTER the two deciders above, on purpose: the full pass runs its plan
-      // after its strategies 1-4, and this one RE-BINDS (that is how it corrects a
-      // candidate an earlier strategy guessed), so the order is part of the decision.
-      const ranked = resolveRankedBareNameTargets(rawDb as any, projectId, { sourceFileIds: touchedFileIds })
-      resolvedStoredEdges = named.resolved + dotted.resolved + imports.resolved + ranked.resolved
+      // A newly available module can resolve rows in files that were not parsed
+      // in this run. Use the resolver's own path candidates to find those importers.
+      const touchedPaths = new Set(opts.touchedFiles.map(file => path.relative(opts.projectPath, file).split(path.sep).join("/")))
+      const resolutionFileIds = [...new Set([...touchedFileIds, ...relativeImporterFileIds(rawDb, projectId, touchedPaths)])]
+      // The shared resolvers bind several SQL parameters per file. Bound each
+      // batch so a widely imported module cannot exhaust SQLite's parameter limit.
+      for (let i = 0; i < resolutionFileIds.length; i += 400) {
+        const sourceFileIds = resolutionFileIds.slice(i, i + 400)
+        const named = resolveNameTargets(rawDb as any, projectId, { sourceFileIds })
+        const dotted = resolveDottedTargets(rawDb as any, projectId, { sourceFileIds })
+        const imports = resolveImportTargets(rawDb as any, projectId, { onlySourceFileIds: sourceFileIds })
+        // Keep the full pass's order. The ranked pass can correct an earlier candidate.
+        const ranked = resolveRankedBareNameTargets(rawDb as any, projectId, { sourceFileIds })
+        resolvedStoredEdges += named.resolved + dotted.resolved + imports.resolved + ranked.resolved
+      }
       if (resolvedStoredEdges > 0) {
-        _log.log(
-          `  bounded: resolved ${named.resolved} name-target, ${dotted.resolved} dotted/colon-target` +
-            ` (suffix ${dotted.byStage.suffix}, unique leaf ${dotted.byStage.uniqueLeaf}, ranked leaf ${dotted.byStage.rankedLeaf}),` +
-            ` ${imports.resolved} import-target and ${ranked.resolved} ranked bare-name row(s) this run stored`,
-        )
+        _log.log(`  bounded: resolved ${resolvedStoredEdges} relationship row(s) in changed files or their importers`)
       }
       recordPhase("relationships", Date.now() - _t, "ok")
     } catch (e: any) {
@@ -9005,10 +9003,7 @@ export async function reindexFilesParallel(
       const deleteSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
       const deleteImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
       const deleteFile = rawDb.prepare(`DELETE FROM brain_file WHERE id = ?`)
-      const deleteRelationships = rawDb.prepare(`
-        DELETE FROM brain_relationship 
-        WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
-      `)
+      const deleteRelationships = prepareOwnedRelationshipDelete(rawDb)
       const deleteTaints = rawDb.prepare(`
         DELETE FROM brain_taint_flow 
         WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
@@ -9019,7 +9014,7 @@ export async function reindexFilesParallel(
         for (const change of deleted) {
           const relativePath = path.relative(realProjectPath, change.path)
           const fileId = `${projectId}:${relativePath}`
-          deleteRelationships.run(fileId)
+          deleteRelationships.run(projectId, fileId, relativePath)
           deleteTaints.run(fileId, fileId)
           deleteSymbols.run(fileId)
           deleteImports.run(fileId)

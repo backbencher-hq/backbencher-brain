@@ -2290,7 +2290,7 @@ type ReceiverFacts = {
   /** THE SCOPE OF EACH LOCAL BINDING — scope id -> name -> the type. A lookup walks OUTWARD from
    *  the row's scope through the enclosing scopes. An EMPTY map means the facts carry no scope
    *  information, and the lookup then falls back to the flat `locals` map. */
-  localsByScope: Map<number, Map<string, ReceiverTypeHint>>
+  localsByScope: Map<number, Map<string, ReceiverTypeHint | null>>
   /** THE SCOPE TREE — scope id -> the id of the scope that encloses it (0 = the module scope). */
   scopeParent: Map<number, number>
   classFields: Map<string, ReceiverTypeHint>
@@ -2317,16 +2317,14 @@ type ReceiverFacts = {
 /**
  * THE SCOPED BINDING LOOKUP — the binding of `name` VISIBLE FROM `scope`.
  *
- * The walk goes OUTWARD through the enclosing scopes: a local declared in an outer function is
- * visible in an inner one, and a local declared in a SIBLING function is not visible at all. A
- * name CONFLICTED WITHIN a scope is invisible in that scope, and the walk CONTINUES outward — an
- * ambiguous inner binding does not hide an unambiguous outer one, because the inner one simply
- * does not answer.
- *
- * WHY IT IS A SEPARATE FUNCTION AND NOT A CLOSURE: the facts are carried in `ReceiverFacts` and
- * are read at the call site, which is a different method from the one that built them.
+ * A null entry is a binding whose type is unknown or ambiguous. It
+ * stops the outward walk because the binding still shadows outer names.
  */
-function lookupLocalInScope(facts: ReceiverFacts, scope: number, name: string): ReceiverTypeHint | undefined {
+function lookupLocalInScope(
+  facts: Pick<ReceiverFacts, "localsByScope" | "scopeParent">,
+  scope: number,
+  name: string,
+): ReceiverTypeHint | null | undefined {
   let s: number | null = scope
   const seen = new Set<number>()
   while (s !== null && !seen.has(s)) {
@@ -2340,6 +2338,14 @@ function lookupLocalInScope(facts: ReceiverFacts, scope: number, name: string): 
   }
   return undefined
 }
+
+const RECEIVER_FUNCTION_SCOPES = new Set([
+  "function_declaration", "generator_function_declaration", "function_expression",
+  "generator_function", "arrow_function", "method_definition",
+])
+const RECEIVER_BLOCK_SCOPES = new Set([
+  "statement_block", "catch_clause", "for_statement", "for_in_statement", "switch_body",
+])
 
 class TypeScriptAnalysisRunner {
   private currentFile: string = ""
@@ -5908,49 +5914,17 @@ class TypeScriptAnalysisRunner {
     // the same name with different types DELETE each other's entry (the conflict rule is
     // written for shadowing WITHIN one scope) and BOTH lose their owner. MEASURED instance and
     // the falsifier: `validation/m14/fixtures/typescript/owner-scope-shadowing.ts`.
-    const localsByScope = new Map<number, Map<string, ReceiverTypeHint>>()
+    const localsByScope = new Map<number, Map<string, ReceiverTypeHint | null>>()
     const scopeParent = new Map<number, number>()
-    /** THE SCOPE ID OF A NODE — the nearest enclosing function-like node's start index, 0 for the
-     *  module scope. A scope's PARENT is the scope of the node that contains it, so the outward
-     *  walk is a walk up the tree and not a scan of every scope. */
-    const scopeOf = (node: Node | null | undefined): number => {
-      let p: Node | null = node ?? null
-      while (p) {
-        if (
-          p.type === "function_declaration" || p.type === "generator_function_declaration" ||
-          p.type === "function_expression" || p.type === "arrow_function" ||
-          p.type === "method_definition"
-        ) return p.startIndex
-        p = p.parent
-      }
-      return 0
-    }
-    /** THE SCOPE TREE — built once, from the same walk, so a scope's parent is known.
-     *
-     *  A scope's PARENT is the scope of the node that CONTAINS the scope's own node. The subtlety
-     *  is that `scopeOf(scopeNode) === scopeNode.startIndex` (the scope node is its own nearest
-     *  function-like ancestor), so the parent search must start at the scope node's PARENT, not at
-     *  the scope node itself — otherwise every scope would be its own parent and the outward walk
-     *  would never leave the scope. THAT WAS THE MEASURED REGRESSION: the walk stopped at the
-     *  scope, so a binding recorded in an OUTER function was invisible to an inner one, and the
-     *  `param` class fell 1,092 -> 865 on a 2,000-file stride.
-     *
-     *  THE RULE, stated once: **a scope node's parent scope is `scopeOf(scopeNode.parent)`.** A
-     *  node that is NOT a scope node introduces no scope, and the scope it lives in was already
-     *  registered when the walk reached that scope's own node. */
+    const scopedFacts = { localsByScope, scopeParent }
+    const scopeOf = (node: Node | null | undefined) => this.scopeIdOf(node)
+    const declarationScope = (node: Node) => this.scopeIdOf(node, node.parent?.type === "variable_declaration")
     const buildScopeTree = (node: Node): void => {
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (!c) continue
-        // IS THIS NODE ITSELF A SCOPE? A scope node is function-like, and `scopeOf` of it is its
-        // own start index.
-        const isScopeNode =
-          c.type === "function_declaration" || c.type === "generator_function_declaration" ||
-          c.type === "function_expression" || c.type === "arrow_function" ||
-          c.type === "method_definition"
-        if (isScopeNode) {
-          const own = c.startIndex
-          if (!scopeParent.has(own)) scopeParent.set(own, scopeOf(c.parent))
+        if (RECEIVER_FUNCTION_SCOPES.has(c.type) || RECEIVER_BLOCK_SCOPES.has(c.type)) {
+          scopeParent.set(c.startIndex + 1, scopeOf(c.parent))
         }
         buildScopeTree(c)
       }
@@ -6016,46 +5990,28 @@ class TypeScriptAnalysisRunner {
         conflicted.add(name)
       }
     }
-    /** THE SCOPED VARIANT — a local binding, recorded in the scope it is written in. */
-    const recordLocal = (scope: number, name: string, type: string, evidence: string): void => {
-      let byScope = localsByScope.get(scope)
-      if (!byScope) localsByScope.set(scope, (byScope = new Map()))
-      const previous = byScope.get(name)
-      if (previous === undefined) {
-        byScope.set(name, { type, evidence })
-        // THE FLAT VIEW — first binding wins across the file (the pre-fix semantics), so a
-        // scope-unaware reader sees the same thing it always saw.
-        if (!locals.has(name)) locals.set(name, { type, evidence })
-        return
-      }
-      if (previous.type === type) return
-      // A REAL conflict WITHIN this scope: the name is ambiguous here, so it is dropped HERE.
-      // The scope's entry is removed; the flat view keeps its FIRST binding (the conflict is
-      // between two bindings of the SAME scope, and the flat view cannot express that).
-      byScope.delete(name)
-      let conflicted = conflictedByScope.get(scope)
-      if (!conflicted) conflictedByScope.set(scope, (conflicted = new Set()))
-      conflicted.add(name)
+    const localBindings = (scope: number) => {
+      let bindings = localsByScope.get(scope)
+      if (!bindings) localsByScope.set(scope, (bindings = new Map()))
+      return bindings
     }
-    /** THE SCOPED LOOKUP — the binding of `name` VISIBLE from `scope`. The walk goes OUTWARD
-     *  through the enclosing scopes, so a local declared in an outer function is visible in an
-     *  inner one, and a local declared in a SIBLING function is not visible at all (that is the
-     *  whole point of the fix). A name CONFLICTED within a scope is invisible in that scope, and
-     *  the walk CONTINUES outward — an ambiguous inner binding does not hide an unambiguous
-     *  outer one, because the inner one simply does not answer. */
-    const lookupLocal = (scope: number, name: string): ReceiverTypeHint | undefined => {
-      if (localsByScope.size === 0) return locals.get(name)
-      let s: number | null = scope
-      const seen = new Set<number>()
-      while (s !== null && !seen.has(s)) {
-        seen.add(s)
-        const conflicted = conflictedByScope.get(s)
-        const byScope = localsByScope.get(s)
-        if (byScope?.has(name) && !conflicted?.has(name)) return byScope.get(name)
-        // THE MODULE SCOPE IS THE LAST STOP — a module-level binding is visible from every scope.
-        s = scopeParent.get(s) ?? (s === 0 ? null : 0)
+    const declareLocal = (scope: number, name: string): void => {
+      const bindings = localBindings(scope)
+      if (!bindings.has(name)) bindings.set(name, null)
+    }
+    const recordLocal = (scope: number, name: string, type: string, evidence: string): void => {
+      if (conflictedByScope.get(scope)?.has(name)) return
+      const bindings = localBindings(scope)
+      const previous = bindings.get(name)
+      if (!previous) {
+        bindings.set(name, { type, evidence })
+        if (!locals.has(name)) locals.set(name, { type, evidence })
+      } else if (previous.type !== type) {
+        bindings.set(name, null)
+        let conflicted = conflictedByScope.get(scope)
+        if (!conflicted) conflictedByScope.set(scope, (conflicted = new Set()))
+        conflicted.add(name)
       }
-      return undefined
     }
     // ── PHASE 1: declaration facts that do not depend on other deferred facts ──────────────────
     const stack: Node[] = [root]
@@ -6063,6 +6019,11 @@ class TypeScriptAnalysisRunner {
       const n = stack.pop()!
       if (n.type === "variable_declarator") {
         pendingDeclarators.push(n)
+        const binding = n.childForFieldName("name")
+        if (binding?.type === "identifier") declareLocal(declarationScope(n), binding.text)
+      } else if (n.type === "catch_clause") {
+        const parameter = n.childForFieldName("parameter")
+        if (parameter?.type === "identifier") declareLocal(scopeOf(n), parameter.text)
       } else if (n.type === "public_field_definition" || n.type === "property_signature") {
         pendingFields.push(n)
       } else if (n.type === "assignment_expression") {
@@ -6126,6 +6087,7 @@ class TypeScriptAnalysisRunner {
       } else if (n.type === "required_parameter" || n.type === "optional_parameter") {
         const pattern = n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0)
         if (pattern && pattern.type === "identifier") {
+          declareLocal(scopeOf(n), pattern.text)
           const type = this.annotationTypeName(n)
           // THE PARAMETER'S SCOPE — the scope of the function the parameter BELONGS to. A
           // parameter is bound in its function's scope, and the call sites that use it are in the
@@ -6198,13 +6160,13 @@ class TypeScriptAnalysisRunner {
         // The evidence class records WHICH statement produced the owner, so the order is part of the
         // published contract rather than an accident of evaluation.
         const annotated = this.annotationTypeName(n)
-        if (annotated) recordLocal(scopeOf(n), nameNode.text, annotated, isNew ? "assignment" : "annotation")
-        else if (castType) recordLocal(scopeOf(n), nameNode.text, castType, "cast")
-        else if (factoryType) recordLocal(scopeOf(n), nameNode.text, factoryType, "factory")
-        else if (enumType) recordLocal(scopeOf(n), nameNode.text, enumType, "enum")
+        if (annotated) recordLocal(declarationScope(n), nameNode.text, annotated, isNew ? "assignment" : "annotation")
+        else if (castType) recordLocal(declarationScope(n), nameNode.text, castType, "cast")
+        else if (factoryType) recordLocal(declarationScope(n), nameNode.text, factoryType, "factory")
+        else if (enumType) recordLocal(declarationScope(n), nameNode.text, enumType, "enum")
         else {
           const declaredType = this.declaratorTypeName(n)
-          if (declaredType) recordLocal(scopeOf(n), nameNode.text, declaredType, isNew ? "assignment" : "annotation")
+          if (declaredType) recordLocal(declarationScope(n), nameNode.text, declaredType, isNew ? "assignment" : "annotation")
         }
         // C3/C4: element type and generic instantiation arguments stated by the declaration.
         const ann = this.typeAnnotationNode(n)
@@ -6224,7 +6186,7 @@ class TypeScriptAnalysisRunner {
     // THE SOURCE IS LOOKED UP IN ITS OWN SCOPE — a `cfg` typed in a sibling function is a
     // different binding, and using it would type the destructured members wrongly.
     for (const { pattern, sourceName } of pendingDestructured) {
-      const sourceHint = lookupLocal(scopeOf(pattern), sourceName)
+      const sourceHint = lookupLocalInScope(scopedFacts, scopeOf(pattern), sourceName)
       if (sourceHint) pendingPatterns.push({ pattern, ownerType: sourceHint.type, evidence: "destructured" })
     }
     // (d) C1 ASSIGNMENT-PROVEN LOCAL TYPES — `x = new Widget()` (a later assignment, not the
@@ -6527,21 +6489,12 @@ class TypeScriptAnalysisRunner {
    * naming an owner here would double-claim. A one-hop `this.field.m()` IS resolved — the
    * receiver's type there is the FIELD's declared type.
    */
-  /**
-   * THE SCOPE OF A NODE — the nearest enclosing function-like node's start index, 0 for the module
-   * scope. THE SAME RULE the receiver-type collector uses to record a binding's scope, so the two
-   * agree by construction: a binding is recorded in the scope it is written in, and a row reads
-   * the binding visible from the scope it is written in.
-   */
-  private scopeIdOf(node: Node | null | undefined): number {
-    let p: Node | null = node ?? null
-    while (p) {
-      if (
-        p.type === "function_declaration" || p.type === "generator_function_declaration" ||
-        p.type === "function_expression" || p.type === "arrow_function" ||
-        p.type === "method_definition"
-      ) return p.startIndex
-      p = p.parent
+  /** Receiver bindings follow lexical blocks, while var belongs to the function or module. */
+  private scopeIdOf(node: Node | null | undefined, functionOnly = false): number {
+    for (let p = node; p; p = p.parent) {
+      if (RECEIVER_FUNCTION_SCOPES.has(p.type) || (!functionOnly && RECEIVER_BLOCK_SCOPES.has(p.type))) {
+        return p.startIndex + 1
+      }
     }
     return 0
   }
@@ -6558,6 +6511,7 @@ class TypeScriptAnalysisRunner {
       const hint = facts.localsByScope.size > 0
         ? lookupLocalInScope(facts, scope, object.text)
         : facts.locals.get(object.text)
+      if (hint === null) return undefined
       if (hint) return hint
       // C8 CLASS-STATIC RECEIVERS — `Cls.staticM()`: the receiver root names a CLASS, and the owner
       // is stated only when the class's own body declares that member (the proof that this is the

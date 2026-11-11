@@ -930,7 +930,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < node.namedChildCount && names.length < 2; i++) {
           const c = node.namedChild(i)
           if (!c) continue
-          if (c.type === "identifier") { names.push(c.text); nameNodes.push(c) }
+          if (c.type === "identifier" || c.type === "operator" || c.type === "setter") {
+            names.push(c.text)
+            nameNodes.push(c)
+          }
           else if (c.type === "simple_symbol") {
             // `alias :"a \"b\"" old` names a method the analyzer can only state if
             // the escape resolves — `rubyNameFromLiteral`, the one rule every
@@ -1169,7 +1172,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // directive map separate avoids an O(symbols) scan for every `private :x`.
     for (const symbol of symbols) {
       if (!symbol.ownerName) continue
-      const override = visibilityOverrides.get(`${symbol.ownerName}\u0000${symbol.name}`)
+      const key = `${symbol.ownerName}\u0000${symbol.name}`
+      const override = (symbol.isStatic ? visibilityOverrides.get(`${key}\u0000class`) : undefined)
+        ?? visibilityOverrides.get(key)
       if (override) symbol.visibility = override as any
     }
 
@@ -1351,8 +1356,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Ruby permits implicit overrides; use local declarations first, then the
     // project companion index supplied by the production/differential caller.
     const baseByClass = new Map<string, string>()
+    const namespacesByLeaf = new Map<string, Set<string>>()
     for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Class && s.metadata?.superClass) {
+      if (s.kind !== ASTEngine.SymbolKind.Class) continue
+      const namespaces = namespacesByLeaf.get(s.name) ?? new Set<string>()
+      namespaces.add(s.ownerName ?? "")
+      namespacesByLeaf.set(s.name, namespaces)
+      if (s.metadata?.superClass) {
         // The base must be a NAME the source writes. A dynamic superclass —
         // `class DirectoryBody < Struct.new(:root, :path, :files)` — has no base
         // class at all, and the extends edge already refuses it
@@ -1364,13 +1374,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // defect was invisible until the M59 line oracle gave the edge a line.
         const superText = String(s.metadata.superClass)
         if (this.isStaticSuperclassName(superText)) {
-          baseByClass.set(s.name, this.leafName(superText))
+          baseByClass.set(s.name, superText)
         }
       }
     }
     const methodsByOwner = new Map<string, Set<string>>()
     for (const s of symbols) {
-      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.nestedDeclaration) continue
       let names = methodsByOwner.get(s.ownerName)
       if (!names) {
         names = new Set<string>()
@@ -1379,9 +1389,19 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       names.add(s.name)
     }
     for (const s of symbols) {
-      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
-      const base = baseByClass.get(s.ownerName)
-      if (!base) continue
+      if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.nestedDeclaration) continue
+      const writtenBase = baseByClass.get(s.ownerName)
+      const ownerNamespaces = namespacesByLeaf.get(s.ownerName)
+      if (!writtenBase || (ownerNamespaces?.size ?? 0) > 1) continue
+      const leaf = this.leafName(writtenBase)
+      const baseNamespaces = namespacesByLeaf.get(leaf)
+      const baseNamespace = baseNamespaces?.size === 1 ? baseNamespaces.values().next().value : undefined
+      const declaredPath = baseNamespace ? `${baseNamespace}::${leaf}` : leaf
+      const qualified = writtenBase.includes("::")
+      const candidate = writtenBase.replace(/^::/, "")
+      const ownerNamespace = ownerNamespaces?.values().next().value
+      const localBase = baseNamespace !== undefined && leaf !== s.ownerName &&
+        (qualified ? candidate === declaredPath : baseNamespace === "" || baseNamespace === ownerNamespace)
       // Self-collision guard (master-review 2026-09, RUBD14): a namespaced
       // reopen like `class Rake::TestCase < Test::Unit::TestCase` leaf-
       // collapses its superclass to `TestCase` — the class's OWN leaf after
@@ -1389,20 +1409,23 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // this is a resolution artifact, not a declared in-file base: route it
       // to the honest external first-parent guess instead of fabricating
       // VERIFIED self-overrides (rake helper.rb: 9 phantom 0.95 edges).
-      const inFileMethods = base === s.ownerName ? undefined : methodsByOwner.get(base)
-      const baseMethods = inFileMethods ?? context?.overrideCompanion?.get(base)
+      const inFileMethods = localBase ? methodsByOwner.get(leaf) ?? new Set<string>() : undefined
+      const companion = qualified || !baseNamespaces
+        ? context?.overrideCompanion?.get(qualified ? candidate : leaf)
+        : undefined
+      const baseMethods = inFileMethods ?? companion
       if (baseMethods?.has(s.name)) {
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
-          target: `${base}.${s.name}`,
+          target: `${localBase ? leaf : writtenBase}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
-          confidence: 0.95,
+          confidence: inFileMethods ? 0.95 : 0.65,
           // #825: a symbol-named edge carries the SYMBOL's own declaration line,
           // so the edge moves with its symbol.
           line_number: s.range?.startLine,
-          metadata: { isOverride: true },
+          metadata: { isOverride: true, reasonCode: inFileMethods ? "in-file-verified" : "companion-index" },
         })
-      } else if (!inFileMethods && !context?.overrideCompanion?.get(base)) {
+      } else if (!inFileMethods && !companion) {
         // Pass 3 (family parity with java/groovy resolveOverrides): the base
         // is not declared in this file and the companion index gave no
         // opinion (it is never populated in production — see M37.10), so
@@ -1414,7 +1437,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // external — silently losing every cross-file override.
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
-          target: `${base}.${s.name}`,
+          target: `${writtenBase}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: 0.5,
           line_number: s.range?.startLine,
@@ -1440,8 +1463,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             //     spelling — it is the class's own leaf — so "beyond this run's reach" would be
             //     the wrong statement and that edge stays silent;
             //   · it is MUTUALLY EXCLUSIVE with every external marker, by the arbiter's rule.
-            ...(base !== s.ownerName && isRubyIdentifierShaped(base)
-              ? { baseBeyondRunScope: base }
+            ...(!qualified && leaf !== s.ownerName && !baseNamespaces && isRubyIdentifierShaped(leaf)
+              ? { baseBeyondRunScope: leaf }
               : {}),
           },
         })
@@ -1570,6 +1593,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const scanStack: Node[] = [node]
     while (scanStack.length > 0) {
       const sn = scanStack.pop()!
+      if (sn.type === "method" || sn.type === "singleton_method") continue
       // `defined?(...)` is unevaluated — never bind names inside it.
       if (sn.type === "unary") {
         const op = sn.childCount > 0 ? sn.child(0) : null
@@ -1580,32 +1604,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // parses as `assignment` whose left is a `left_assignment_list` —
         // every identifier under it is an assignment target.
         const left = sn.childForFieldName("left") ?? sn.namedChild(0)
-        if (left) {
-          if (left.type === "identifier") {
-            localNames.add(left.text)
-          }
-          const _nc8 = left.namedChildCount
-          for (let i = 0; i < _nc8;
- i++) {
-            const c = left.namedChild(i)
-            if (c?.type === "identifier") localNames.add(c.text)
-          }
-        }
-      }
-      // Nested method declarations (`def @app.mm(*a, &b)` inside a method
-      // body) bind their OWN parameters as locals of that nested scope.
-      // walkBody walks nested defs' bodies (Ruby defines them when the outer
-      // method runs), so without this the params leak as bare calls of the
-      // OUTER method (verified: rake top_level_functions.rb setup leaks
-      // calls:a/calls:b from `def @app.method_missing(*a, &b)`).
-      if (sn.type === "method_parameters") {
-        const inner: Node[] = [sn]
-        while (inner.length > 0) {
-          const q = inner.pop()!
-          if (q.type === "identifier") localNames.add(q.text)
-          for (let j = 0; j < q.namedChildCount; j++) {
-            const d = q.namedChild(j)
-            if (d) inner.push(d)
+        if (left?.type === "identifier") localNames.add(left.text)
+        if (left?.type === "left_assignment_list") {
+          for (const child of left.namedChildren) {
+            if (child?.type === "identifier") localNames.add(child.text)
           }
         }
       }
@@ -1776,6 +1778,31 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const n = stack.pop()!
       const type = n.type
 
+      if (type === "method" || type === "singleton_method") {
+        const nameNode = n.childForFieldName("name")
+        if (!nameNode) continue
+        const name = nameNode.text
+        const parameters = this.extractParameters(n)
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Method,
+          range: this.nodeToRange(n),
+          parameters,
+          ownerName: enclosingMethod,
+          ownerKind: enclosingMethod ? ASTEngine.SymbolKind.Method : undefined,
+          metadata: { nestedDeclaration: true },
+        })
+        const methodLocals = new Set((parameters ?? []).map(parameter => parameter.name))
+        for (const binding of this.extractParamDefaultBindings(n)) methodLocals.add(binding)
+        this.walkMethodBody(n, n.childForFieldName("body"), symbols, relationships, imports, metadata,
+          undefined, undefined, name, visibilityOverrides, methodLocals)
+        this.walkParamDefaults(n, symbols, relationships, imports, metadata,
+          undefined, undefined, name, visibilityOverrides, methodLocals)
+        const receiver = n.childForFieldName("object")
+        if (receiver) stack.push(receiver)
+        continue
+      }
+
       // --- `defined?(expr)` is unevaluated: the operand is a name being
       // probed, never a call or read (`defined?(bar)` emitted junk
       // calls->bar; `defined?(x = 1)` must not bind x either). Skip the
@@ -1823,7 +1850,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           : (parentType === "method" || parentType === "singleton_method") &&
             n.parent!.namedChild(0)?.id === n.id
         if (isDefName) continue
-        if (!BARE_CALL_SKIP_PARENTS.has(parentType as string) && !localNames.has(n.text)) {
+        const isCallReceiver = parentType === "call" && n.parent?.childForFieldName("receiver")?.id === n.id
+        if ((isCallReceiver || !BARE_CALL_SKIP_PARENTS.has(parentType as string)) && !localNames.has(n.text)) {
           this.pushBareCall(n.text, n, owner, enclosingMethod, relationships)
         }
       }
@@ -2183,7 +2211,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `private`/`protected`/`public` are declarations, not call edges. The
     // symbol-list form (`private :helper`) changes already-declared methods;
     // the bare form is captured lexically when class frames are built.
-    if (methodName === "private" || methodName === "protected" || methodName === "public") {
+    const explicitReceiver = node.childForFieldName("receiver")
+    const classVisibility = !!owner && !enclosingMethod
+      && (methodName === "private_class_method" || methodName === "public_class_method")
+      && (!explicitReceiver || explicitReceiver.type === "self")
+    if (classVisibility || methodName === "private" || methodName === "protected" || methodName === "public") {
       const args = this.findChild(node, "argument_list")
       if (args && owner && args.namedChildCount > 0) {
         const _nc16 = args.namedChildCount
@@ -2192,7 +2224,12 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const arg = args.namedChild(i)
           if (!arg || arg.type !== "simple_symbol") continue
           const targetName = this.stripSymbolColon(arg.text)
-          visibilityOverrides.set(`${owner}\u0000${targetName}`, methodName)
+          const key = `${owner}\u0000${targetName}`
+          if (classVisibility) {
+            visibilityOverrides.set(`${key}\u0000class`, methodName === "private_class_method" ? "private" : "public")
+          } else {
+            visibilityOverrides.set(key, methodName)
+          }
         }
       }
       return

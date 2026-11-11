@@ -284,6 +284,23 @@ function candidatePaths(base: string): string[] {
   return out
 }
 
+/** Files whose written relative imports could name a touched module. */
+export function relativeImporterFileIds(db: MinimalDb, projectId: string, touchedPaths: ReadonlySet<string>): string[] {
+  if (touchedPaths.size === 0) return []
+  const rows = db.prepare(`
+    SELECT f.id AS fileId, f.relative_path AS relativePath, i.import_path AS specifier
+    FROM brain_import i JOIN brain_file f ON f.id = i.file_id
+    WHERE i.project_id = ? AND (i.import_path LIKE './%' OR i.import_path LIKE '../%' OR i.import_path IN ('.', '..'))
+  `).all(projectId) as Array<{ fileId: string; relativePath: string; specifier: string }>
+  const importers = new Set<string>()
+  for (const row of rows) {
+    if (importers.has(row.fileId)) continue
+    const base = resolveSpecifierPath(row.relativePath.split("\\").join("/"), row.specifier)
+    if (base !== null && candidatePaths(base).some(path => touchedPaths.has(path))) importers.add(row.fileId)
+  }
+  return [...importers]
+}
+
 /** Split `path:item` on the LAST colon — a specifier may itself contain one. */
 /**
  * The file ids a specifier names when read from the importing file's own

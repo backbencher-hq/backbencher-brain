@@ -951,6 +951,17 @@ export function probePoolWorkerSync(
     )
   }
 
+  // spawnSync can surface a host error even when the child status is zero.
+  // An empty capture in that case says nothing about the worker's version.
+  if (res.error) {
+    return fail("fork-unavailable", `could not run the worker self-test: ${res.error.message}`, {
+      workerPath: resolution.workerPath,
+      workerArgs: resolution.workerArgs,
+      errorMessage: res.error.message,
+      stderrTail: stderrTail || undefined,
+    })
+  }
+
   const markerLine = stdout.split("\n").find((l) => l.startsWith(SELFTEST_MARKER))
   if (markerLine) {
     let report: PoolWorkerSelfTestReport | null = null

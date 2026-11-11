@@ -130,6 +130,7 @@ export const handler: ToolHandler = async (args, { projectId }) => {
     let result
     try {
       result = await graphTraversal(projectId as any, symbol, {
+        rootFile: typeof args.file === "string" ? args.file.trim() || undefined : undefined,
         maxDepth,
         edgeLimit: edgeLimitArg,
         maxEdges: maxEdgesArg,
@@ -169,6 +170,7 @@ export const handler: ToolHandler = async (args, { projectId }) => {
         // above was DERIVED from the stored kind and confidence — a reader can
         // tell a stored claim from a derivation without a second query.
         evidenceClass: e.metadata?.evidenceClass ?? null,
+        ...(e.metadata?.method === "regex" ? { extractionMethod: "regex" } : {}),
         isCrossLanguage: e.isCrossLanguage === true,
         bridgeMechanism: e.bridge ?? e.bridgeMechanism ?? null,
         depth: e.depth,

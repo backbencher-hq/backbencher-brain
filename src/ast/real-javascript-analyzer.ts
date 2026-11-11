@@ -2298,27 +2298,29 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the TypeScript pass (`collectLocalReceiverTypes` there, where the three-file
    * measurement and the reasoning live).
    *
-   * JavaScript states a receiver's type in exactly one syntactic form: an
-   * initialiser. `const c = new Foo()` is the whole rule here; there are no type
-   * annotations to read, which is why this map is smaller than the TS one rather
-   * than narrower by choice. A name declared with two different constructors in
-   * one file is dropped: shadowing makes the file-level answer a guess, and a
-   * wrong owner rewrites a binding that is currently right.
+   * The positional binding model identifies the declaration behind each local
+   * receiver. An untyped inner binding does not inherit an outer type hint.
    */
-  private collectLocalReceiverTypes(root: Node): Map<string, ReceiverType> {
-    const types = new Map<string, ReceiverType>()
-    const conflicted = new Set<string>()
-    const record = (name: string, type: string, evidence: ReceiverEvidence): void => {
-      if (name.length === 0 || type.length === 0) return
+  private collectLocalReceiverTypes(root: Node) {
+    const model = this.bindingModel
+    const localTypes = new Map<BindingScope | null, Map<string, ReceiverType | null>>()
+    const typedNames = new Set<string>()
+    const fieldTypes = new Map<string, ReceiverType | null>()
+    const record = (types: Map<string, ReceiverType | null>, name: string, type: string, evidence: ReceiverEvidence): void => {
+      if (!name || !type) return
       const previous = types.get(name)
-      if (previous === undefined) {
-        if (!conflicted.has(name)) types.set(name, { type, evidence })
-      } else if (previous.type !== type) {
-        // TWO TYPES FOR ONE NAME IN ONE FILE: shadowing makes the file-level answer a guess,
-        // and a wrong owner rewrites a binding that is currently right — drop, never pick.
-        types.delete(name)
-        conflicted.add(name)
-      }
+      if (previous === undefined) types.set(name, { type, evidence })
+      else if (previous && previous.type !== type) types.set(name, null)
+    }
+    const scopeAt = (node: Node, name: string) =>
+      model ? this.resolveBindingScope(model, node.startIndex, name) : null
+    const recordLocal = (node: Node, type: string, evidence: ReceiverEvidence): void => {
+      const name = node.text
+      const scope = scopeAt(node, name)
+      let types = localTypes.get(scope)
+      if (!types) localTypes.set(scope, (types = new Map()))
+      record(types, name, type, evidence)
+      typedNames.add(name)
     }
     /** the CONSTRUCTOR LEAF a `new` expression names (`new Foo()`, `new ns.Foo()`). */
     const newCtorLeaf = (value: Node | null | undefined): string | null => {
@@ -2424,10 +2426,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const value = n.childForFieldName("value")
         if (nameNode && nameNode.type === "identifier") {
           const ctor = newCtorLeaf(value)
-          if (ctor !== null) record(nameNode.text, ctor, "new")
+          if (ctor !== null) recordLocal(nameNode, ctor, "new")
           else {
             const docType = jsdocTypeOf(n)
-            if (docType !== null) record(nameNode.text, docType, "jsdoc")
+            if (docType !== null) recordLocal(nameNode, docType, "jsdoc")
           }
         }
       } else if (n.type === "field_definition") {
@@ -2437,7 +2439,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const value = n.childForFieldName("value")
         const ctor = newCtorLeaf(value)
         if (prop?.type === "property_identifier" && ctor !== null) {
-          record(`this.${prop.text}`, ctor, "assignment")
+          record(fieldTypes, `this.${prop.text}`, ctor, "assignment")
           // also readable unqualified inside instance methods in some styles; keep the
           // this.-key only — an unqualified use is a bare local read, not a proven receiver.
         }
@@ -2450,12 +2452,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const ctor = newCtorLeaf(right)
         const line = n.startPosition.row + 1
         if (left && ctor !== null) {
-          if (left.type === "identifier") record(left.text, ctor, "assignment")
+          if (left.type === "identifier") recordLocal(left, ctor, "assignment")
           else if (left.type === "member_expression") {
             const obj = left.childForFieldName("object")
             const prop = left.childForFieldName("property")
             if (obj?.type === "this" && prop?.type === "property_identifier") {
-              record(`this.${prop.text}`, ctor, "assignment")
+              record(fieldTypes, `this.${prop.text}`, ctor, "assignment")
             }
           }
         } else if (left && right && left.type === "member_expression" && right.type === "identifier") {
@@ -2465,7 +2467,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const prop = left.childForFieldName("property")
           if (obj?.type === "this" && prop?.type === "property_identifier") {
             const paramType = jsdocParamTypeAt(line, right.text)
-            if (paramType !== null) record(`this.${prop.text}`, paramType, "jsdoc")
+            if (paramType !== null) record(fieldTypes, `this.${prop.text}`, paramType, "jsdoc")
           }
         }
       }
@@ -2474,7 +2476,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push(child)
       }
     }
-    return types
+    return {
+      localAt: (node: Node, name: string) => typedNames.has(name)
+        ? localTypes.get(scopeAt(node, name))?.get(name) ?? undefined
+        : undefined,
+      field: (name: string) => fieldTypes.get(name) ?? undefined,
+    }
   }
 
   /**
@@ -2506,7 +2513,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
-    receiverTypes: Map<string, ReceiverType>,
+    receiverTypes: ReturnType<RealJavaScriptAnalyzer["collectLocalReceiverTypes"]>,
     deadSpans: { s: number; e: number }[] = [],
   ): void {
     const resolveCurrent = (n: Node, current: string | null): string | null => {
@@ -2681,7 +2688,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   if (!object) return {}
                   let recv: ReceiverType | undefined
                   if (object.type === "identifier") {
-                    recv = receiverTypes.get(object.text) ??
+                    recv = receiverTypes.localAt(object, object.text) ??
                       this.staticClassReceiver(object, object.text) ??
                       this.thisAliasOwnerAt(object, object.text) ??
                       undefined
@@ -2697,7 +2704,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     // `this.x.m()` — the constructor-assignment key is spelled exactly so.
                     const inner = object.childForFieldName("object")
                     const prop = object.childForFieldName("property")
-                    if (inner?.type === "this" && prop) recv = receiverTypes.get(`this.${prop.text}`)
+                    if (inner?.type === "this" && prop) recv = receiverTypes.field(`this.${prop.text}`)
                   }
                   return recv ? { owner: recv.type, ownerEvidence: recv.evidence } : {}
                 })() : {}),
@@ -3651,7 +3658,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     moduleName: string,
     // The file's stated receiver types (one collection per file, shared with the calls walk):
     // a member READ can carry the same `metadata.owner` a member CALL does.
-    receiverTypes: Map<string, ReceiverType>,
+    receiverTypes: ReturnType<RealJavaScriptAnalyzer["collectLocalReceiverTypes"]>,
     // JD6: this pass had no dead-span guard, so reads inside a superseded
     // duplicate body still emitted `uses` rows after the symbol they belonged to
     // was removed. Its sibling extractCallRelationships has had the guard all
@@ -3928,7 +3935,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // binding for an owner-carrying row and then declines.
                   const recvOwner = (() => {
                     if (cur?.type === "identifier" && head) {
-                      return receiverTypes.get(head) ??
+                      return receiverTypes.localAt(cur, head) ??
                         this.staticClassReceiver(cur, head) ??
                         this.thisAliasOwnerAt(cur, head) ??
                         undefined

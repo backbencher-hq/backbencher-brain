@@ -2029,10 +2029,9 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (leaf.type === "scoped_use_list") {
           const innerBase = pathOf(leaf.namedChild(0))
           if (innerBase) {
-            for (const it of groupLeaves(leaf.namedChild(1), innerBase)) items.push(it)
-            if (innerBase !== base) {
-              out.push({ module: innerBase, items: [], line: this.nodeLine(leaf), kind: "nested_group" })
-            }
+            const qualifiedBase = base ? `${base}::${innerBase}` : innerBase
+            for (const it of groupLeaves(leaf.namedChild(1), qualifiedBase)) items.push(it)
+            out.push({ module: qualifiedBase, items: [], line: this.nodeLine(leaf), kind: "nested_group" })
           }
         }
       }

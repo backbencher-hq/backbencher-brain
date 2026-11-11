@@ -569,7 +569,10 @@ function edgeMetadata(meta: string | null): EdgeMetadata | undefined {
   try {
     const parsed = JSON.parse(meta) as Record<string, unknown>
     const out: EdgeMetadata = {}
-    if (typeof parsed["evidenceClass"] === "string") out.evidenceClass = parsed["evidenceClass"]
+    if (parsed.method === "regex") {
+      out.method = "regex"
+      out.evidenceClass = "inferred"
+    } else if (typeof parsed.evidenceClass === "string") out.evidenceClass = parsed.evidenceClass
     // Pass through the index-computed enrichment fields (the
     // enrichment pass writes them into metadata; the LSP surface only reads
     // what the index stored — no inference here, §12.3). Presence is gated on
@@ -1502,6 +1505,7 @@ export type RootMatch = "exact" | "exact-any-kind" | "containment"
 export async function resolveGraphRootDetailed(
   projectId: ProjectID,
   name: string,
+  file?: string,
 ):
   // A discriminated union, so a caller that has a root also has a `match`
   // without an assertion. The two are set together and are not independent:
@@ -1518,7 +1522,10 @@ export async function resolveGraphRootDetailed(
     "COALESCE(f.language,'unknown') AS language, COALESCE(s.complexity,0) AS complexity " +
     "FROM brain_symbol s" + symbolHint + " JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id " +
     "WHERE s.project_id = ? "
-  const base = baseFor("")
+  const filePath = file?.split("\\").join("/")
+  const fileScope = filePath === undefined ? "" : "AND (f.relative_path = ? OR f.path = ?) "
+  const params = filePath === undefined ? [projectId] : [projectId, filePath, filePath]
+  const base = baseFor("") + fileScope
   /**
    * The EXACT steps get the name index; the containment step does not.
    *
@@ -1530,7 +1537,7 @@ export async function resolveGraphRootDetailed(
    * the index at all, so the containment step is left unhinted: forcing the
    * index there would turn one scan into a full index scan.
    */
-  const exactBase = baseFor(indexedBy(raw, SYMBOL_NAME_INDEX))
+  const exactBase = baseFor(indexedBy(raw, SYMBOL_NAME_INDEX)) + fileScope
   // Every ranking is a TOTAL order. `ORDER BY gravity_score DESC LIMIT 1` alone
   // leaves the winner undefined when two same-named symbols tie on gravity, and
   // SQLite is free to return either one — the answer would then depend on the
@@ -1551,7 +1558,7 @@ export async function resolveGraphRootDetailed(
   // 1) exact name among the structural kinds the graph can traverse
   let predicate = exactStructural
   let param = name
-  let rows = raw.prepare(exactStructural + RANK).all(projectId, name) as SymbolRow[]
+  let rows = raw.prepare(exactStructural + RANK).all(...params, name) as SymbolRow[]
   if (rows.length === 0) {
     // Measured corpus catch: the fallback used to go STRAIGHT to a
     // fuzzy substring match, so a real exact-name symbol of a non-structural
@@ -1559,12 +1566,12 @@ export async function resolveGraphRootDetailed(
     // merely CONTAINING the string (a Makefile target lib$(LANGUAGE_NAME).a) —
     // bb_graph and bb_analyze then answered the same query with different
     // roots. Exact-name of ANY kind must win over fuzzy containment.
-    rows = raw.prepare(exactAnyKind + RANK).all(projectId, name) as SymbolRow[]
+    rows = raw.prepare(exactAnyKind + RANK).all(...params, name) as SymbolRow[]
     predicate = exactAnyKind
     param = name
     match = "exact-any-kind"
   }
-  if (rows.length === 0) {
+  if (rows.length === 0 && filePath === undefined) {
     // 3) documented near-miss fallback: fuzzy containment among structural kinds.
     //
     // The caller's string becomes a LIKE PATTERN, so `%`, `_` and the escape
@@ -1585,7 +1592,7 @@ export async function resolveGraphRootDetailed(
   if (!root) return { root: null, candidates: 0, match: null }
   // How many stored symbols the winning step had to choose between, counted
   // with that step's own predicate and parameter.
-  const countRow = raw.prepare("SELECT COUNT(*) c FROM (" + predicate + ")").get(projectId, param) as any
+  const countRow = raw.prepare("SELECT COUNT(*) c FROM (" + predicate + ")").get(...params, param) as any
   return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)), match }
 }
 
@@ -1614,7 +1621,7 @@ export async function graphTraversal(
   name: string,
   options: GraphTraversalOptions = {},
 ): Promise<GraphTraversalResult> {
-  const { root, candidates, match } = await resolveGraphRootDetailed(projectId, name)
+  const { root, candidates, match } = await resolveGraphRootDetailed(projectId, name, options.rootFile)
   if (!root) throw new Error(`Symbol '${name}' not found`)
   const {
     callers,

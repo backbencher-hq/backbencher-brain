@@ -184,8 +184,9 @@ export function evidenceClassOf(metadata: string | null | undefined): string | n
   try {
     const parsed = JSON.parse(metadata) as unknown
     if (typeof parsed !== "object" || parsed === null) return null
-    const cls = (parsed as { evidenceClass?: unknown }).evidenceClass
-    return typeof cls === "string" ? cls : null
+    const { evidenceClass, method } = parsed as { evidenceClass?: unknown; method?: unknown }
+    if (method === "regex") return "inferred"
+    return typeof evidenceClass === "string" ? evidenceClass : null
   } catch {
     return null
   }

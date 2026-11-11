@@ -78,17 +78,6 @@ const ancestors = (n: any): any[] => {
   while (cur) { out.push(cur); cur = cur.parent }
   return out
 }
-const enclosingMods = (n: any): string[] => {
-  // outermost-first inline module names (mirrors the analyzer's `enclosingMods` walk semantics)
-  const mods: string[] = []
-  for (const a of ancestors(n).reverse()) if (a.type === "mod_item") { const nm = a.childForFieldName?.("name") ?? a.namedChild(0); if (nm) mods.push(text(nm)) }
-  return mods
-}
-const enclosingFunction = (n: any): string => {
-  for (const a of ancestors(n)) if (a.type === "function_item") { const nm = a.childForFieldName?.("name"); if (nm) return text(nm) }
-  return ""
-}
-
 /** imports truth — one row per distinct (source, module) per file. */
 export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
   const out: RustTruthEdge[] = []
@@ -105,9 +94,8 @@ export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
     while (stack.length > 0) {
       const n = stack.pop()!
       if (n.type === "use_declaration") {
-        const mods = enclosingMods(n)
-        const fn = mods.length === 0 ? enclosingFunction(n) : ""
-        const source = mods.length > 0 ? mods[mods.length - 1] : fn !== "" ? fn : RUST_FILE_SOURCE
+        const owner = ancestors(n).find(parent => parent.type === "function_item" || parent.type === "mod_item")
+        const source = text(owner?.childForFieldName?.("name")) || RUST_FILE_SOURCE
         const arg = (() => {
           for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && c.type !== "visibility_modifier") return c }
           return n.namedChild(0)
@@ -145,7 +133,10 @@ export function deriveRustImportsTruth(root: any): RustTruthEdge[] {
             if (list) for (let i = 0; i < list.namedChildCount; i++) collectLeaf(list.namedChild(i), base)
             return
           }
-          if (t === "use_list") { for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c && c.type !== "use_as_clause") collectLeaf(c, "") } return }
+          if (t === "use_list") {
+            for (let i = 0; i < node.namedChildCount; i++) collect(node.namedChild(i))
+            return
+          }
           if (t === "use_as_clause") {
             const p = pathOf(node.childForFieldName?.("path") ?? node.namedChild(0))
             const { module } = splitLeaf(p)
@@ -286,12 +277,15 @@ const nominalTypeNode = (t: any): any => {
   let guard = 0
   while (cur && guard++ < 12) {
     const ty = String(cur.type)
-    if (ty === "reference_type" || ty === "pointer_type" || ty === "parenthesized_type" || ty === "array_type" || ty === "tuple_type") { cur = cur.namedChild(cur.namedChildCount - 1); continue }
+    if (ty === "reference_type" || ty === "pointer_type" || ty === "parenthesized_type") {
+      cur = cur.childForFieldName("type") ?? cur.namedChild(cur.namedChildCount - 1)
+      continue
+    }
     if (ty === "generic_type") { cur = cur.childForFieldName?.("type") ?? cur.namedChild(0); continue }
-    if (ty === "scoped_type_identifier" || ty === "type_identifier") return cur
-    return cur
+    if (ty === "scoped_type_identifier" || ty === "type_identifier" || ty === "primitive_type") return cur
+    return null
   }
-  return cur
+  return null
 }
 
 /** overrides truth — direct members of `impl Trait for Type` blocks; the contract is in the header. */
@@ -362,7 +356,7 @@ export function deriveRustOverridesTruth(root: any): RustTruthEdge[] {
               // a trait declared here that does not declare the member: the impl ADDS it — not an override
               if (declared && !declared.has(method)) continue
               // a generic-parameter type cannot own an implementation row
-              if (genericParam) continue
+              if (!typeName || genericParam) continue
               const from = `${typeName}.${method}`
               const k = `${from}\u0000${method}`
               if (seen.has(k)) continue

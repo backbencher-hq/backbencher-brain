@@ -10,7 +10,7 @@
 //
 // ## The rule, in PHP's terms
 //
-// A method that re-declares a name its BASE CLASS already declares OVERRIDES it. Three
+// An override names the nearest in-file ancestor that declares an inherited method of that name. Three
 // properties decide it, and each has a boundary worth stating:
 //
 //   1. THE BASE IS DECLARED IN THE SAME FILE. This is not a modelling convenience, it is
@@ -67,8 +67,7 @@
 //
 // `source: "<owner>.<method>"`, `target: "<base>.<method>"` — the same shape the analyzer
 // emits, because the differential matches on label+target and a differently-spelled target
-// would read as a mismatch in the corpus rather than in the instrument. Deduped per file on
-// label+target, which is the shape the analyzer side is collapsed to before comparison.
+// would read as a mismatch in the corpus rather than in the instrument. Distinct source and target tuples are preserved.
 
 export function derivePhpOverridesTruth(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
@@ -154,20 +153,27 @@ export function derivePhpOverridesTruth(root: any): { label: string; from: strin
   }
 
   for (const info of types.values()) {
-    if (!info.base) continue
-    const base = types.get(info.base)
-    // (1) the base must be declared in THIS file; (2) it must declare the member.
-    if (!base) continue
-    for (const [mname, decl] of info.methods) {
-      const baseMethod = base.methods.get(mname)
-      if (!baseMethod) continue
-      // (3) a private base method is not inherited, so there is nothing to override.
-      if (baseMethod.private) continue
-      const target = `${base.name}.${mname}`
-      const key = "overrides:" + target
+    const ancestors: TypeInfo[] = []
+    const visited = new Set([info.name])
+    for (let base = info.base; base && !visited.has(base);) {
+      visited.add(base)
+      const parent = types.get(base)
+      if (!parent) break
+      ancestors.push(parent)
+      base = parent.base
+    }
+    for (const mname of info.methods.keys()) {
+      const parent = ancestors.find(candidate => {
+        const method = candidate.methods.get(mname)
+        return method && !method.private
+      })
+      if (!parent) continue
+      const from = `${info.name}.${mname}`
+      const target = `${parent.name}.${mname}`
+      const key = JSON.stringify([from, target])
       if (seen.has(key)) continue
       seen.add(key)
-      edges.push({ label: "overrides", from: `${info.name}.${mname}`, target })
+      edges.push({ label: "overrides", from, target })
     }
   }
   return edges

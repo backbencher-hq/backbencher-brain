@@ -57,6 +57,7 @@ const MEMBER_ITEM = new Set([
   "static_item",
   "type_item",
   "type_alias",
+  "associated_type",
   "mod_item",
   "struct_item",
   "enum_item",
@@ -73,6 +74,7 @@ const TYPE_NAMED_ITEM = new Set([
   "trait_item",
   "type_item",
   "type_alias",
+  "associated_type",
 ])
 
 /** Items that own a `declaration_list` or a variant/field list. */
@@ -146,6 +148,21 @@ export function deriveRustContainsTruth(root: any): RustContainsEdge[] {
   }
   const itemName = (n: any): string => (TYPE_NAMED_ITEM.has(n.type) ? typeItemName(n) : valueItemName(n))
 
+  const implSelfType = (node: any): string => {
+    let type = node.childForFieldName("type")
+    while (type && ["generic_type", "reference_type", "pointer_type", "parenthesized_type"].includes(type.type)) {
+      type = type.childForFieldName("type") ?? named(type).find(child =>
+        child && child.type !== "lifetime" && child.type !== "mutable_specifier")
+    }
+    return type && ["type_identifier", "scoped_type_identifier", "primitive_type"].includes(type.type)
+      ? type.text : ""
+  }
+  const containedItemName = (node: any): string => {
+    if (node.type !== "impl_item") return itemName(node)
+    const type = implSelfType(node)
+    return type ? `${type}::r#impl` : "anonymous_impl"
+  }
+
   /** the members declared directly inside a container's body list */
   const membersOf = (list: any, owner: string, kind: "decl" | "field" | "variant"): void => {
     if (!list || !owner) return
@@ -162,8 +179,8 @@ export function deriveRustContainsTruth(root: any): RustContainsEdge[] {
         if (id?.text) add(owner, id.text)
         continue
       }
-      if (!MEMBER_ITEM.has(c.type)) continue
-      const nm = itemName(c)
+      if (!MEMBER_ITEM.has(c.type) && c.type !== "impl_item") continue
+      const nm = containedItemName(c)
       if (nm) add(owner, nm)
     }
   }
@@ -194,21 +211,21 @@ export function deriveRustContainsTruth(root: any): RustContainsEdge[] {
       const owner = valueItemName(n)
       const block = firstOfType(n, "block")
       if (owner && block) {
-        for (const c of named(block)) {
-          // A nested function owns nested TYPES and FUNCTIONS, not nested values.
-          // `static MANIFEST: &str` inside a `fn` is a local constant, and the
-          // analyzer does not publish it as contained; including it added 3
-          // truth-only rows on a 40-file ripgrep draw (`MANIFEST`, `BINARY`,
-          // `ALPHABET`) — a fabrication on the truth side, which is the direction
-          // that quietly inflates coverage.
-          if (!FUNCTION_LOCAL_ITEMS.has(c.type)) continue
-          const nm = itemName(c)
-          if (nm) add(owner, nm)
+        const pending = [...named(block)]
+        while (pending.length) {
+          const child = pending.pop()
+          if (FUNCTION_LOCAL_ITEMS.has(child.type) || child.type === "impl_item") {
+            const name = containedItemName(child)
+            if (name) add(owner, name)
+          } else {
+            pending.push(...named(child))
+          }
         }
       }
     }
     if (CONTAINER_ITEM.has(n.type)) {
-      const owner = n.type === "mod_item" ? valueItemName(n) : typeItemName(n)
+      const owner = n.type === "impl_item" ? implSelfType(n) || "anonymous_impl" :
+        n.type === "mod_item" ? valueItemName(n) : typeItemName(n)
       if (owner) {
         const decl = firstOfType(n, "declaration_list")
         const fields = firstOfType(n, "field_declaration_list")

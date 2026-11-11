@@ -248,7 +248,7 @@ import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
-import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
+import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpTypeSpelling, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
 // RESTORED 2026-10-08: this line used to import THREE RULES (`phpStaticIncludePath`,
 // `phpStaticCallableName` alongside `phpDeclaredTypeRefs`). See the note above
 // `phpIndependentStaticIncludePath` for what happened to them and why the truth may not
@@ -300,7 +300,7 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 // from a genuinely absent corpus — a misleading way to learn a path is wrong. Third instance of
 // the same merge signature in this one file (the csharp oracles, the lost braces, and now an env
 // lookup): all small, all silent, all load-bearing, and none of them visible to any gate.
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "/home/ishaq2321/bb_tests/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
@@ -426,7 +426,7 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
 // Two harness defects found live while re-emitting F5 (2026-09-14). Both made a
 // canonical sweep impossible to finish on this checkout, because `proxicall` —
 // the dart primary corpus — is a symlink to an actively developed 16G project
-// ($HOME/ProxiCall) whose HEAD moved five times during one sweep:
+// (/home/ishaq2321/ProxiCall) whose HEAD moved five times during one sweep:
 //
 //   1. STATE FORKED PER CHILD. The journal is addressed by sweep state (pins +
 //      sampling + the analyzer/oracle source that derived it), and every
@@ -692,7 +692,7 @@ export const LANG_REPOS: Record<string, string> = {
   // The corpus directory is `go-tools` WITH A HYPHEN on this root, and the underscore form is the
   // one that does not exist. Ported from origin/main where the comment claimed the opposite —
   // "verified against the corpus on disk, which lists go_tools" — and the disk here lists
-  // `$HOME/fixtures/repositories/go-tools`. MEASURED, not assumed: with `go_tools` the
+  // `/home/ishaq2321/bb_tests/repositories/go-tools`. MEASURED, not assumed: with `go_tools` the
   // leg dies `Error: corpus repo missing: …/go_tools` (exit 1), so the port did not fix a vacuous
   // pass, it CREATED one — and the vacuous pass it claimed to fix was real on main's root.
   // THE CORRECT SPELLING IS A PROPERTY OF THE CORPUS ROOT, NOT OF THE FILE.
@@ -774,8 +774,8 @@ export const LANG_REPOS: Record<string, string> = {
   // so both lanes were measured on a root fetched for them and their declarations name it. The
   // differential reads the same files the declarations do — an absolute mapping rather than a
   // second corpus root, so the shared CORPUS_ROOT stays exactly what the other 48 lanes measured.
-  matlab: "$HOME/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab",
-  vba: "$HOME/mcp/backbencher-brain/.corpus-tail/VBA-Web",
+  matlab: "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/robotics-toolbox-matlab",
+  vba: "/home/ishaq2321/mcp/backbencher-brain/.corpus-tail/VBA-Web",
   json: "terraform",
   // M60 #278: powershell's primary corpus is the `powershell` repository. Its
   // test/ tree is deliberately excluded by the draw (parser-error TEST DATA — 166
@@ -818,7 +818,7 @@ export const LANG_REPOS: Record<string, string> = {
   // heavy link graphs into other spec pages — which is a real dialect and not a
   // set of READMEs.
   markdown: "scala3",
-  // Julia's corpus is Julia itself: `fixtures/repositories/julia` is a clone of JuliaLang/julia at
+  // Julia's corpus is Julia itself: `bb_tests/repositories/julia` is a clone of JuliaLang/julia at
   // 6391263 (sparse checkout, 941 tracked .jl files present), so the differential measures the
   // language's own implementation and standard library — the code that DEFINES the constructs this
   // lane has to model. The 177 ERROR-node files are part of that claim rather than a reason to pick
@@ -1449,7 +1449,42 @@ export function sharpnessInvariants(s: { truth: number; covered: number; missing
   return bad
 }
 
-interface TreeEdge { label: string; from: string; target: string }
+interface TreeEdge { label: string; from: string; target: string; targetUnverified?: boolean }
+
+// Count distinct graph relationships. Call-site multiplicity requires an
+// oracle that supplies comparable locations on both sides.
+export function compareEdgeIdentities(truth: readonly TreeEdge[], actual: readonly TreeEdge[]) {
+  const hasSource = (edge: TreeEdge) => Boolean(edge.from?.trim()) && edge.from !== "(expr)"
+  const index = (edges: readonly TreeEdge[]) => {
+    const indexed = new Map<string, TreeEdge>()
+    for (const edge of edges) {
+      const key = JSON.stringify([edge.label, edge.from, edge.target])
+      if (!edge.targetUnverified || !indexed.has(key)) indexed.set(key, edge)
+    }
+    return indexed
+  }
+  const expected = index(truth)
+  const emitted = index(actual)
+  const unverifiable = [...expected.values()].filter(edge => !hasSource(edge))
+  const unverifiedTargets = [...expected.values()].filter(edge => hasSource(edge) && edge.targetUnverified)
+  const labelTarget = (edge: TreeEdge) => JSON.stringify([edge.label, edge.target])
+  const labelSource = (edge: TreeEdge) => JSON.stringify([edge.label, edge.from])
+  const uncertainPairs = new Set(unverifiable.map(labelTarget))
+  const uncertainSources = new Set(unverifiedTargets.map(labelSource))
+  const comparable = (edge: TreeEdge | undefined): boolean => !!edge && hasSource(edge) && !edge.targetUnverified
+  const missing = [...expected].filter(([key, edge]) => comparable(edge) && !comparable(emitted.get(key)))
+  const unmatchedActual = [...emitted].filter(([key, edge]) => !comparable(edge) || !comparable(expected.get(key)))
+  const isUnverified = (edge: TreeEdge) =>
+    !comparable(edge) || uncertainPairs.has(labelTarget(edge)) || uncertainSources.has(labelSource(edge))
+  return {
+    matched: [...expected].filter(([key, edge]) => comparable(edge) && comparable(emitted.get(key))).length,
+    missing: missing.map(([, edge]) => edge),
+    unexpected: unmatchedActual.filter(([, edge]) => !isUnverified(edge)).map(([, edge]) => edge),
+    unverifiable,
+    unverifiedTargets,
+    unverifiedActual: unmatchedActual.filter(([, edge]) => isUnverified(edge)).map(([, edge]) => edge),
+  }
+}
 
 // Vue template component-usage oracle: every element start_tag NOT in an
 // independently-written core-HTML/SVG set is a component usage. The set
@@ -6246,13 +6281,32 @@ export function deriveTypeScriptDecoratorTruth(root: any): { label: string; from
   return out
 }
 
-export function deriveJavaScriptEdges(root: any): { label: string; from: string; target: string }[] {
+export function deriveJavaScriptEdges(root: any, options: { callSources?: boolean } = {}): TreeEdge[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
-  const push = (label: string, target: string) => {
+  const push = (label: string, target: string, from = "(expr)") => {
     if (!target) return
-    const k = label + "|" + target
-    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+    const k = JSON.stringify([label, from, target])
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from, target }) }
+  }
+  const callSource = (node: any): string => {
+    for (let parent = node.parent; parent; parent = parent.parent) {
+      switch (parent.type) {
+        case "function_declaration":
+        case "generator_function_declaration":
+        case "method_definition":
+          return parent.childForFieldName("name")?.text ?? "(expr)"
+        case "arrow_function":
+        case "function_expression":
+        case "generator_function": {
+          const declaration = parent.parent
+          const name = declaration?.type === "variable_declarator"
+            ? declaration.childForFieldName("name") : null
+          return parent.childForFieldName("name")?.text ?? (name?.type === "identifier" ? name.text : "(expr)")
+        }
+      }
+    }
+    return "(expr)"
   }
   const JS_CONSOLE_BUILTINS = new Set([
     "console.log", "console.warn", "console.error", "console.info", "console.debug",
@@ -6786,7 +6840,7 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
           // THE TRUTH'S OVER-CLAIM INSTEAD OF THE ANALYZER'S UNDER-CLAIM.
           isNameLikeCallTarget(targetName) &&
           !isBuiltinCall(targetName, fullCallee)
-        ) push("calls", targetName)
+        ) push("calls", targetName, options.callSources ? callSource(n) : undefined)
       }
     }
     // M49 #744 mirror (web fix wave, java #739 family contract): member
@@ -9192,7 +9246,7 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
       // method leaves and stdlib ctors never instantiate.
       if (isCtor && ctorFns.has(name) && isTopLevelFunctionCallee(fn) && !seen.has("inst:" + name)) {
         seen.add("inst:" + name)
-        edges.push({ label: "renders", from: "(expr)", target: name })
+        edges.push({ label: "instantiates", from: "(expr)", target: name })
       }
     } else if (n.type === "composite_literal") {
       // A GRAMMAR error region is not evidence of a construction (#889 round).
@@ -10485,6 +10539,19 @@ export function deriveCSharpDeclaredTypeEdges(root: any): { label: string; from:
 export function deriveCSharpUsingReferences(root: any): { label: string; from: string; target: string }[] {
   const out: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  const types = new Set(["class_declaration", "struct_declaration", "interface_declaration",
+    "enum_declaration", "delegate_declaration", "record_declaration"])
+  const firstType = (node: any): string | undefined => {
+    if (types.has(node.type)) return node.childForFieldName("name")?.text
+    if (!node.type.startsWith("preproc_") &&
+        !["compilation_unit", "namespace_declaration", "file_scoped_namespace_declaration", "declaration_list"].includes(node.type)) return undefined
+    for (const child of node.namedChildren) {
+      const name = firstType(child)
+      if (name) return name
+    }
+    return undefined
+  }
+  const from = firstType(root) ?? "root"
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
@@ -10492,7 +10559,7 @@ export function deriveCSharpUsingReferences(root: any): { label: string; from: s
       const t = csharpUsingDirectiveTarget(n)
       if (t && !seen.has(t.module)) {
         seen.add(t.module)
-        out.push({ label: "references", from: "root", target: t.module })
+        out.push({ label: "references", from, target: t.module })
       }
     }
     for (const c of n.namedChildren ?? []) stack.push(c)
@@ -10662,6 +10729,13 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
     if (n.type === "class_declaration" || n.type === "interface_declaration" || n.type === "struct_declaration" || n.type === "record_declaration") {
       const nameNode = n.childForFieldName?.("name")
       const nm = nameNode?.text
+      const declarationPath = [nm]
+      for (let owner = n.parent; owner; owner = owner.parent) {
+        if (["class_declaration", "interface_declaration", "struct_declaration", "record_declaration"].includes(owner.type)) {
+          declarationPath.unshift(owner.childForFieldName("name")?.text)
+        }
+      }
+      const declarationSource = declarationPath.filter(Boolean).join(".")
       const baseList = n.namedChildren.find((c: any) => c.type === "base_list")
       // C923 (#923): the member-level implements truth, derived for EVERY type declaration
       // (not only the ones with a base list — an explicit interface member whose class omits the
@@ -10756,8 +10830,8 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
           // interface-implements keyword). Mirror the analyzer's isInterface
           // branch exactly.
           if (isInterfaceDecl) {
-            const key = `extends:${nm}->${target}`
-            if (!seen.has(key)) { seen.add(key); edges.push({ label: "extends", from: nm, target }) }
+            const key = `extends:${declarationSource}->${target}`
+            if (!seen.has(key)) { seen.add(key); edges.push({ label: "extends", from: declarationSource, target }) }
             continue
           }
           // class/struct/record: mirror the analyzer — in-file kind, then the
@@ -10825,10 +10899,10 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
           const isStructDecl = n.type.includes("struct")
           const looksLikeInterface = !declaredKind && (isStructDecl || (i === 0 && /^[I][A-Z]/.test(leaf) && leaf.length > 2))
           const label = knownIface || looksLikeInterface || (i > 0 && !declaredKind) ? "implements" : "extends"
-          const key = `${label}:${nm}->${target}`
+          const key = `${label}:${declarationSource}->${target}`
           if (!seen.has(key)) {
             seen.add(key)
-            edges.push({ label, from: nm, target })
+            edges.push({ label, from: declarationSource, target })
           }
         }
       }
@@ -10842,27 +10916,36 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         n.namedChildren.find((c: any) => c.type === "generic_name" || c.type === "identifier" || c.type === "qualified_name" || c.type === "predefined_type" || c.type === "alias_qualified_name") ??
         n.namedChildren.find((c: any) => c.type === "type_argument_list")
       if (typeNode) {
-        const t = leafOf(typeNode.text)
-        const key = "inst:" + t
+        const t = csharpTypeSpelling(typeNode.text).split(/[<?]/, 1)[0].trim()
+        let from = "(expr)"
+        if (t.includes(".")) {
+          for (let owner = n.parent; owner; owner = owner.parent) {
+            if (["method_declaration", "constructor_declaration", "local_function_statement",
+                 "class_declaration", "struct_declaration", "record_declaration"].includes(owner.type)) {
+              from = owner.childForFieldName("name")?.text ?? "(expr)"
+              break
+            }
+          }
+        }
+        const key = `inst:${from}:${t}`
         // A construction target is always a constructible type — `new object()`
         // and `new string(...)` are real instantiations, so CSBUILTINS must NOT
         // filter them (only `var`/`nameof` can never be `new` targets, and those
         // never parse as object_creation_expression anyway).
         if (t && !seen.has(key)) {
           seen.add(key)
-          edges.push({ label: "instantiates", from: "(expr)", target: t })
+          edges.push({ label: "instantiates", from, target: t })
         }
       }
     } else if (n.type === "constructor_initializer") {
       // CSD8 mirror (re-review 2026-09-04): `public Sub() : base(42) { }` /
       // `: this()` — a real constructor-to-constructor call the analyzer now
       // emits (calls IS compared for csharp, so both sides must derive it).
-      // `from` is a placeholder (the matcher is label+target site-agnostic).
-      const tgt = /:\s*base\s*\(/.test(n.text) ? "base" : "this"
+      const tgt = n.children.find((child: any) => child?.type === "base" || child?.type === "this")?.type
       const key = `calls:${tgt}`
-      if (!seen.has(key)) {
+      if (tgt && !seen.has(key)) {
         seen.add(key)
-        edges.push({ label: "calls", from: "(ctor)", target: tgt })
+        edges.push({ label: "calls", from: "constructor", target: tgt })
       }
     } else if (n.type === "implicit_object_creation_expression") {
       // Target-typed `new()` — the type is NOT inside the node. Resolve it
@@ -10874,7 +10957,7 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       // inst: key dedups explicit+implicit constructions of one type per file.
       const t = csharpImplicitNewType(n, memberTypes)
       if (t) {
-        const key = "inst:" + t
+        const key = "inst:(expr):" + t
         if (!seen.has(key)) {
           seen.add(key)
           edges.push({ label: "instantiates", from: "(expr)", target: t })
@@ -11812,6 +11895,35 @@ function swIsNominalRecovery(n: any): boolean {
   return kind !== null && nameNode !== null
 }
 
+function swiftOracleCallableSource(root: any, stripQuoting: (name: string) => string): (node: any) => string {
+  const functionName = (n: any): string | undefined => {
+    if (n.type !== "function_declaration") return undefined
+    const name = n.childForFieldName("name")
+    if (!name) return undefined
+    if (name.type === "simple_identifier" || name.type === "identifier") return stripQuoting(name.text)
+    if (name.type === "custom_operator" || !name.isNamed) return `operator ${name.text}`
+    return undefined
+  }
+  const functionCounts = new Map<string, number>()
+  const declarations = [root]
+  while (declarations.length) {
+    const n = declarations.pop()
+    const name = functionName(n)
+    if (name) functionCounts.set(name, (functionCounts.get(name) ?? 0) + 1)
+    for (let i = 0; i < n.namedChildCount; i++) declarations.push(n.namedChild(i))
+  }
+  return (node: any): string => {
+    for (let n = node.parent; n; n = n.parent) {
+      const name = functionName(n)
+      if (name) return functionCounts.get(name) === 1 ? name : "(expr)"
+      if (n.type === "lambda_literal" || n.type === "init_declaration" ||
+          n.type === "deinit_declaration" || n.type === "subscript_declaration" ||
+          n.type === "class_declaration" || swIsNominalRecovery(n)) break
+    }
+    return "(expr)"
+  }
+}
+
 export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -11850,27 +11962,23 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   // and its dropped `.0`/`.1` edges as missing truth.
   const swStripQuoting = (t: string): string =>
     t.length >= 2 && t.charCodeAt(0) === 96 && t.charCodeAt(t.length - 1) === 96 ? t.slice(1, -1) : t
-  const key = (label: string, target: string) => label + ":" + target
-  const push = (label: string, target: string) => {
+  const key = (label: string, target: string, from: string) => JSON.stringify([label, from, target])
+  const push = (label: string, target: string, from = "(expr)") => {
     target = swStripQuoting(target)
-    const k = key(label, target)
-    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+    const k = key(label, target, from)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from, target }) }
   }
   // SW-B candidates (head + leaf), resolved post-walk against declared
   // enum cases; matched leaf calls convert to instantiates.
-  const swEnumCtorCandidates: Array<{ head: string | null; owner: string | null; leaf: string; removeCalls: boolean }> = []
-  // #938/#942: how many CALL SITES contribute a `calls` edge per target.
-  // Truth edges are (label,target)-deduped and the analyzer's are then
-  // collapsed the same way by the harness, so a construction conversion must
-  // retire only ITS OWN site's contribution — the old splices removed the
-  // first edge with that target, which is a different site's call whenever two
-  // sites in one file share a leaf name (measured: `calls -> method` vanished
-  // from alamofire's TestHelpers.swift, and `calls -> websocket` vanished from
-  // Client.swift behind a phantom two-sided agreement).
+  const swEnumCtorCandidates: Array<{ head: string | null; owner: string | null; leaf: string; removeCalls: boolean; from: string }> = []
+  // Track site counts per caller so enum conversion only removes its own call.
   const swCallsSites = new Map<string, number>()
-  const swNoteCallsSite = (target: string): void => {
-    swCallsSites.set(target, (swCallsSites.get(target) ?? 0) + 1)
+  const swNoteCallsSite = (target: string, from: string): void => {
+    const site = key("calls", target, from)
+    swCallsSites.set(site, (swCallsSites.get(site) ?? 0) + 1)
+    push("calls", target, from)
   }
+  const caller = swiftOracleCallableSource(root, swStripQuoting)
   // SW-G: class -> superclass map for super.init targets.
   const swSuperByClass = new Map<string, string>()
   // hasSelfReceiver): navigation > (navigation | self_expression) — stops at
@@ -11983,6 +12091,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           if (c.type === "class") isClass = true
         }
       }
+      const from = swRecoveryName(n) ?? "(expr)"
       const bases: string[] = []
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -11996,7 +12105,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // (no superclass possible); enum bases are conformances except a
       // stdlib raw-value first base (analyzer records it as meta.rawType).
       const skipFirst = isEnum && bases.length > 0 && SWIFT_ENUM_RAW.has(bases[0])
-      for (let i = skipFirst ? 1 : 0; i < bases.length; i++) push("implements", bases[i])
+      for (let i = skipFirst ? 1 : 0; i < bases.length; i++) push("implements", bases[i], from)
       } else {
         // Mirror the analyzer: a class's first base is extends only when it
         // is NOT a known corpus protocol; a known protocol first-base (or any
@@ -12011,7 +12120,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         }
         for (let i = 0; i < bases.length; i++) {
           const isExtends = firstIsSuperclass && i === 0
-          push(isExtends ? "extends" : "implements", bases[i])
+          push(isExtends ? "extends" : "implements", bases[i], from)
         }
       }
       // `renders` mirror (R3, landed 2026-10-23): a type conforming to View
@@ -12048,19 +12157,20 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
             if (!swCallee) continue
             const swTarget = swCallee.text
             if (!swTarget || !isCapitalized(swTarget) || swTarget === "View" || swTarget === "Self") continue
-            push("renders", swTarget)
+            push("renders", swTarget, swClassName)
           }
         }
       }
     }
     if (t === "protocol_declaration") {
+      const from = n.namedChildren.find((c: any) => c.type === "type_identifier")?.text ?? "(expr)"
       // SWIFTD13 oracle mirror: protocol inheritance -> extends per parent;
       // AnyObject/Any class-constraint markers are NOT protocol parents.
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c && c.type === "inheritance_specifier") {
           const nm = baseName(c)
-          if (nm && nm !== "AnyObject" && nm !== "Any") push("extends", nm)
+          if (nm && nm !== "AnyObject" && nm !== "Any") push("extends", nm, from)
         }
       }
     }
@@ -12120,7 +12230,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           }
           if (recv) {
             const target = recv === "super" ? swSuperByClass.get(enclosingType) ?? null : enclosingType
-            if (target) push("instantiates", target)
+            if (target) push("instantiates", target, caller(n))
             // #941 mirror: SW-G, verbatim — "Unresolvable stays silent". An
             // initializer delegation is never a `calls` edge, so the
             // unresolvable case must not fall through to the generic path and
@@ -12129,7 +12239,8 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
           }
         }
         if (!consumed) {
-          if (leaf && leaf !== "$0") { swNoteCallsSite(leaf); push("calls", leaf) }
+          const from = caller(n)
+          if (leaf && leaf !== "$0") swNoteCallsSite(leaf, from)
           // SW-B mirror: record enum-construction candidates (capitalized
           // DIRECT receiver + leaf) for post-walk resolution. Receiver is
           // second-to-last in document order; never descend into nested
@@ -12152,20 +12263,20 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
             }
             const receiver = parts.length >= 2 ? parts[parts.length - 2] : null
             if (receiver && isCapitalized(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
-              swEnumCtorCandidates.push({ head: receiver, owner: null, leaf, removeCalls: true })
+              swEnumCtorCandidates.push({ head: receiver, owner: null, leaf, removeCalls: true, from })
             } else if (receiver === "Self" && enclosingType) {
               // SW-H mirror: Self.a(v) in an enum builds the enclosing enum.
-              swEnumCtorCandidates.push({ head: null, owner: enclosingType, leaf, removeCalls: true })
+              swEnumCtorCandidates.push({ head: null, owner: enclosingType, leaf, removeCalls: true, from })
             }
           }
         }
       } else if (callee) {
-        const target = callee.text
+        const target = swStripQuoting(callee.text)
         // SWIFTD16 mirror: XCTest assertion functions (capitalized free
         // functions, never types) must not fabricate instantiates edges.
         if (target && !SWIFT_BUILTINS.has(target) && !target.startsWith("XCT")) {
-          if (isCapitalized(target)) push("instantiates", target)
-          else { swNoteCallsSite(target); push("calls", target) }
+          if (isCapitalized(target)) push("instantiates", target, caller(n))
+          else swNoteCallsSite(target, caller(n))
         }
       }
       // SW-H mirror: implicit enum-case construction (`.a(v)` parses the
@@ -12206,7 +12317,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
               }
               own = own.parent
             }
-            if (onm) swEnumCtorCandidates.push({ head: null, owner: onm, leaf, removeCalls: false })
+            if (onm) swEnumCtorCandidates.push({ head: null, owner: onm, leaf, removeCalls: false, from: caller(n) })
           }
         }
       }
@@ -12241,7 +12352,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       const parCallSubscript = n.parent && n.parent.type === "call_expression" && isSubscript(n.parent)
       if (hasSelf && (parentType !== "call_expression" || parCallSubscript)) {
         const leaf = navLeaf(n)
-        if (leaf) push("uses", leaf)
+        if (leaf) push("uses", leaf, caller(n))
       }
       // SW-A mirror: NON-self navigation member reads. Direct suffixes only
       // (nested navigations visit separately); self-chains belong to the
@@ -12277,7 +12388,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
             const lhs2 = a2.namedChild(0)
             if (lhs2 && lhs2.startIndex <= c.startIndex && lhs2.endIndex >= c.endIndex) continue
           }
-          push("uses", m.text)
+          push("uses", m.text, caller(n))
         }
       }
     }
@@ -12289,7 +12400,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
         if (!x) continue
         if (x.type === "navigation_suffix") {
           const m = x.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "identifier")
-          if (m && m.text && m.text !== "self" && m.text !== "Self") push("uses", m.text)
+          if (m && m.text && m.text !== "self" && m.text !== "Self") push("uses", m.text, caller(n))
           continue
         }
         for (let k = x.namedChildCount - 1; k >= 0; k--) { const c = x.namedChild(k); if (c) st.push(c) }
@@ -12298,7 +12409,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
     if (t === "import_declaration") {
       // mirror handleImport: first simple_identifier/type_identifier/identifier
       const id = n.namedChildren.find((c: any) => c.type === "simple_identifier" || c.type === "type_identifier" || c.type === "identifier")
-      if (id && id.text) push("references", id.text)
+      if (id && id.text) push("references", id.text, "root")
     }
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
@@ -12364,19 +12475,22 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // #938/#942: retire only the contributing SITES, then drop a `calls`
       // edge whose site count fell to zero, then append the instantiates
       // edges. Splicing by (label,target) deleted another site's real call.
-      const instantiatesKeys: string[] = []
+      const constructions: Array<{ typeName: string; from: string }> = []
       for (const cand of swEnumCtorCandidates) {
-        const key = cand.head ?? cand.owner
-        if (!key || !enumCases.has(`${key}.${cand.leaf}`)) continue
-        if (cand.removeCalls) swCallsSites.set(cand.leaf, (swCallsSites.get(cand.leaf) ?? 0) - 1)
-        instantiatesKeys.push(key)
+        const typeName = cand.head ?? cand.owner
+        if (!typeName || !enumCases.has(`${typeName}.${cand.leaf}`)) continue
+        if (cand.removeCalls) {
+          const site = key("calls", cand.leaf, cand.from)
+          swCallsSites.set(site, (swCallsSites.get(site) ?? 0) - 1)
+        }
+        constructions.push({ typeName, from: cand.from })
       }
       for (let k = edges.length - 1; k >= 0; k--) {
         if (edges[k].label !== "calls") continue
-        if ((swCallsSites.get(edges[k].target) ?? 0) > 0) continue
+        if ((swCallsSites.get(key("calls", edges[k].target, edges[k].from)) ?? 0) > 0) continue
         edges.splice(k, 1)
       }
-      for (const key of instantiatesKeys) push("instantiates", key)
+      for (const { typeName, from } of constructions) push("instantiates", typeName, from)
     }
   }
   return edges
@@ -12402,12 +12516,13 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
   // reads the member `default`, which is the name the declaration publishes).
   const stripQuoting = (t: string): string =>
     t.length >= 2 && t.charCodeAt(0) === 96 && t.charCodeAt(t.length - 1) === 96 ? t.slice(1, -1) : t
-  const push = (name: string): void => {
+  const caller = swiftOracleCallableSource(root, stripQuoting)
+  const push = (name: string, from: string): void => {
     name = stripQuoting(name)
-    const key = "uses\u0000" + name
+    const key = from + "\u0000" + name
     if (seen.has(key)) return
     seen.add(key)
-    edges.push({ label: "uses", from: "", target: name })
+    edges.push({ label: "uses", from, target: name })
   }
   // Mirrors NOT_A_READ in the analyzer: declarations, plus the two positions
   // that name something other than a member of the enclosing type — an
@@ -12545,7 +12660,7 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
         !cLocals.has(txt) &&
         !cLocals.has(lookup) &&
         isMember
-      ) push(lookup)
+      ) push(lookup, caller(n))
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
@@ -18781,7 +18896,7 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
 // (impl <Trait> for Type), extends (supertrait bounds on trait items).
 // Exported like the zig/cpp oracles so lane replicas and probes can verify
 // the mirror directly.
-export function deriveRustEdges(root: any): { label: string; from: string; target: string }[] {
+export function deriveRustEdges(root: any, compareSources = false): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
   // R7 MIRROR (task-41): the analyzer publishes an edge only when an enclosing DECLARATION owns it
@@ -18793,6 +18908,15 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
     let cur: any = n?.parent ?? null
     while (cur) { if (RUST_OWNER_TYPES.has(String(cur.type))) return true; cur = cur.parent }
     return false
+  }
+  const expressionSource = (n: any): string => {
+    if (compareSources) {
+      for (let owner = n.parent; owner; owner = owner.parent) {
+        if (!RUST_OWNER_TYPES.has(owner.type)) continue
+        return owner.childForFieldName("name")?.text ?? "(expr)"
+      }
+    }
+    return "(expr)"
   }
   // BARE-TUPLE-CTOR MIRROR (task-36 rule): a bare PascalCase callee is a construction only when this
   // file declares a TUPLE-shape struct of that name — not an associated type (`type Err = Error;`) and
@@ -18840,6 +18964,7 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
   // are stored as FULL text (io::Error) to mirror the analyzer's inFile
   // symbol names - a foreign type implemented here is not a local
   // declaration and must not resolve io::Error::new() to the leaf Error.
+  const declaredMembers = new Set<string>()
   const declaredTypes = new Set<string>()
   {
     const pre: any[] = [root]
@@ -18857,7 +18982,18 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         // so an impl of a FOREIGN type does not put that type in the file's declaration key space (the
         // analyzer's deferred ctor filter reads symbol NAMES). Without this, `Glob::new()` in serde_impl.rs
         // (`impl Serialize for Glob`) looked like a construction of an in-file type.
-        if (typeN) declaredTypes.add((rustImplSymbolName(typeN) ?? "anonymous_impl") + "::impl")
+        if (typeN) {
+          const owner = rustImplSymbolName(typeN)
+          declaredTypes.add((owner ?? "anonymous_impl") + "::impl")
+          if (compareSources && owner) {
+            const body = n.childForFieldName("body")
+            for (const member of body?.namedChildren ?? []) {
+              if (member?.type !== "function_item") continue
+              const name = member.childForFieldName("name")?.text
+              if (name) declaredMembers.add(`${owner}::${name}`)
+            }
+          }
+        }
       }
       for (let k = 0; k < n.namedChildCount; k++) pre.push(n.namedChild(k))
     }
@@ -18891,9 +19027,11 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
       // macro invocations are real call sites (format!/write!/vec!...)
       const mn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "scoped_identifier")
       let mname = mn ? mn.namedChildren[mn.namedChildCount - 1]?.text ?? mn.text : undefined
-      if (mname && hasEnclosingOwner(n) && !seenCalls.has("macro:" + mname)) {
-        seenCalls.add("macro:" + mname)
-        edges.push({ label: "calls", from: "(expr)", target: mname })
+      const from = expressionSource(n)
+      const macroKey = JSON.stringify(["macro", from, mname])
+      if (mname && hasEnclosingOwner(n) && !seenCalls.has(macroKey)) {
+        seenCalls.add(macroKey)
+        edges.push({ label: "calls", from, target: mname })
       }
       // ★ part_of TRUTH (2026-10-23, the R3 relabel): `include!("path")` is TEXTUAL FILE INCLUSION
       // — the splice that shares the including file's single scope and has no module identity —
@@ -18969,9 +19107,24 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
     if (n.type === "call_expression") {
       const fn = n.childForFieldName?.("function")
       const name = leafOf(fn)
-      if (name && !seenCalls.has(name)) {
-        seenCalls.add(name)
-        edges.push({ label: "calls", from: "(expr)", target: name })
+      if (name) {
+        const from = expressionSource(n)
+        let target = name
+        if (compareSources) {
+          const callee = fn?.type === "generic_function" ? fn.childForFieldName("function") : fn
+          const writtenPath = callee?.type === "scoped_identifier" ? callee.text : ""
+          const usesSelf = writtenPath === `Self::${name}` ||
+            (callee?.type === "field_expression" && callee.childForFieldName("value")?.type === "self")
+          const impl = usesSelf ? enclosingImplType(n) : null
+          const candidate = impl ? `${impl}::${name}` : writtenPath
+          if (/^[A-Za-z_][A-Za-z_0-9]*::[A-Za-z_][A-Za-z_0-9]*$/.test(candidate) &&
+              declaredMembers.has(candidate)) target = candidate
+        }
+        const key = JSON.stringify(["call", from, target])
+        if (!seenCalls.has(key)) {
+          seenCalls.add(key)
+          edges.push({ label: "calls", from, target })
+        }
       }
       // ::new / Type() constructor instantiation truth mirrors the family:
       // receiver-type leaf for ::new, PascalCase leaf for tuple ctors.
@@ -19003,10 +19156,12 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
           // enclosing impl type (matches the analyzer's enclosingImplType
           // rule; unresolvable Self drops like the analyzer's ?? null).
           if (recv === "Self") recv = enclosingImplType(n) ?? ""
+          const from = expressionSource(n)
+          const key = JSON.stringify(["inst", from, recv])
           if (recv && hasEnclosingOwner(n) && /^[A-Z]/.test(recv) && declaredTypes.has(recv) &&
-              (!barePascal || tupleShapeNames.has(recv)) && !seenCalls.has("inst:" + recv)) {
-            seenCalls.add("inst:" + recv)
-            edges.push({ label: "instantiates", from: "(expr)", target: recv })
+              (!barePascal || tupleShapeNames.has(recv)) && !seenCalls.has(key)) {
+            seenCalls.add(key)
+            edges.push({ label: "instantiates", from, target: recv })
           }
         }
       }
@@ -19041,9 +19196,11 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         // unexplained" was partly arithmetic luck. Recorded as a spec decision
         // rather than three separate patches, because the rule is one sentence:
         // a construction is a construction whatever its type is spelled.)
-        if (t2.length > 0 && !seenCalls.has("struct:" + t2)) {
-          seenCalls.add("struct:" + t2)
-          edges.push({ label: "instantiates", from: "(expr)", target: t2 })
+        const from = expressionSource(n)
+        const key = JSON.stringify(["struct", from, t2])
+        if (t2.length > 0 && !seenCalls.has(key)) {
+          seenCalls.add(key)
+          edges.push({ label: "instantiates", from, target: t2 })
         }
       }
     } else if (n.type === "impl_item") {
@@ -19371,16 +19528,25 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
   const seen = new Set<string>()
   // R7 MIRROR (task-41): a READ with no enclosing declaration has no owner; the analyzer refuses it.
   const RUST_OWNER_TYPES = new Set(["function_item", "impl_item", "const_item", "static_item", "struct_item", "enum_item", "trait_item", "mod_item"])
-  const hasEnclosingOwner = (n: any): boolean => {
+  const enclosingOwner = (n: any): string | undefined => {
     let cur: any = n?.parent ?? null
-    while (cur) { if (RUST_OWNER_TYPES.has(String(cur.type))) return true; cur = cur.parent }
-    return false
+    while (cur) {
+      if (cur.type === "impl_item") {
+        const typeName = rustImplSymbolName(cur.childForFieldName("type"))
+        return typeName ? `${typeName}::r#impl` : "(expr)"
+      }
+      if (RUST_OWNER_TYPES.has(String(cur.type))) return cur.childForFieldName("name")?.text ?? "(expr)"
+      cur = cur.parent
+    }
+    return undefined
   }
   const emit = (target: string, at: any): void => {
-    if (!target || seen.has(target)) return
-    if (!hasEnclosingOwner(at)) return
-    seen.add(target)
-    out.push({ label: "uses", from: "global", target })
+    const from = enclosingOwner(at)
+    if (!target || !from) return
+    const key = JSON.stringify([from, target])
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push({ label: "uses", from, target })
   }
   const stack: any[] = [root]
   while (stack.length > 0) {
@@ -19496,7 +19662,7 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
 // (generic-parameter exclusion incl. the enclosing-item climb, `Self` → the
 // enclosing impl type, macro-rule bodies excluded, where-bounds and
 // type-parameter lists never collected, field NAME identifiers never types).
-export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: string; target: string }[] {
+export function deriveRustDeclaredTypeRefs(root: any, compareSources = false): { label: string; from: string; target: string }[] {
   const out: { label: string; from: string; target: string }[] = []
   const emitted = new Set<string>()
   const enclosingImplType = (n: any): string | null => {
@@ -19541,22 +19707,10 @@ export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: st
       target = resolved
     }
     if (gparams.has(target)) return
-    // Dedupe keyed by TARGET alone, i.e. by (label, target) here, because this
-    // oracle emits exactly one label. That is the file-wide TRUTH-SIDE
-    // INVARIANT every oracle in this harness keeps (see the note at the
-    // analyzer-collapse site: "The tree-truth oracles already emit UNIQUE
-    // (label,target) edges per file") and it is what the coverage match reads —
-    // the match is deliberately site-agnostic, comparing label+normTarget and
-    // never `from`. A source-scoped key was tried and reverted: it made truth
-    // carry duplicate (references, Err) rows for `fn b<..>() -> T::Err` and
-    // `fn c<..>() -> T::Err`, so treeEdgesTotal inflated 6,309 -> 8,278 on
-    // ripgrep and the lane's number stopped being comparable to its peers'
-    // (the analyzer side is collapsed to unique (label,target), so the same
-    // edge counted twice on one side and once on the other). An oracle must
-    // mirror the GATE; a synthetic probe that compares `from` as well is
-    // asking a question this comparison does not ask.
-    if (emitted.has(target)) return
-    emitted.add(target)
+    // Preserve the file-wide count for the legacy report.
+    const key = compareSources ? JSON.stringify([source, target]) : target
+    if (emitted.has(key)) return
+    emitted.add(key)
     out.push({ label: "references", from: source, target })
   }
   // R8/R15 mirror: the generic parameters bound by EVERY enclosing generic item
@@ -23292,6 +23446,36 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
 const zeroTruthUnmeasured: Record<string, { repo: string; language: string; reason: string; corpusOnBox: boolean }> = {}
 
 async function main() {
+  if (process.argv.includes("--self-test-edge-identities")) {
+    const a = { label: "calls", from: "A.process", target: "Service.run" }
+    const b = { ...a, from: "B.process" }
+    const missing = compareEdgeIdentities([a, b], [a, a])
+    const wrong = compareEdgeIdentities([a, b], [a, { ...b, target: "Other.run" }, { ...b, from: "Other.process" }])
+    const complete = compareEdgeIdentities([a, b, b], [b, a])
+    const placeholder = { ...a, from: "(expr)" }
+    const unknown = compareEdgeIdentities([placeholder], [placeholder])
+    if (missing.matched !== 1 || missing.missing[0] !== b || missing.missing.length !== 1 ||
+        wrong.missing.length !== 1 || wrong.unexpected.length !== 2 ||
+        complete.matched !== 2 || complete.missing.length || complete.unexpected.length ||
+        unknown.matched !== 0 || unknown.missing.length || unknown.unverifiable.length !== 1 ||
+        unknown.unverifiedActual.length !== 1 || unknown.unexpected.length) {
+      throw new Error("edge identity self-test failed")
+    }
+    console.log("edge identity self-test passed")
+    return
+  }
+  const checkEdgeIdentities = process.argv.includes("--check-edge-identities")
+  if (checkEdgeIdentities && (!(ONLY_LANGS || REPO) || CHILD_SLICE ||
+      ["--emit", "--pin-baseline", "--update-baseline"].some(flag => process.argv.includes(flag)))) {
+    throw new Error("--check-edge-identities requires --lang or --repo and cannot write legacy evidence or baselines")
+  }
+  let identityMatched = 0
+  let identityMissing = 0
+  let identityUnexpected = 0
+  let identityUnverifiable = 0
+  let identityTargetUnverified = 0
+  let identityUnverifiedActual = 0
+  const identitySamples = new Map<string, number>()
   // DEPTH CAMPAIGN (2026-10-19): the local-binding claim audit depends on `auditTarget`
   // stripping the BINDING_SEP prefix. The self-test proves the helper exists and works, so a
   // future edit that removes the strip goes RED here rather than silently degrading the JS
@@ -23428,7 +23612,7 @@ async function main() {
   // Crash-resume: seed from the per-lane journal (written after every lane).
   // Only for canonical full sweeps — probe runs (--repo/--sample) always
   // recompute and never read the journal.
-  const resume = !REPO && !process.argv.includes("--sample")
+  const resume = !checkEdgeIdentities && !REPO && !process.argv.includes("--sample")
   // One grammar + parser per LANGUAGE, reused by that language's second-corpus
   // lane. The wasm heap is fixed size: loading a language module and
   // constructing a Parser for EVERY lane (42 allocations for 21 languages)
@@ -23553,7 +23737,7 @@ async function main() {
   // below can or should demand. Probes stay single-process, as they always
   // were; they are interactive diagnosis, and the dead-parser guard still makes
   // a module abort loud rather than silent.
-  const willBatch = !CHILD_SLICE && !NO_BATCH && !REPO && lanes.length > BATCH_SIZE
+  const willBatch = !checkEdgeIdentities && !CHILD_SLICE && !NO_BATCH && !REPO && lanes.length > BATCH_SIZE
   const useJournal = !!CHILD_SLICE || resume || willBatch
   const loadJournal = (): Record<string, any> => {
     if (!useJournal || !fs.existsSync(LANE_JOURNAL)) return {}
@@ -23942,12 +24126,12 @@ async function main() {
 
     // M49 #760: cold-pool rotation — prefer never-sampled files each wave.
     // Falls back to warm files only when the fresh pool is exhausted.
-    const pool = coldPoolPick(files, SAMPLE_PER_LANG, `${langRepo}:${lang}`,
-      // Corpus-relative, so a frozen-worktree measurement and an in-place one
-      // describe the same file (see coldPoolPick).
-      (f: string) => path.relative(repoDir, f))
-    const sample = pool.picked
-    console.log(`  [cold-pool] ${langRepo}:${lang}: ${pool.coldCount}/${sample.length} fresh (rot ${pool.rotation}, corpus ${pool.total})`)
+    const laneKey = `${langRepo}:${lang}`
+    const pool = checkEdgeIdentities ? undefined : coldPoolPick(
+      files, SAMPLE_PER_LANG, laneKey, f => path.relative(repoDir, f),
+    )
+    const sample = pool?.picked ?? seededPick([...files].sort(), SAMPLE_PER_LANG, `${laneKey}:edge-identities`)
+    if (pool) console.log(`  [cold-pool] ${laneKey}: ${pool.coldCount}/${sample.length} fresh (rot ${pool.rotation}, corpus ${pool.total})`)
     // Which files were measured, on request. The row records filesSampled and
     // the drawn set's HASH, which answers "same sample?" but never "which
     // files?" — and for a corpus too large for one process (dart/proxicall:
@@ -24821,7 +25005,7 @@ async function main() {
         }
       }
       if (lang === "rust") {
-        for (const e of deriveRustEdges(root)) {
+        for (const e of deriveRustEdges(root, checkEdgeIdentities)) {
           ;(truth as any[]).push(e)
         }
         // R1 (rust review #798): bare value-read + field-read `uses` truth —
@@ -24834,7 +25018,7 @@ async function main() {
         }
         // R13: declared-type `references` truth — the fn-param/return,
         // field-type, alias and const/static type surface.
-        for (const e of deriveRustDeclaredTypeRefs(root)) {
+        for (const e of deriveRustDeclaredTypeRefs(root, checkEdgeIdentities)) {
           ;(truth as any[]).push(e)
         }
         // FLEET PHASE (2026-10-19): the rust contains oracle was imported and ALLOWLISTED but never PUSHED —
@@ -24941,6 +25125,9 @@ async function main() {
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
+          // The legacy walker emits a qualified alias for interface members.
+          // The dedicated override oracle emits the stored member identity.
+          if (checkEdgeIdentities && e.label === "overrides") continue
           // C923 (#923) EXCLUSION LIFTED 2026-10-19 (fleet phase, route (a)): `overrides` is now
           // compared for csharp — the analyzer emits property/indexer/field/event overrides and
           // C923 interface-member implementations, and the lane's own override oracle derives both
@@ -25374,6 +25561,8 @@ async function main() {
         }
       }
       if (lang === "ruby") {
+        // Ruby's lane oracle distinguishes constant superclasses from expressions.
+        truth = truth.filter(edge => edge.label !== "extends")
         // Lane-owned module (script/m14/ruby-truth.ts): RUBY-D1 relabel (include/prepend/extend →
         // mixes_in) + imports/exports derivations + overrides external-base cause channel. The
         // in-file mirror was deleted in the same change; two implementations was how the stale
@@ -25625,13 +25814,16 @@ async function main() {
       if (lang === "typescript" && process.argv.includes("--debug-truth")) {
         console.log(`[debug] ${relPath}: truth=${truth.length} declRoot=${root.type}`)
       }
-      const rels = (result.relationships ?? []).map((r: any) => ({
+      const relationshipsWithSources = (result.relationships ?? []).map((r: any) => ({
         label: String(r.type ?? r.relationshipType ?? ""),
         target: String(r.target ?? r.to ?? r.toSymbol ?? ""),
         // CLJ1/F5-certification wave: carry the SOURCE so diff samples can
         // name the analyzer edge (previously dropped — an UNEXPLAINED sample
         // printed a target with no caller, and triage had to re-derive).
         from: String(r.source ?? r.from ?? r.fromSymbol ?? ""),
+        ...(lang === "ruby" && r.type === "overrides" &&
+            ["first-parent-guess", "companion-index"].includes(r.metadata?.reasonCode)
+          ? { targetUnverified: true } : {}),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
       // c, rust and go compare CALL edges too (their independently derivable
@@ -26242,18 +26434,15 @@ async function main() {
         // the audit for the 16,002 pointer references the oracle DOES witness.
         ...(lang === "yaml" ? ["contains", "references", "imports", "uses", "calls", "exports"] : []),
         ...(lang === "python" ? ["contains", "exports", "imports"] : [])].includes(r.label))
-        // The tree-truth oracles already emit UNIQUE (label,target) edges per
-        // file (each oracle keeps a `seen` set keyed by label+target). The
-        // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
-        // target constructed/called N times yields N duplicate (label,target)
-        // edges. Because the coverage match below is deliberately site-agnostic
-        // (it compares label+target only, never the source line), those
-        // duplicates were being double-counted as fabrication. Collapsing them
-        // to one edge per (label,target) aligns the analyzer side with the
-        // truth-side semantics. This never removes a match a truth edge relied
-        // on (the kept occurrence still matches), so it is safe for every
-        // already-gated language -- it can only remove duplicate fabrication.
-        .filter((r: any, i: number, arr: any[]) => { const k = r.label + "|" + r.target; return i === arr.findIndex((x: any) => (x.label + "|" + x.target) === k) })
+      // Historical F5 baselines measure label/target presence per file.
+      const seenTargets = new Set<string>()
+      const rels = relationshipsWithSources.filter((r: TreeEdge) => {
+        const key = JSON.stringify([r.label, r.target])
+        if (seenTargets.has(key)) return false
+        seenTargets.add(key)
+        return true
+      })
+
 
       // UNCONDITIONAL. A label that is COMPARED and has edges on the analyzer side
       // but ZERO truth rows is being compared against nothing, and every one of its
@@ -26314,6 +26503,27 @@ async function main() {
         }
       }
 
+      if (checkEdgeIdentities) {
+        const endpointTruth = lang === "javascript" ? [
+          ...truth.filter(edge => edge.label !== "calls" || edge.from !== "(expr)"),
+          ...deriveJavaScriptEdges(root, { callSources: true }).filter(edge => edge.label === "calls"),
+        ] : truth
+        const result = compareEdgeIdentities(endpointTruth, relationshipsWithSources)
+        identityMatched += result.matched
+        identityMissing += result.missing.length
+        identityUnexpected += result.unexpected.length
+        identityUnverifiable += result.unverifiable.length
+        identityTargetUnverified += result.unverifiedTargets.length
+        identityUnverifiedActual += result.unverifiedActual.length
+        for (const [kind, edges] of [["MISSING", result.missing], ["UNEXPECTED", result.unexpected], ["ORACLE SOURCE UNKNOWN", result.unverifiable], ["ORACLE TARGET UNVERIFIED", result.unverifiedTargets]] as const) {
+          const printed = identitySamples.get(kind) ?? 0
+          const sample = edges.slice(0, Math.max(0, 20 - printed))
+          for (const edge of sample) {
+            console.log(`[edge identities] ${kind} ${relPath}: ${edge.from} --${edge.label}--> ${edge.target}`)
+          }
+          identitySamples.set(kind, printed + sample.length)
+        }
+      }
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
 
@@ -26627,7 +26837,7 @@ async function main() {
     // two runs comparable at all. A lane line that omits them forces a
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}${
+    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} file-level-label-target-covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}${
       // Appended ONLY when there is something to attribute, so a clean lane's line is byte-identical
       // to what it was before this existed. A breakdown that always prints is a breakdown nobody
       // reads, and an always-changing log line breaks every parser reading these artifacts.
@@ -26796,6 +27006,14 @@ async function main() {
     try { fs.rmSync(FROZEN_ROOT, { recursive: true, force: true }) } catch { /* empty dir left behind */ }
     console.log(`[frozen] removed ${frozenTrees.size} pinned-tree worktree(s): ${[...frozenTrees.keys()].join(", ")}`)
   }
+  if (checkEdgeIdentities) {
+    console.log(`[edge identities] matched=${identityMatched} missing=${identityMissing} unexpected=${identityUnexpected} oracleSourceUnknown=${identityUnverifiable} oracleTargetUnverified=${identityTargetUnverified} analyzerUnverified=${identityUnverifiedActual}`)
+    if (identityMatched === 0 || identityMissing || identityUnexpected || identityUnverifiable || identityTargetUnverified || identityUnverifiedActual || labelTruthGaps.length ||
+        Object.keys(zeroTruthUnmeasured).length) process.exitCode = 5
+    removeFrozenTrees()
+    return
+  }
+
   /**
    * Merge this run's rows into the baseline file. A MERGE, never a replace: every
    * other lane's row is carried through untouched, so pinning one lane cannot
@@ -27021,7 +27239,7 @@ async function main() {
         data: {
           scoped: true,
           scope,
-          samplingRule: `seeded ${SAMPLE_PER_LANG} files/language, scoped to ${scope}`,
+          samplingRule: `file-level label/target coverage over seeded ${SAMPLE_PER_LANG} files/language, scoped to ${scope}`,
           report,
           secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
           codeInputs: { ...codeInputs, ownInputs: [...ownInputs], sharedInputs: [...sharedInputs], laneDirt, sharedDirt, otherDirt },
@@ -27200,7 +27418,7 @@ async function main() {
       // M49 W16: pins whose live checkout did not match, and what was measured
       // instead. Empty means every lane read exactly its pin.
       pinDrift,
-      samplingRule: `seeded ${SAMPLE_PER_LANG} files/language (primary + second corpus lanes)`,
+      samplingRule: `file-level label/target coverage over seeded ${SAMPLE_PER_LANG} files/language (primary + second corpus lanes)`,
       report,
       secondCorpus: { mapping: SECOND_CORPUS, report: reportSecond },
       // M49 G5: exactly what the baseline comparison could and could not

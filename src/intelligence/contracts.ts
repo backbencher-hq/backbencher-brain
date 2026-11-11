@@ -361,6 +361,7 @@ export interface GraphEdge {
    *  annotated as enrichment (never an evidence class). */
   metadata?: {
     evidenceClass?: string
+    method?: "regex"
     enrichment?: {
       role?: string
       pattern?: string
@@ -377,6 +378,7 @@ export interface GraphEdge {
 }
 
 export interface GraphTraversalOptions {
+  rootFile?: string
   direction?: "callers" | "callees" | "both"
   maxDepth?: number
   relationshipTypes?: string[]

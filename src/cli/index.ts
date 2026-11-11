@@ -555,6 +555,10 @@ async function cmdIndex(
   if (stats.cancelled) {
     console.log(`⏸ index cancelled after ${secs}s — progress saved. Resume with: bb index --resume`)
   }
+  const fallbackFiles = Object.values(stats.phases?.byLanguage ?? {}).reduce((total, language) => total + language.fallback, 0)
+  if (fallbackFiles > 0) {
+    console.log(yellow(`  AST analysis degraded for ${fallbackFiles} file(s). Regex-derived graph edges are marked inferred.`, S))
+  }
   if (stats.summary) {
     const s = stats.summary
     console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts${s.cancelled ? ` | ${s.cancelled} cancelled` : ""}`)

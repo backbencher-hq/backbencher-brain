@@ -67,7 +67,7 @@ on Windows); add that directory to your `PATH`.
 ### Pin a release
 
 ```bash
-npm install -g @backbencher/brain@0.1.1
+npm install -g @backbencher/brain@0.1.2
 # or with the installer scripts:
 VERSION=0.1.0 curl -fsSL https://backbencher.cc/install.sh | bash
 ```

@@ -943,59 +943,52 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         let reasonCode = "first-supertype-guess"
         let evidence = "inferred"
         if (parents.length > 0) {
-          // In-file declaration membership test against the hoisted index.
-          // Signatures from the member's own symbol so overload resolution is
-          // exact; generic-substituted sigs fall back to name-only.
-          const declared = (typeName: string): boolean => {
-            const nameMap = (isMethodOverride ? declSigs : propSigs).get(typeName)
-            if (!nameMap) return false
-            // The parent must declare a member with the SAME NAME first —
-            // signature compatibility is only consulted after the name
-            // matches (see declSigs comment: name-blind pairing fabricated
-            // cross-member overrides on the corpus).
-            const sigs = nameMap.get(s.name)
-            if (!sigs || sigs.size === 0) return false
-            if (overrideSig && sigs.has(overrideSig)) return true
-            // No signature on a side (extractor gap) OR a generic type
-            // variable in either sig: name-only pairing. A type variable is
-            // a single capital (T, R) at a token boundary — `(T?)` included,
-            // which is how Kotlin writes a nullable generic parameter and
-            // which the old token-split mirror misread as a concrete type
-            // (#949). Concrete types (Int, String, Byte?) still require the
-            // exact sig so overloads never pair. The scan is the judge's own
-            // (kotlinSigHasTypeVar) — see its comment for why mirroring it
-            // boundary-for-boundary is load-bearing.
-            const hasTypeVar = (sig: string): boolean => kotlinSigHasTypeVar(sig)
-            if (!overrideSig) return true
-            for (const s2 of sigs) if (hasTypeVar(s2) || hasTypeVar(overrideSig)) return true
-            return false
+          const signatureMatch = (typeName: string): "exact" | "generic" | undefined => {
+            const signatures = (isMethodOverride ? declSigs : propSigs).get(typeName)?.get(s.name)
+            if (!signatures?.size) return undefined
+            if (signatures.has(overrideSig)) return "exact"
+            if (kotlinSigHasTypeVar(overrideSig)) return "generic"
+            for (const signature of signatures) {
+              if (kotlinSigHasTypeVar(signature)) return "generic"
+            }
+            return undefined
           }
           // BFS over the typeIndex hierarchy (companion-free fallback: the
           // index itself provides getParents from superTypes metadata).
           const queue: string[] = [...parents]
           const seen = new Set<string>()
           let depth = 0
+          let genericParent: string | undefined
           while (queue.length > 0 && depth < 10) {
             depth++
             const parent = queue.shift()!
             if (seen.has(parent)) continue
             seen.add(parent)
-            if (declared(parent)) {
+            const match = signatureMatch(parent)
+            if (match === "exact") {
               overrideParent = parent
               confidence = 0.9
               reasonCode = "in-file-verified"
               evidence = "structural"
               break
             }
+            if (match === "generic" && !genericParent) genericParent = parent
             const gp = typeIndex.get(parent)?.metadata?.superTypes ?? []
             for (const g of gp) if (!seen.has(g)) queue.push(g)
+          }
+          if (reasonCode === "first-supertype-guess" && genericParent) {
+            overrideParent = genericParent
+            confidence = 0.65
+            reasonCode = "generic-signature-guess"
           }
         }
         // Property overrides deliberately do NOT consult the cross-file
         // companion: `mergeSymbolsIntoOverrideCompanion` indexes method symbols
         // only, so the pass could not name a property declarer even in principle.
         // Recording the omission beats a pass that silently returns null.
-        if (isMethodOverride && context?.overrideCompanion && parents.length > 0) {
+        // The companion carries method names only, so it cannot replace an
+        // in-file signature match with a namesake overload on another parent.
+        if (reasonCode === "first-supertype-guess" && isMethodOverride && context?.overrideCompanion && parents.length > 0) {
           const declaring = findDeclaringParent(
             s.name,
             parents,
@@ -1004,9 +997,9 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           )
           if (declaring) {
             overrideParent = declaring
-            confidence = 0.9
+            confidence = 0.65
             reasonCode = "companion-index"
-            evidence = "structural"
+            evidence = "inferred"
           }
         }
         if (overrideParent) {

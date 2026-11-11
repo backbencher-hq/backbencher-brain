@@ -1630,7 +1630,7 @@ comes from a printed command.
 | `annotation` | parameter/annotated-assignment annotation, incl. forward refs, `Optional`/`Union`-of-one, PEP 604 | see D7 doc |
 | `assignment` | single-binding `x = Foo(...)`, `with Foo() as x`; now also the QUALIFIED spelling `x = pkg.Foo(...)` when the leaf names a class-like type | see D7 doc |
 | `annotation-element` | FOR TARGET over an annotated container: `for x in xs` where `xs: list[Foo]` — python's own rule is that the target binds the element. Refused: unparameterised containers, two-target loops, a rebinding inside the loop body | see D7 doc |
-| `field` | two-dot receiver through a `@dataclass` field: `self.body.send()` where `body: Foo`. Restricted to `@dataclass` because a plain class-body annotation is a type-checker hint the runtime ignores; refused: non-dataclass classes, container fields, duplicate field declarations, unions of two classes | see D7 doc |
+| `field` | Two-dot receiver through a dataclass field, such as `self.body.send()` where `body: Foo`. Requires a module-level class with a prior, unambiguous import of `dataclasses.dataclass` or its module, including aliases. Container fields, duplicate declarations, and unions of two classes are refused. | see D7 doc |
 
 `annotationOwnerName` is ONE reader shared by parameters, annotated assignments and dataclass
 fields — a second reader is how two emission sites start disagreeing. The member-READS pass

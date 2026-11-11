@@ -16,6 +16,7 @@ import { BrainTools } from "../../../ast/tools"
 import { ASTEngine } from "../../../ast/engine"
 import { resolveRowsFreshnessDetailed, buildStalenessEnvelope } from "../../../brain/freshness"
 import { collectStaleFiles, maybeAutoRefresh, autoRefreshLine } from "../../../ast/auto-refresh"
+import { relative, resolve, sep } from "node:path"
 
 export const handler: ToolHandler = async (args, { projectId, projectPath }) => {
     const mode = args.mode === "content" ? "content" : args.mode === "symbol" || args.mode === "file" ? args.mode : "symbols"
@@ -198,6 +199,9 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
     }
     if (mode === "symbol") {
       const raw = await BrainDatabase.getRawInstance(projectId as any, { readonly: true })
+      const filePath = typeof args.filePath === "string" ? args.filePath.split("\\").join("/") : undefined
+      const scopedPath = filePath?.includes("/") ? resolve(projectPath, filePath) : undefined
+      const relativeScope = scopedPath ? relative(projectPath, scopedPath).split(sep).join("/") : undefined
       // Rerunnable pass — repair stale files inline within
       // budget, then answer from the SECOND pass so the answer reflects the
       // repair (declared).
@@ -206,8 +210,17 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
       type SymbolPass = { answer: Record<string, unknown>; rows: Array<{ filePath: string }>; statuses: Map<string, string> } | { envelope: string }
       const runPass = async (): Promise<SymbolPass> => {
         let found: { matches: any[] }
+        const scopeRows: Array<{ filePath: string }> = []
         try {
-          found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? "").trim(), args.filePath ? String(args.filePath) : undefined)
+          const scopedFile = scopedPath ? raw.prepare(
+            "SELECT path FROM brain_file WHERE project_id = ? AND (relative_path = ? OR path = ?) LIMIT 1",
+          ).get(projectId, relativeScope, scopedPath) as { path: string } | undefined : undefined
+          found = scopedPath && !scopedFile ? { matches: [] } : await ASTEngine.findSymbol(
+            projectId, String(args.symbolName ?? args.query ?? "").trim(), scopedFile?.path ?? filePath,
+          )
+          if (scopedFile) found.matches = found.matches.filter(match => match.fileId === scopedFile.path)
+          if (scopedFile) scopeRows.push({ filePath: scopedFile.path })
+          else if (scopedPath) scopeRows.push({ filePath: scopedPath })
         } catch (error: any) {
           // findSymbol's internals (dynamic import, DB handle) threw. The
           // handler returns an error envelope rather than letting a raw driver
@@ -230,7 +243,8 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
         const pageLimit = args.limit === undefined ? null : Number(args.limit)
         const pageOffset = Number(args.offset ?? 0)
         const page = pageLimit === null ? matches : matches.slice(pageOffset, pageOffset + pageLimit)
-        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, page.map((m: any) => ({ filePath: m.fileId })))
+        const rows = [...scopeRows, ...page.map((m: any) => ({ filePath: m.fileId }))]
+        const detail = resolveRowsFreshnessDetailed(raw, projectId as any, rows)
         for (const m of page) m.stale = detail.statuses.get(m.fileId) !== "fresh"
         return {
           answer: {
@@ -247,9 +261,9 @@ export const handler: ToolHandler = async (args, { projectId, projectPath }) => 
             ...(pageLimit !== null && pageOffset + page.length < totalMatches
               ? { truncationReason: "page-limit", nextOffset: pageOffset + page.length }
               : {}),
-            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
+            freshness: buildStalenessEnvelope(detail.summary, relativeScope === undefined ? { kind: "dir" } : { kind: "file", path: relativeScope }),
           },
-          rows: page.map((m: any) => ({ filePath: m.fileId })),
+          rows,
           statuses: detail.statuses,
         }
       }
