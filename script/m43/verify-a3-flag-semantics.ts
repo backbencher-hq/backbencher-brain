@@ -177,7 +177,7 @@ async function main() {
     const file = FRESHNESS_REMEDIATION.file
     check("5: dir remediation names the automatic behavior", dir.includes("auto-refresh") && dir.includes("BB_NO_AUTO_REFRESH"), dir.slice(0, 140))
     check("5: dir remediation keeps the manual interface", dir.includes("bb index --changed") && dir.includes("bb_index"), dir.slice(0, 140))
-    check("5: file remediation names the automatic behavior + manual file interface", file.includes("auto-refresh") && /bb index "/.test(file) && file.includes("bb_index"), file.slice(0, 140))
+    check("5: file remediation names the automatic behavior + manual file interface", file.includes("auto-refresh") && /bb index --file "/.test(file) && file.includes("bb_index"), file.slice(0, 140))
     const searchDoc = readFileSync(path.join(ROOT, "docs/tools/bb_search.md"), "utf8")
     check("5: generated bb_search.md documents refresh=false and auto-refresh", searchDoc.includes("refresh") && searchDoc.includes("auto-refresh"), "doc missing the surface")
     const guide = readFileSync(path.join(ROOT, "docs/MCP_CLI_INDEXER_GUIDE.md"), "utf8")

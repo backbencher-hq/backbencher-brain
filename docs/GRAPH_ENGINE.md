@@ -87,9 +87,14 @@ when the answer has no position — never a fabricated line 0), `depth`, `rowId`
 the row actually named, for a cascade edge), `targetBasis`
 (`symbol`/`external`/`unresolved` — the stored resolution basis), and
 `metadata` (the declared pass-through fields: `evidenceClass`, `method`, and
-index-computed enrichment). Regex fallback edges carry `method: "regex"` and
-the `inferred` tier. The `bb_graph` tool exposes their origin as
-`extractionMethod: "regex"`.
+index-computed enrichment). The enrichment pass's "why" is exposed as
+`enrichment` when stored: `role` (producer/consumer/decorator/configurator/
+inheritor), `pattern` (factory_consumer/observer/adapter/di_injection/override/
+delegate/event_handler/callback), `layerFlow`, `criticality`, `frequency`,
+`isDependencyInjection`, and `inferredAt` (when the reason was computed). The
+object is absent when the stored metadata does not carry the `inferredAt` marker
+the pass always writes; the reader never infers one. Regex fallback edges carry `method: "regex"` and the `inferred` tier. The
+`bb_graph` tool exposes their origin as `extractionMethod: "regex"`.
 
 ### Summary declarations
 
@@ -119,6 +124,14 @@ the `inferred` tier. The `bb_graph` tool exposes their origin as
 - **One stored row emits at most one edge per direction.** The owner cascade can
   reach the same row from more than one traced symbol; the first depth to reach
   it emits, and the repeat is counted in `dedupedAtToolLayer`.
+- **Exact call-site offsets survive deduplication.** Where analyzer metadata supplies
+  a nonnegative safe-integer `callSiteStartIndex`, caller and callee spelling
+  deduplication includes that offset. Same-source/same-target calls on one line
+  remain distinct. The engine exposes it in edge metadata; `bb_graph` exposes
+  `callSiteStartIndex` beside `callSite`. This is an offset into the indexed source,
+  not a line or a byte-offset promise. Missing/invalid offsets retain the legacy
+  line-based fallback; no exact position is invented. TypeScript currently emits
+  the offset for `calls`; other relationship kinds are not covered by this change.
 - **Owner cascade.** A relationship stored against a member of a class is
   attributed to the class: the member set is the lexical range of
   `brain_symbol.owner_symbol_id` for the traced symbol's `…:<Name>:` prefix

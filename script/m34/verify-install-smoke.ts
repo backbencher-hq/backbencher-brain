@@ -23,6 +23,11 @@ import os from "node:os"
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS = path.join(ROOT, "validation/m34/results")
 const PKG_PATH = path.join(ROOT, "package.json")
+// The published package is scoped (@backbencher/brain); its install path is
+// node_modules/@backbencher/brain, not node_modules/backbencher-brain. Derive it
+// from package.json instead of hardcoding the pre-scope name.
+const PKG_NAME = (JSON.parse(readFileSync(PKG_PATH, "utf8")) as { name: string }).name
+const installedDir = (root: string): string => path.join(root, "node_modules", ...PKG_NAME.split("/"))
 const EVIDENCE_PATH = path.join(RESULTS, "S1.json")
 
 let checks = 0
@@ -75,9 +80,9 @@ if (packed) {
     encoding: "utf8",
     timeout: 480000, // native builds can be slow; upper bound, not target
   })
-  installed = r.status === 0 && existsSync(path.join(prefix, "node_modules", "backbencher-brain"))
+  installed = r.status === 0 && existsSync(installedDir(prefix))
   check("B: npm install from the tarball succeeds (real native deps)", installed, (r.stderr ?? r.stdout ?? "").slice(-300))
-  check("B: better-sqlite3 native module present after install", existsSync(path.join(prefix, "node_modules", "backbencher-brain", "node_modules", "better-sqlite3")) || existsSync(path.join(prefix, "node_modules", "better-sqlite3")))
+  check("B: better-sqlite3 native module present after install", existsSync(path.join(installedDir(prefix), "node_modules", "better-sqlite3")) || existsSync(path.join(prefix, "node_modules", "better-sqlite3")))
 } else {
   check("B: npm install from the tarball succeeds (real native deps)", false, "no tarball")
   check("B: better-sqlite3 native module present after install", false, "no install")
@@ -87,7 +92,7 @@ if (packed) {
 // C. The INSTALLED copy works
 // ---------------------------------------------------------------------------
 
-const installedPkg = path.join(prefix, "node_modules", "backbencher-brain")
+const installedPkg = installedDir(prefix)
 const installedBin = path.join(installedPkg, "bin", "bb")
 if (installed) {
   const env = { ...process.env, BB_DATA_DIR: path.join(tmp, "bbdata") }
@@ -206,7 +211,7 @@ function installMutant(tgz: string, tag: string): string {
   execFileSync("npm", ["install", "--prefix", prefix, "--ignore-scripts", "--no-audit", "--no-fund", tgz], {
     encoding: "utf8", timeout: 240000, stdio: ["ignore", "pipe", "pipe"],
   })
-  return path.join(prefix, "node_modules", "backbencher-brain")
+  return installedDir(prefix)
 }
 
 const mutants: Mutant[] = [

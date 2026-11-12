@@ -1994,9 +1994,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (
         type === "method_declaration" ||
+        type === "local_function_statement" ||
         type === "constructor_declaration" ||
         type === "destructor_declaration"
       ) {
+        const localFunction = type === "local_function_statement"
+        const kind = localFunction ? ASTEngine.SymbolKind.Function
+          : type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method
         let name =
           node.childForFieldName("name")?.text ||
           this.childText(node, "identifier") ||
@@ -2097,13 +2101,14 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         const signature = `(${sigParams})`
 
-        const ownerFqn = parentContext ? parentContext.fqn : ""
+        let ownerFqn = parentContext?.fqn ?? ""
+        if (localFunction && parentContext) ownerFqn += `.${parentContext.rawName}`
         const fqn = parentContext ? `${ownerFqn}.${name}${signature}` : `${name}${signature}`
         const localOwnerPrefix = parentContext ? `${parentContext.rawName}.${name}${signature}` : `${name}${signature}`
 
         const sym: ASTEngine.UniversalSymbol = {
           name,
-          kind: type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+          kind,
           range: this.nodeToRange(node),
           visibility,
           ownerName: parentContext?.rawName,
@@ -2129,7 +2134,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         symbolMap.set(fqn, sym)
         symbolMap.set(localOwnerPrefix, sym)
 
-        this.collectMemberContract(node, name, parentContext, ownerFqn, localOwnerPrefix, interfaceTasks, interfaceMembers, classMembers)
+        if (!localFunction) {
+          this.collectMemberContract(node, name, parentContext, ownerFqn, localOwnerPrefix, interfaceTasks, interfaceMembers, classMembers)
+        }
 
         if (this.hasModifier(node, "override")) {
           overrideTasks.push({
@@ -2149,7 +2156,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           node,
           name,
           rawName: name,
-          kind: type === "constructor_declaration" ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
+          kind,
           fqn: ownerFqn,
           visibility,
           symbolRef: sym,
@@ -2205,6 +2212,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const enclosingKind = parentContext?.kind
         const isCallSite =
           enclosingKind === ASTEngine.SymbolKind.Method ||
+          enclosingKind === ASTEngine.SymbolKind.Function ||
           enclosingKind === ASTEngine.SymbolKind.Constructor ||
           enclosingKind === ASTEngine.SymbolKind.Property ||
           // Class-body expression contexts (field/type-member initializers and

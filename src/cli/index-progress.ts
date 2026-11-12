@@ -428,3 +428,35 @@ export class IndexProgressRenderer {
     return this.announcedExpectation
   }
 }
+/**
+ * The one live line under an index run while vectors drain. Kept pure and
+ * exported so the rate-limit wording is testable without a real provider: a 429
+ * must read as a provider rate limit with its retry count and growing backoff,
+ * never as a slow indexer.
+ */
+export function formatEmbeddingDrainLine(progress: {
+  queued: number
+  completed: number
+  active: boolean
+  rateLimited: boolean
+  retryInMs: number
+  retryAttempt: number
+  retryDelayMs: number
+}): string {
+  const total = progress.queued
+  const pct = total > 0 ? Math.min(100, Math.floor((progress.completed / total) * 100)) : null
+  const parts: string[] = []
+  if (total > 0) {
+    parts.push(`${progress.completed.toLocaleString()}/${total.toLocaleString()} vectors${pct === null ? "" : ` (${pct}%)`}`)
+  } else {
+    parts.push("finishing vectors")
+  }
+  if (progress.rateLimited) {
+    const retryIn = Math.max(1, Math.ceil(progress.retryInMs / 1000))
+    const backoff = Math.max(1, Math.round(progress.retryDelayMs / 1000))
+    parts.push(`provider rate-limited — retry ${Math.max(1, progress.retryAttempt)} in ${retryIn}s (backoff ${backoff}s)`)
+  } else if (progress.active) {
+    parts.push("in flight")
+  }
+  return `  ${parts.join(" · ")}`
+}

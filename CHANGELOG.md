@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.1.3 — UX overhaul
+
+Owner-facing release. Everything below was verified on the packaged tarball before
+publication.
+
+- **Embedding setup is key-first.** Paste the API key (hidden, never echoed — the
+  old reader leaked the key interleaved with stars), the provider is detected from
+  the key, the embedding models that key can use are listed, and the user picks one
+  or types a model id. The choice is validated with a live `/embeddings` probe
+  before saving. A failed probe keeps the user in the menu (retry / change model /
+  change key / skip) instead of dropping out with nothing saved — the loop that
+  made every `bb index` re-prompt. OpenRouter is no longer advertised as an
+  embedding provider (its catalogue lists none); the custom base-URL + manual model
+  path remains.
+- **`bb setup` can be re-run and `bb setup reset` removes** the saved provider, key
+  and model (and the skip marker) without touching the index. Changing the model
+  is reconciled by the next `bb index`: stored symbols are re-embedded in place
+  with the new model (no re-parse) and superseded rows are deleted, so an
+  unchanged index no longer keeps old vectors. The repair is incremental and
+  provider-only: each `bb index` sends only symbols still missing the configured
+  model, and a rate-limited provider keeps existing vectors and reports the
+  remaining count so a later run continues from there. `bb index --force` remains
+  the full parse rebuild. The skip message names both paths.
+- **Asymmetric NVIDIA embedding models work end to end.** Nemotron 3.5 embed
+  models require `input_type` and reject requests without it; bb now sends
+  `passage` for stored symbols, `query` for search queries, and `passage` for the
+  setup probe, so `nvidia/nemotron-3.5-embed-8b` on NVIDIA NIM indexes and
+  searches. The docs note that OpenRouter's free route has a small daily request
+  cap, so bulk embedding should use the NVIDIA NIM endpoint directly.
+- **Every post-parse phase is visible and timed**: cross-file/cross-language
+  resolution, enrichment (with pattern breakdown and declared dangling/unresolved
+  counts), gravity, taints (with flow count), health, integrity, vector blobs and
+  planner stats. Long phases print a heartbeat.
+- **The completion report is richer:** index database path (with the exact `rm -rf`
+  to remove it), DB/WAL size, cross-language edges, taint flows, relationships
+  explained + patterns, worker count, per-phase timings and wall time.
+- **Embedding drain is live:** vector progress, and on a provider 429 the retry
+  attempt, countdown and growing backoff (5s, 10s, 20s, 30s cap) instead of a
+  silent wait that looked like a slow indexer. The engine also logs the rate limit
+  while it happens.
+- **`bb_graph` edges expose the stored enrichment "why"** as
+  `metadata.enrichment` (`role`, `pattern`, `layerFlow`, `criticality`,
+  `frequency`, `inferredAt`).
+- **Release gates:** `prepack` refuses a dist whose chunk references do not
+  resolve; a packaged-install gate packs the tarball, installs it, and runs
+  `--version`, a real index (asserting the summary/path/run lines) and
+  `bb setup reset`. Test evidence for this build: `npm test`, `verify:fast`
+  (20 gates), 1,776/1,776 fixtures, a PTY mock-provider setup run, and the
+  packaged-tarball smoke.
+
 ## 0.1.2 — analyzer verification follow-up
 
 This release is the verification pass the analyzers needed after the first public

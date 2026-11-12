@@ -96,6 +96,24 @@ writeFileSync(
 const projectId = getProjectId(root)
 try {
   await indexProjectParallel(projectId, root, {})
+  // The enrichment pass is a separate post-pass; this gate does not need its cost,
+  // only its STORED shape. Write one metadata row directly (the shape the pass
+  // writes) so the door's projection is what is under test, not the enricher.
+  const rawForEnrichment = await BrainDatabase.getRawInstance(projectId)
+  rawForEnrichment
+    .prepare("UPDATE brain_relationship SET metadata = ? WHERE project_id = ?")
+    .run(
+      JSON.stringify({
+        role: "producer",
+        pattern: "observer",
+        layerFlow: "same-layer",
+        criticality: "high",
+        frequency: "one_of_3",
+        inferredAt: Date.now(),
+        evidenceClass: "inferred",
+      }),
+      projectId,
+    )
 
   const betaGraph = await graphTraversal(projectId, "beta", { direction: "both", maxDepth: 3 })
   check("beta has callers (alpha)", betaGraph.callers.some((e) => betaGraph.nodes[e.from]?.name === "alpha"))
@@ -376,6 +394,19 @@ try {
   const doorFractionalEdges = await door({ symbol: "beta", maxEdges: 2.5 })
   check("door: a fractional maxEdges is refused, never floored", !doorFractionalEdges.ok && /whole number/.test(doorFractionalEdges.error), String(doorFractionalEdges.ok ? "accepted" : doorFractionalEdges.error))
   const doorDefault = await door({ symbol: "beta" })
+  // D11 — the enrichment "why" reaches the DOOR. The stored metadata is what
+  // explains a relationship (role, criticality, pattern, layer flow); if the
+  // handler drops it, every explanation is invisible to the caller.
+  const doorEnriched = await door({ symbol: "alpha", direction: "callees" })
+  const enrichedEdges: any[] = doorEnriched.ok ? [...(doorEnriched.json.callers ?? []), ...(doorEnriched.json.callees ?? [])] : []
+  const explainedEdge = enrichedEdges.find(
+    (e) => e.enrichment && (typeof e.enrichment.role === "string" || typeof e.enrichment.criticality === "string"),
+  )
+  check(
+    "D11: bb_graph edges expose the stored enrichment why (role/criticality + inferredAt)",
+    Boolean(explainedEdge) && typeof explainedEdge.enrichment.inferredAt === "number",
+    JSON.stringify(explainedEdge ?? enrichedEdges.slice(0, 2)),
+  )
   const engineDefault = await graphTraversal(projectId, "beta", {})
   check(
     "door: an omitted maxDepth applies the DECLARED default (5) — the same default the engine uses",

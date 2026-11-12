@@ -348,7 +348,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     const emittedContains = new Set<string>()
     // SW-B candidates: navigation calls with capitalized heads, resolved
     // post-walk against declared enum cases (symbols must be whole first).
-    const enumCtorCandidates: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean; line?: number }> = []
+    const enumCtorCandidates: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean; line?: number; declarationLine?: number }> = []
     // SW-G: class -> superclass (first base when it IS a superclass),
     // recorded at declaration time for `super.init(...)` targets.
     const superByClass = new Map<string, string>()
@@ -596,12 +596,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         // puts a `size` call and a `case1` conversion on one line), and a
         // global line set would re-line — or delink — an unrelated edge.
         const retiredLines = new Map<string, Set<number>>()
-        const constructions: Array<{ source: string; target: string; line?: number }> = []
+        const constructions: Array<{ source: string; target: string; line?: number; declarationLine?: number }> = []
         for (const cand of enumCtorCandidates) {
           const key = cand.head ?? cand.owner
           if (!key || !enumCases.has(`${key}.${cand.leaf}`)) continue
           if (cand.removeCalls) {
-            const siteKey = `${cand.source}\u0000${cand.leaf}`
+            const siteKey = `${cand.source}\u0000${cand.leaf}\u0000${cand.declarationLine ?? ""}`
             const left = (callSiteCounts.get(siteKey) ?? 0) - 1
             callSiteCounts.set(siteKey, left)
             if (typeof cand.line === "number") {
@@ -611,13 +611,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             if (left <= 0) retiredSites.add(siteKey)
           }
-          constructions.push({ source: cand.source, target: key, line: cand.line })
+          constructions.push({ source: cand.source, target: key, line: cand.line, declarationLine: cand.declarationLine })
         }
         if (retiredSites.size > 0) {
           for (let i = relationships.length - 1; i >= 0; i--) {
             const r = relationships[i]
             if (r.type !== ASTEngine.RelationshipType.Calls) continue
-            if (!retiredSites.has(`${r.source}\u0000${String(r.target)}`)) continue
+            if (!retiredSites.has(`${r.source}\u0000${String(r.target)}\u0000${r.metadata?.sourceDeclarationLine ?? ""}`)) continue
             relationships.splice(i, 1)
           }
         }
@@ -628,7 +628,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (callSiteLines.size > 0) {
           for (const r of relationships) {
             if (r.type !== ASTEngine.RelationshipType.Calls) continue
-            const key = `${r.source}\u0000${String(r.target)}`
+            const key = `${r.source}\u0000${String(r.target)}\u0000${r.metadata?.sourceDeclarationLine ?? ""}`
             const lines = callSiteLines.get(key)
             if (!lines) continue
             const retired = retiredLines.get(key)
@@ -644,7 +644,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         for (const c of constructions) {
-          const ekey = `${c.source}\u0000instantiates\u0000${c.target}`
+          const ekey = `${c.source}\u0000instantiates\u0000${c.target}\u0000${c.declarationLine ?? ""}`
           if (emittedCalls.has(ekey)) continue
           emittedCalls.add(ekey)
           relationships.push({
@@ -1408,6 +1408,13 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (funcAttrs.length > 0) meta.annotations = funcAttrs
 
     const symbol = this.createSymbol(opName ?? nameNode!.text, kind, opName ? node : nameNode!, parent, symbols, meta, vis, this.getDeclaredVisibility(node), localScope)
+    // Keep the name's start for navigation and the full body for stored caller ownership.
+    symbol.range = {
+      ...symbol.range,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column + 1,
+      endIndex: node.endIndex,
+    }
     this.collectFunctionMeta(node, meta, symbol)
     // Per-symbol cyclomatic complexity (managed-OO family contract — csharp
     // #264 / dart #265 waves; same node set as the file-level counter).
@@ -1528,7 +1535,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     parent: ASTEngine.UniversalSymbol | null,
     emittedCalls: Set<string>,
-    enumCtorCandidates?: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean; line?: number }>,
+    enumCtorCandidates?: Array<{ source: string; head: string | null; owner: string | null; leaf: string; removeCalls: boolean; line?: number; declarationLine?: number }>,
     superByClass?: Map<string, string>,
     callSiteCounts?: Map<string, number>,
     callSiteLines?: Map<string, number[]>,
@@ -1567,7 +1574,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const owner = parent?.ownerName ?? null
           if (leaf && owner) {
-            enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: false, line: this.nodeLine(node) })
+            enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: false, declarationLine: parent?.range?.startLine, line: this.nodeLine(node) })
           }
         }
       }
@@ -1605,7 +1612,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           if ((recv === "self" || recv === "Self") && owner) target = owner
           else if (recv === "super" && owner && superByClass) target = superByClass.get(owner) ?? null
           if (target) {
-            const key = `${source}\u0000instantiates\u0000${target}`
+            const key = `${source}\u0000instantiates\u0000${target}\u0000${parent?.range?.startLine ?? ""}`
             if (!emittedCalls.has(key)) {
               emittedCalls.add(key)
               relationships.push({
@@ -1641,16 +1648,16 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `static var get: Endpoint { method(.get) }` silently lost its call to
       // `Endpoint.method` because a property initializer elsewhere in the type
       // called `Path.method(.get)`.
-      this.emitCall(relationships, source, leaf, emittedCalls, callSiteCounts, this.nodeLine(this.navigationLeafNode(funcNode)), callSiteLines)
+      this.emitCall(relationships, source, leaf, emittedCalls, callSiteCounts, this.nodeLine(this.navigationLeafNode(funcNode)), callSiteLines, parent?.range?.startLine)
       if (enumCtorCandidates) {
         const chain = this.navigationChain(funcNode)
         const receiver = chain.length >= 2 ? chain[chain.length - 2] : null
         if (receiver && this.isTypeName(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
-          enumCtorCandidates.push({ source, head: receiver, owner: null, leaf, removeCalls: true, line: this.nodeLine(this.navigationLeafNode(funcNode)) })
+          enumCtorCandidates.push({ source, head: receiver, owner: null, leaf, removeCalls: true, declarationLine: parent?.range?.startLine, line: this.nodeLine(this.navigationLeafNode(funcNode)) })
         } else if (receiver === "Self") {
           // SW-H: `Self.a(v)` in an enum builds the enclosing enum.
           const owner = parent?.ownerName ?? null
-          if (owner) enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: true, line: this.nodeLine(this.navigationLeafNode(funcNode)) })
+          if (owner) enumCtorCandidates.push({ source, head: null, owner, leaf, removeCalls: true, declarationLine: parent?.range?.startLine, line: this.nodeLine(this.navigationLeafNode(funcNode)) })
         }
       }
       return
@@ -1678,7 +1685,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (isCapitalized) {
       // Bare capitalized call = construction syntax -> instantiates ONLY
       // (Java `new Foo()` analog — never also a calls edge).
-      const key = `${source}\u0000instantiates\u0000${target}`
+      const key = `${source}\u0000instantiates\u0000${target}\u0000${parent?.range?.startLine ?? ""}`
       if (!emittedCalls.has(key)) {
         emittedCalls.add(key)
         relationships.push({
@@ -1699,7 +1706,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       // conversion in one scope retires the edge of a genuine bare call that
       // nothing else re-creates (`static var get: Int { method(.get) }` next
       // to `var path = Path.method(.get)`).
-      this.emitCall(relationships, source, target, emittedCalls, callSiteCounts, this.nodeLine(funcNode), callSiteLines)
+      this.emitCall(relationships, source, target, emittedCalls, callSiteCounts, this.nodeLine(funcNode), callSiteLines, parent?.range?.startLine)
     }
   }
 
@@ -1711,11 +1718,12 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
     callSiteCounts?: Map<string, number>,
     line?: number,
     callSiteLines?: Map<string, number[]>,
+    declarationLine?: number,
   ) {
     // #942: count every SITE, including the ones the dedupe below absorbs — the
     // post-walk needs sites, not edges.
     if (callSiteCounts) {
-      const siteKey = `${source}\u0000${target}`
+      const siteKey = `${source}\u0000${target}\u0000${declarationLine ?? ""}`
       callSiteCounts.set(siteKey, (callSiteCounts.get(siteKey) ?? 0) + 1)
       if (typeof line === "number") {
         const arr = callSiteLines?.get(siteKey)
@@ -1723,7 +1731,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         else callSiteLines?.set(siteKey, [line])
       }
     }
-    const key = `${source}\u0000calls\u0000${target}`
+    const key = `${source}\u0000calls\u0000${target}\u0000${declarationLine ?? ""}`
     if (emittedCalls.has(key)) return
     emittedCalls.add(key)
     relationships.push({
@@ -1735,8 +1743,17 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       confidence: 0.95,
       // The CALLEE node's own line — the site a reader checks.
       ...(typeof line === "number" ? { line_number: line } : {}),
-      metadata: {},
+      metadata: { sourceDeclarationLine: declarationLine },
     })
+  }
+
+  private relationshipDeclarationLine(node: Node): number {
+    for (let owner = node.parent; owner; owner = owner.parent) {
+      if (["function_declaration", "init_declaration", "class_declaration", "protocol_declaration"].includes(owner.type)) {
+        return this.nodeLine(owner.childForFieldName("name") ?? owner) ?? 0
+      }
+    }
+    return 0
   }
 
   private handleSelfUse(
@@ -1820,7 +1837,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
       (parent?.ownerName ? parent.ownerName : null) ||
       parent?.name ||
       "root"
-    const key = `${source}\u0000uses\u0000${leaf}`
+    const key = `${source}\u0000uses\u0000${leaf}\u0000${this.relationshipDeclarationLine(node)}`
     if (emittedUses.has(key)) return
     emittedUses.add(key)
     relationships.push({
@@ -2015,7 +2032,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
           isMember
         ) {
           const source = cFn || cTy || "root"
-          const key = `${source}\u0000uses\u0000${lookup}`
+          const key = `${source}\u0000uses\u0000${lookup}\u0000${this.relationshipDeclarationLine(n)}`
           if (!emittedUses.has(key)) {
             emittedUses.add(key)
             relationships.push({
@@ -3312,7 +3329,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         const lhs = a.namedChild(0)
         if (lhs && lhs.startIndex <= c.startIndex && lhs.endIndex >= c.endIndex) continue
       }
-      const key = `${source}\u0000uses\u0000${member}`
+      const key = `${source}\u0000uses\u0000${member}\u0000${this.relationshipDeclarationLine(node)}`
       if (emittedUses.has(key)) continue
       emittedUses.add(key)
       relationships.push({
@@ -3356,7 +3373,7 @@ export class RealSwiftAnalyzer implements ASTEngine.LanguageAnalyzer {
         const m = this.findChildByType(n, "simple_identifier") || this.findChildByType(n, "identifier")
         if (m && m.text && m.text !== "self" && m.text !== "Self") {
           const keyPathMember = this.stripNameQuoting(m.text)
-          const key = `${source}\u0000uses\u0000${keyPathMember}`
+          const key = `${source}\u0000uses\u0000${keyPathMember}\u0000${this.relationshipDeclarationLine(node)}`
           if (!emittedUses.has(key)) {
             emittedUses.add(key)
             relationships.push({

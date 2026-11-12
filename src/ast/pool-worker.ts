@@ -1756,6 +1756,18 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             // own emptiness test: `[]` and absent are one fact downstream, and
             // the store already writes NULL for both.
             if (Array.isArray(m.superTypes) && m.superTypes.length > 0) out.superTypes = m.superTypes
+            // PHP's receiver resolver reads these exact class identities and
+            // canonical parents. Dropping them here would turn the worker path
+            // back into leaf-name lookup while direct analyzer tests still pass.
+            if (m.phpSpecific === true && ["class", "interface", "trait", "enum"].includes(s.kind)) {
+              out.phpSpecific = true
+              if (typeof m.fqn === "string") out.fqn = m.fqn
+              if (typeof m.baseIdentity === "string") out.baseIdentity = m.baseIdentity
+              if (Array.isArray(m.superTypeIdentities)) out.superTypeIdentities = m.superTypeIdentities
+              if (Array.isArray(m.phpTraits)) out.phpTraits = m.phpTraits
+            }
+            if (m.phpSpecific === true && s.kind === "method" && typeof m.isFinal === "boolean") out.isFinal = m.isFinal
+            if (m.phpSpecific === true && s.kind === "method" && m.phpSignatureShape) out.phpSignatureShape = m.phpSignatureShape
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,

@@ -108,7 +108,7 @@ with the indexed hash, so its `stale` flag is a measured comparison. The other
 modes search the index; their rows carry `stale: true` when the file changed or
 disappeared after indexing. Stale/missing files are flagged, never dropped, and
 the freshness block's remediation names the manual repair (`bb index --changed`,
-or `bb index "<file>"` for file scope).
+or `bb index --file "<file>"` for file scope).
 
 `symbols`, `content` and `symbol` auto-refresh the stale files they touch within a
 bounded budget (25 files / 2 MiB by default) before answering and declare the

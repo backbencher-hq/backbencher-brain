@@ -1314,6 +1314,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // file. Declared, so a consumer can tell an inferred unit from a
           // written one — the same convention `instantiates` uses.
           resolvedTarget: "file-unit",
+          fileLevel: true,
           exportKind: s.kind,
         },
       })
@@ -1381,12 +1382,24 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const methodsByOwner = new Map<string, Set<string>>()
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.nestedDeclaration) continue
-      let names = methodsByOwner.get(s.ownerName)
+      const dispatchOwner = `${s.ownerName}:${s.isStatic === true ? "singleton" : "instance"}`
+      let names = methodsByOwner.get(dispatchOwner)
       if (!names) {
         names = new Set<string>()
-        methodsByOwner.set(s.ownerName, names)
+        methodsByOwner.set(dispatchOwner, names)
       }
       names.add(s.name)
+    }
+    const localParent = (owner: string, written: string): string | undefined => {
+      const scopes = namespacesByLeaf.get(owner)
+      const leaf = this.leafName(written)
+      const parentScopes = namespacesByLeaf.get(leaf)
+      if (scopes?.size !== 1 || parentScopes?.size !== 1 || leaf === owner) return undefined
+      const parentScope = parentScopes.values().next().value
+      const qualifiedPath = parentScope ? `${parentScope}::${leaf}` : leaf
+      return (written.includes("::")
+        ? written.replace(/^::/, "") === qualifiedPath
+        : parentScope === "" || parentScope === scopes.values().next().value) ? leaf : undefined
     }
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.nestedDeclaration) continue
@@ -1395,13 +1408,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!writtenBase || (ownerNamespaces?.size ?? 0) > 1) continue
       const leaf = this.leafName(writtenBase)
       const baseNamespaces = namespacesByLeaf.get(leaf)
-      const baseNamespace = baseNamespaces?.size === 1 ? baseNamespaces.values().next().value : undefined
-      const declaredPath = baseNamespace ? `${baseNamespace}::${leaf}` : leaf
       const qualified = writtenBase.includes("::")
       const candidate = writtenBase.replace(/^::/, "")
-      const ownerNamespace = ownerNamespaces?.values().next().value
-      const localBase = baseNamespace !== undefined && leaf !== s.ownerName &&
-        (qualified ? candidate === declaredPath : baseNamespace === "" || baseNamespace === ownerNamespace)
+      const localBase = localParent(s.ownerName, writtenBase) !== undefined
       // Self-collision guard (master-review 2026-09, RUBD14): a namespaced
       // reopen like `class Rake::TestCase < Test::Unit::TestCase` leaf-
       // collapses its superclass to `TestCase` — the class's OWN leaf after
@@ -1409,7 +1418,21 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // this is a resolution artifact, not a declared in-file base: route it
       // to the honest external first-parent guess instead of fabricating
       // VERIFIED self-overrides (rake helper.rb: 9 phantom 0.95 edges).
-      const inFileMethods = localBase ? methodsByOwner.get(leaf) ?? new Set<string>() : undefined
+      let declaringLocal = leaf
+      let inFileMethods = localBase
+        ? methodsByOwner.get(`${leaf}:${s.isStatic === true ? "singleton" : "instance"}`) ?? new Set<string>()
+        : undefined
+      if (localBase) {
+        const visited = new Set([s.ownerName, leaf])
+        while (!inFileMethods?.has(s.name)) {
+          const writtenParent = baseByClass.get(declaringLocal)
+          const parent = writtenParent ? localParent(declaringLocal, writtenParent) : undefined
+          if (!parent || visited.has(parent)) break
+          visited.add(parent)
+          declaringLocal = parent
+          inFileMethods = methodsByOwner.get(`${parent}:${s.isStatic === true ? "singleton" : "instance"}`) ?? new Set<string>()
+        }
+      }
       const companion = qualified || !baseNamespaces
         ? context?.overrideCompanion?.get(qualified ? candidate : leaf)
         : undefined
@@ -1417,19 +1440,18 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (baseMethods?.has(s.name)) {
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
-          target: `${localBase ? leaf : writtenBase}.${s.name}`,
+          target: `${localBase ? declaringLocal : writtenBase}.${s.name}`,
           type: ASTEngine.RelationshipType.Overrides,
           confidence: inFileMethods ? 0.95 : 0.65,
           // #825: a symbol-named edge carries the SYMBOL's own declaration line,
           // so the edge moves with its symbol.
           line_number: s.range?.startLine,
-          metadata: { isOverride: true, reasonCode: inFileMethods ? "in-file-verified" : "companion-index" },
+          metadata: { isOverride: true, dispatchKind: s.isStatic === true ? "singleton" : "instance", reasonCode: inFileMethods ? "in-file-verified" : "companion-index" },
         })
       } else if (!inFileMethods && !companion) {
         // Pass 3 (family parity with java/groovy resolveOverrides): the base
         // is not declared in this file and the companion index gave no
-        // opinion (it is never populated in production — see M37.10), so
-        // declaring-parent verification is impossible. Emit the deterministic
+        // opinion, so declaring-parent verification is impossible. Emit the deterministic
         // first-parent guess BELOW the patterns.ts threshold (0.7): visible
         // in raw output, never contaminating thresholded analysis, and
         // counted as heuristic (honest suspicion) by the differential. The
@@ -1451,7 +1473,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // (`script/m14/incoming-rule.ts:274`), so `causeOK` is 0 fleet-wide and the residual
             // reads as an unstated hole. The claim is the TRUE half of what this branch already
             // knows: the base is not declared in this file AND the companion index gave no opinion
-            // (it is never populated in production, M37.10), so the run could not look. It is a
+            // so the run could not verify that parent. It is a
             // claim about the RUN, not about the project, which is why the arbiter reads it only
             // where the target names nothing and why it can never raise `resolved`.
             //
@@ -3216,13 +3238,10 @@ private rubyNameFromLiteral(node: Node): string | undefined {
    *
    * Behind `BB_RUBY_INDEX_CONSUME=1` ONLY, and FAIL-CLOSED: no context, no index, or `index.complete`
    * not strictly true ⇒ touches nothing and the file's output is byte-identical to the pre-index run.
-   * What it does, in the pre-committed shape of the phase-1 sizing (4,611-row bound):
-   *   · overrides — VERIFY the first-parent guess: base type declared AND the base declares the member
-   *     (`typeKinds` + `typeMembers`, NOT counts) ⇒ `metadata.projectIndexVerified`/`ownerEvidence`,
-   *     confidence raised to structural; otherwise DECLINED with a reason (the 102 none-base rows stay
-   *     declared causes, they are not overwritten).
-   *   · instantiates/extends/mixes_in — a static constant path that the index declares gets
-   *     `metadata.projectIndexDeclared` (module existence is all mixes_in needs; typeBases is not read).
+   * The index stores written names and merges instance/singleton member names;
+   * it cannot establish lexical constant binding or override dispatch kind.
+   * Matches therefore carry `projectIndexNameCandidate`, never a structural
+   * verification claim. Qualified names require an exact index key.
    *   · calls — NOT TOUCHED. Name-only binding would bind decoys (the ruby D4 lesson); ruby has no
    *     static receiver typing, so the index may not manufacture a call binding.
    * Declined rows are COUNTED BY REASON in `metadata.projectIndex.declined`, never merged into a result.
@@ -3234,43 +3253,43 @@ private rubyNameFromLiteral(node: Node): string | undefined {
     if (process.env.BB_RUBY_INDEX_CONSUME !== "1") return undefined
     const index = (context as any)?.projectIndex as import("./project-index").ProjectIndex | undefined
     if (!index || index.complete !== true) return undefined
-    const leafOf = (name: string): string => {
-      const at = name.lastIndexOf("::")
-      return at >= 0 ? name.slice(at + 2) : name
-    }
-    const hasType = (name: string): boolean => index.typeKinds.has(name) || index.typeKinds.has(leafOf(name))
+    const indexKey = (name: string): string => name.replace(/^::/, "")
+    const hasType = (name: string): boolean => index.typeKinds.has(indexKey(name))
     const membersOf = (name: string): Set<string> | undefined =>
-      index.typeMembers.get(name) ?? index.typeMembers.get(leafOf(name))
-    let verifiedOverrides = 0
-    let declaredTargets = 0
+      index.typeMembers.get(indexKey(name))
+    let candidateOverrides = 0
+    let candidateTargets = 0
     const declined: Record<string, number> = {}
     const decline = (reason: string): void => { declined[reason] = (declined[reason] ?? 0) + 1 }
     for (const r of relationships) {
       const type = String(r.type ?? "")
       const md: any = (r.metadata ??= {})
       if (type === "overrides") {
+        if (md.reasonCode === "in-file-verified") continue
         const target = String(r.target ?? "")
         const dot = target.lastIndexOf(".")
         if (dot <= 0) { decline("overrideTargetUnnameable"); continue }
         const base = target.slice(0, dot)
         const method = target.slice(dot + 1)
-        if (!hasType(base)) { decline("baseNotDeclared"); continue }
+        if (!hasType(base)) { decline("baseNotInNameIndex"); continue }
         const members = membersOf(base)
         if (!members || !members.has(method)) { decline("memberNotOnBase"); continue }
-        md.projectIndexVerified = true
-        md.ownerEvidence = "projectIndex"
-        r.confidence = Math.max(r.confidence ?? 0, 0.95)
-        verifiedOverrides++
+        md.projectIndexNameCandidate = true
+        md.ownerEvidence = "project-index-name-only"
+        r.confidence = 0.65
+        candidateOverrides++
       } else if (type === "instantiates" || type === "extends" || type === "mixes_in") {
-        if (!hasType(String(r.target ?? ""))) { decline(`${type}:typeNotDeclared`); continue }
-        md.projectIndexDeclared = true
-        declaredTargets++
+        if (!hasType(String(r.target ?? ""))) { decline(`${type}:typeNotInNameIndex`); continue }
+        md.projectIndexNameCandidate = true
+        candidateTargets++
       }
     }
     return {
       complete: true,
-      verifiedOverrides,
-      declaredTargets,
+      verifiedOverrides: 0,
+      declaredTargets: 0,
+      candidateOverrides,
+      candidateTargets,
       callsUntouched: true,
       declined,
     }

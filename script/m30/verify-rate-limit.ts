@@ -184,6 +184,13 @@ async function withMockServer<T>(mode: "storm" | "blip" | "ok", fn: (base: strin
 
 // Fixture: drives embedMany through failure schedules and reports the model
 // label + vector dimension at each step (API model 4-dim vs local vectors).
+const BACKOFF_FIXTURE = `
+import { SemanticEngine } from __ENGINE__
+const steps = [1, 2, 3, 5].map((attempt) => SemanticEngine.embeddingBackoffForAttempt(attempt))
+const withRetryAfter = SemanticEngine.embeddingBackoffForAttempt(4, 2)
+console.log("JSON:" + JSON.stringify({ steps, withRetryAfter }))
+`
+
 const FIXTURE = `
 import { SemanticEngine } from __ENGINE__
 const out = (v: unknown) => console.log("JSON:" + JSON.stringify(v))
@@ -256,6 +263,24 @@ console.log(`  component: ${path.relative(ROOT, COMPONENT)}`)
   const j = Object.fromEntries(fixtureJSON(fixture!).map((o) => [o.step, o]))
   check("Q1: healthy first batch uses the API", j.b1?.model === "mock-embed-4d" && j.b1?.dim === 4, JSON.stringify(j.b1))
   check("Q1: healthy second batch stays on the API", j.b2?.model === "mock-embed-4d", JSON.stringify(j.b2))
+
+  // Growing backoff: without Retry-After the wait doubles per consecutive 429
+  // (5s, 10s, 20s) up to the declared 30s cap; a provider Retry-After is honoured
+  // exactly, regardless of the attempt count. The jitter is bounded at 500ms.
+  const backoffRes = await runFixture(BACKOFF_FIXTURE, {}, COMPONENT)
+  const backoff = fixtureJSON(backoffRes)[0] as { steps: number[]; withRetryAfter: number } | undefined
+  const within = (value: number | undefined, low: number, high: number): boolean =>
+    typeof value === "number" && value >= low && value <= high
+  check("Q1: first 429 waits ~5s", within(backoff?.steps?.[0], 5_000, 5_500), JSON.stringify(backoff?.steps))
+  check("Q1: second 429 waits ~10s", within(backoff?.steps?.[1], 10_000, 10_500), JSON.stringify(backoff?.steps))
+  check("Q1: third 429 waits ~20s", within(backoff?.steps?.[2], 20_000, 20_500), JSON.stringify(backoff?.steps))
+  check("Q1: growth is capped at 30s", within(backoff?.steps?.[3], 30_000, 30_500), JSON.stringify(backoff?.steps))
+  check(
+    "Q1: backoff grows monotonically",
+    (backoff?.steps?.[0] ?? 0) < (backoff?.steps?.[1] ?? 0) && (backoff?.steps?.[1] ?? 0) < (backoff?.steps?.[2] ?? 0),
+    JSON.stringify(backoff?.steps),
+  )
+  check("Q1: provider Retry-After is honoured exactly", within(backoff?.withRetryAfter, 2_000, 2_500), String(backoff?.withRetryAfter))
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +318,7 @@ const mutants: Mutant[] = [
   {
     name: "Retry-After ignored (fixed long backoff delays recovery)",
     mutate: (src) => src.replace(
-      "const base = retryAfterSec && retryAfterSec > 0 ? retryAfterSec * 1000 : 5_000",
+      "const base = retryAfterMs > 0 ? retryAfterMs : API_BACKOFF_BASE_MS",
       "const base = 30_000",
     ),
     // A 30s fixed backoff is still active after 2.2s -> batch 3 stays local.

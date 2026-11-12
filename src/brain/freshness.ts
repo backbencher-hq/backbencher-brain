@@ -470,7 +470,7 @@ export function resolveRowsFreshness(
 // ══ M35.E1 (#581): staleness envelope + machine-stable remediation ══════════
 // Single source of truth for the wire block every read tool attaches.
 // remediation strings name the REAL reindex interfaces:
-//   CLI:      bb index --changed | bb index "<file>"
+//   CLI:      bb index --changed | bb index --file "<file>"
 //   MCP tool: bb_index { path } (file path reindexes that file; a dir runs
 //             incremental changed-only indexing)
 export const FRESHNESS_REMEDIATION = {
@@ -478,9 +478,9 @@ export const FRESHNESS_REMEDIATION = {
   // answering and declare it; the strings name that automatic behavior and
   // keep the manual interface for opt-out/over-budget cases. Substring
   // contract (asserted by the M35 envelope gate): dir names "bb index
-  // --changed" and "bb_index"; file matches /bb index "/ and names bb_index.
+  // --changed" and "bb_index"; file matches /bb index --file "/ and names bb_index.
   dir: 'reads auto-refresh stale files within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)',
-  file: 'reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)',
+  file: 'reads auto-refresh this file within budget when enabled — disable with BB_NO_AUTO_REFRESH=1 or refresh=false; manual repair: run: bb index --file "<file>" (or the bb_index tool with that file path)',
 } as const
 
 /**
@@ -503,11 +503,11 @@ export const FRESHNESS_REMEDIATION = {
  *
  *  These strings keep the manual interface verbatim — the part that is true for EVERY read
  *  path, and the part the M35 envelope gate asserts by substring (`bb index --changed`,
- *  `bb_index`, and `bb index "<file>"` for file scope) — and drop only the claim that does
+ *  `bb_index`, and `bb index --file "<file>"` for file scope) — and drop only the claim that does
  *  not hold. */
 export const FRESHNESS_REMEDIATION_MANUAL_ONLY = {
   dir: 'this read does NOT auto-refresh — the rows describe the index as it stands; manual repair: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only)',
-  file: 'this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index "<file>" (or the bb_index tool with that file path)',
+  file: 'this read does NOT auto-refresh this file — the rows describe the index as it stands; manual repair: run: bb index --file "<file>" (or the bb_index tool with that file path)',
 } as const
 
 export function buildStalenessEnvelope(

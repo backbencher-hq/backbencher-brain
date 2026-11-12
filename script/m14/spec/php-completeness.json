@@ -68,7 +68,8 @@
       "dynamic_variable_name",
       "subscript_expression",
       "variadic_placeholder",
-      "ERROR"
+      "ERROR",
+      "relative_name"
     ]
   },
   "internal_silent": {
@@ -142,7 +143,6 @@
       "readonly_modifier",
       "reference_assignment_expression",
       "reference_modifier",
-      "relative_name",
       "return_statement",
       "sentinel_error",
       "sequence_expression",
@@ -250,7 +250,7 @@
         "node_type": "function_call_expression",
         "status": "RULED",
         "question": "PHP global function calls flood the graph with stdlib edges — filter or keep?",
-        "resolution": "PHP_BUILTINS (exported set, ~200 stdlib globals: string/array/type/math/fs/control/preg families) are filtered from call relationships. Method calls (member/scoped/nullsafe) are NEVER filtered — they are user code. The differential oracle imports the analyzer's EXACT set (single source of truth, no hand-duplicated copy)."
+        "resolution": "Only a single canonical global builtin candidate is filtered. Qualified user functions with builtin leaves and namespaced unqualified names remain, with ordered namespace/global lookup candidates. Method calls are never builtin-filtered. Independent namespace/import derivation and native PHP fixtures check the function namespace rules."
       },
       {
         "id": "PHPD3",
@@ -305,8 +305,8 @@
       {
         "id": "PHPD7",
         "status": "RULED",
-        "question": "M37.13: the analyzer's processFunctionCall returns EARLY for the WordPress hook registrars add_action/add_filter (framework detection only, never a calls edge — they register callbacks, they don't call user code). The differential oracle imported the analyzer's PHP_BUILTINS but NOT this hook exclusion, so it fabricated calls:add_action/add_filter truth on every procedural WP-style file.",
-        "resolution": "Ruling (M37.13): WP hook registration is framework ceremony — excluded from call edges on BOTH sides (single exclusion mirrored in derivePhpEdges, never a hand-duplicated copy). Add_action/add_filter still trigger WordPress framework detection. Pinned by fixtures/php/procedural-enum forbidRelationships (calls->add_action/add_filter) + mutant php/emit-wp-hook-calls.",
+        "question": "Should WordPress registrar calls be suppressed because they register callbacks?",
+        "resolution": "Current ruling: registration invokes the named registrar, so add_action/add_filter emit calls while retaining framework detection. This does not assert invocation of the callback argument. procedural-enum expects registrar calls; php/drop-wp-registrar-calls checks omission.",
         "nodeTypeProse": [
           "add_filter)",
           "function_call_expression (add_action"
@@ -339,7 +339,7 @@
         "node_type": "base_clause",
         "status": "FIXED",
         "question": "M37.13: a class may inherit from a DIFFERENT class that shares its leaf name in another namespace — phpmyadmin Setup\\FeaturesForm extends User\\FeaturesForm, phpunit interface Exception extends \\PHPUnit\\Exception, class InvalidArgumentException extends \\InvalidArgumentException (the SPL builtin). Everything was leaf-collapsed, so the subclass's own name matched the base leaf: fabricated extends Self edges (12 in phpunit, 11 in phpmyadmin), VERIFIED @0.95 self-overrides (16 phpmyadmin, 2 phpunit — the in-file/companion override check matched the class's OWN methods), and `new parent()` -> self. Why did the F5 differential stay green? Both the analyzer AND the oracle leaf-collapsed identically — extends truth fabricated on both sides colluded.",
-        "resolution": "Fix (M37.13): heritage-target resolution (heritageTarget). A QUALIFIED base/interface whose leaf equals the declaring class's name keeps its qualification (leading backslash stripped): extends FeaturesForm -> Forms\\User\\FeaturesForm, and override resolution then runs against the external same-leaf base (M37.10 first-parent guess @0.5/inferred — never verified, never self). A qualified base that qualification CANNOT disambiguate — global single-segment like \\InvalidArgumentException — is unresolvable in the leaf graph: NO extends edge and no baseByClass entry (self-loop is always fabrication; family 'wrong edge worse than no edge' precedent, same as unresolvable new parent()). Analyzer metadata.baseClass/extends/implements/enum-implements and oracle derivePhpEdges + deriveTreeEdges heritage all mirror the same helper. Corpus result: self-extends 12->0 (phpunit), 11->0 (phpmyadmin); self-overrides 16->0 / 2->0; differential parity held at 100%/0/0 on both corpora.",
+        "resolution": "Resolve class identity through the enclosing namespace and class import aliases. Display leaves may coincide for distinct declarations: a namespaced Exception extending \\Exception has a real global parent. Preserve canonical targetIdentity on heritage, composition, construction and declared-type references; the store resolves exact identities and rejects ambiguous or kind-incompatible targets. Native and worker checks: validation/m14/verify-php-type-identities.mts.",
         "nodeTypeProse": [
           "class_interface_clause with same-leaf fully-qualified base (namespace collision)"
         ],
@@ -556,10 +556,10 @@
       },
       {
         "id": "PHPD34",
-        "node_type": "colon_block, disjunctive_normal_form_type, dynamic_variable_name, empty_statement, function_static_declaration, global_declaration, goto_statement, named_label_statement, namespace_use_group, operation, php_end_tag, relative_name, sentinel_error, shell_command_expression, static_variable_declaration, text_interpolation, use_as_clause, use_instead_of_clause, use_list, var_modifier",
+        "node_type": "colon_block, disjunctive_normal_form_type, dynamic_variable_name, empty_statement, function_static_declaration, global_declaration, goto_statement, named_label_statement, namespace_use_group, operation, php_end_tag, sentinel_error, shell_command_expression, static_variable_declaration, text_interpolation, use_as_clause, use_instead_of_clause, use_list, var_modifier",
         "status": "RULED",
         "question": "The construct census (script/m12/php-construct-census.ts) walked all 4,463 corpus files and found 20 of the grammar's 179 named node types that occur ZERO times in phpunit AND phpmyadmin. Are these unhandled work, or constructs no corpus can exercise?",
-        "resolution": "RULED: all 20 were probed by hand against the analyzer, and every one is correct or correctly inert. This closes the last CLAIMED-BUT-NEVER-EXERCISED type, taking that set to EMPTY. Evidence per group: (a) namespace_use_group — grouped `use C\\{D, E as F};` emitted NOTHING; FIXED under M12.PHP-GROUPED-USE and pinned by the php/grouped-use fixture. (b) dynamic_variable_name (`$$n`, `${expr}`) — parses clean and emits the correct read of the inner variable name (`uses m -> n`), since the NAME is what is read; the dynamic target is not resolvable from one file and correctly yields no edge. (c) global_declaration — `global $registry, $other;` emits no symbol (the doc already rules globals are never symbols) AND subsequent reads bind correctly (`uses m -> registry`, `uses m -> other`). (d) static_variable_declaration — `static $hits = 0;` binds and its later reads emit `uses`. (e) function_static_declaration — `static function(){}` and `static fn()=>` parse clean. (f) colon_block — the alternative `if: … elseif: … else: … endif;` syntax parses clean and its body statements are read normally. (g) use_instead_of_clause / use_as_clause / use_list — trait adaptation and multi-trait `use` both keep every trait `use` edge, consistent with the model where a trait's methods belong to the trait and are not re-declared on the composing class. (h) var_modifier (`var $legacy = 1;`) — the ONE construct that FAILS to parse, and that is CORRECT: `var` was removed in PHP 7.0, so the pinned 0.24.2 grammar does not accept it, and reporting a parse error for removed dead syntax is the honest outcome. It is absent from both corpora because no modern PHP code contains it. (i) text_interpolation — ruled separately in PHPD31. (j) empty_statement, php_end_tag, goto_statement, named_label_statement, sentinel_error, operation, shell_command_expression, relative_name, disjunctive_normal_form_type — no PHP DECLARATION, so no symbol and no relationship is the correct output; a DNF type or a `goto` label is not a graph node this analyzer claims to model."
+        "resolution": "Current revision: relative_name moved to handled_verified after native namespace-relative construction/type checks; it is no longer part of this silent ruling. Historical measurement follows. RULED: all 20 were probed by hand against the analyzer, and every one is correct or correctly inert. This closes the last CLAIMED-BUT-NEVER-EXERCISED type, taking that set to EMPTY. Evidence per group: (a) namespace_use_group — grouped `use C\\{D, E as F};` emitted NOTHING; FIXED under M12.PHP-GROUPED-USE and pinned by the php/grouped-use fixture. (b) dynamic_variable_name (`$$n`, `${expr}`) — parses clean and emits the correct read of the inner variable name (`uses m -> n`), since the NAME is what is read; the dynamic target is not resolvable from one file and correctly yields no edge. (c) global_declaration — `global $registry, $other;` emits no symbol (the doc already rules globals are never symbols) AND subsequent reads bind correctly (`uses m -> registry`, `uses m -> other`). (d) static_variable_declaration — `static $hits = 0;` binds and its later reads emit `uses`. (e) function_static_declaration — `static function(){}` and `static fn()=>` parse clean. (f) colon_block — the alternative `if: … elseif: … else: … endif;` syntax parses clean and its body statements are read normally. (g) use_instead_of_clause / use_as_clause / use_list — trait adaptation and multi-trait `use` both keep every trait `use` edge, consistent with the model where a trait's methods belong to the trait and are not re-declared on the composing class. (h) var_modifier (`var $legacy = 1;`) — the ONE construct that FAILS to parse, and that is CORRECT: `var` was removed in PHP 7.0, so the pinned 0.24.2 grammar does not accept it, and reporting a parse error for removed dead syntax is the honest outcome. It is absent from both corpora because no modern PHP code contains it. (i) text_interpolation — ruled separately in PHPD31. (j) empty_statement, php_end_tag, goto_statement, named_label_statement, sentinel_error, operation, shell_command_expression, relative_name, disjunctive_normal_form_type — no PHP DECLARATION, so no symbol and no relationship is the correct output; a DNF type or a `goto` label is not a graph node this analyzer claims to model."
       },
       {
         "id": "PHPD35",
@@ -626,7 +626,7 @@
         "node_type": "",
         "status": "RULED",
         "question": "M14 laptop-B round 2: the unresolved column reads 2,395 at the 60-file sample scope and 14,878 at whole-project scope. How much of the sample figure is key-space BUDGET rather than defect, and what is left at project scope once the budget is removed?",
-        "resolution": "BOTH SCOPES BESIDE EACH OTHER, each self-checked against the gate, because one number alone misleads in both directions. SAMPLE SCOPE (`php php 60`, 3,257 edges): 2,395 unresolved after claims (73.5% of edges), 2,483 with claims ignored, and of those 2,483 a measured 1,325 (53.4%) are KEY-SPACE BUDGET — they name declarations that ARE in the corpus, and are unresolved only because a 60-file stride over 5,094 does not contain the declaring file. PROJECT SCOPE (`php php 0 --repo=phpunit`, 133,468 edges): 14,878 unresolved after claims (11.1% of edges) plus 4,437 external-verified, and 19,315 with claims ignored. The budget share at project scope is ZERO BY CONSTRUCTION (the whole project is in the key space), and the raw 19,315 splits into exactly four measured buckets with no defect in it: 172 path-shaped targets (a FILE reference — `require_once 'A.php'` — never a defect), 0 declared in this project (this is where a resolution defect would appear; a 2-row version of it was the PROBE's flaw, corrected and recorded in the doc), 2,138 declared in another admitted repo (external to this project, inside the corpus), and 17,005 declared nowhere in the corpus, of which 4,241 carry a php-src name over 346 names. READ TOGETHER: the sample inflates the unresolved RATE by 6.6x (73.5% of edges at 60 files against 11.1% at whole-project scope) and 53.4% of its raw column is pure key-space budget, which is why the lane reports both scopes and never the sample alone. The remaining project-scope residue is 2,138 + 17,005 edges that name something the project does not declare; the analyzer can prove externality for the 4,241 php-src-named ones (it carries the table) and CANNOT for the rest (one file cannot know whether a name is declared by a sibling file), so they stay unmarked and reported rather than guessed at.",
+        "resolution": "Suppress heritage only when the resolved canonical target identity equals the declaration identity. Bare self-reference, fully qualified self-reference, and an alias to self are suppressed. A leading backslash may name a different global type and is not itself evidence of self-inheritance. Corrected against PHP 8.3.6 reflection and execution; three historical same-leaf fixture expectations were corrected with that evidence.",
         "evidence": "npx tsx validation/m14/fixtures/php/project-scope-census.mts phpunit 60 — scope A: claims applied 639 resolved / 54 ambDeclOnly / 81 ambBoth / 2395 unresolved / 88 externalVerified (MATCH vs `php php 60`), claims ignored 2483 unresolved; scope B: 33427 resolved / 27154 ambDeclOnly / 53572 ambBoth / 14878 unresolved / 4437 externalVerified (MATCH vs `php php 0 --repo=phpunit`), claims ignored 19315 unresolved split 172 path-shaped / 0 in-project / 2138 in-another-repo / 17005 nowhere (4241 php-src over 346 names); degraded 0"
       }
     ]
@@ -653,10 +653,22 @@
   "coverage": {
     "_implemented_measured": {
       "_unit": "THE WHOLE ADMITTED POPULATION, MEASURED 2026-10-23 BY THE LANE ARM — 6,424 admitted of 6,780 tracked paths (.php 5,114 + .phpt 1,310; 356 tracked-but-absent named; reference validation/m14/measurements/php-population.json). The per-type edges/files below are the arm's own TABLE 1, transcribed by the declaration generator (parsed 6424 of 6424, 0 failed; validation/m14/measurements/php-emission-census.json). ⇒ THESE SUPERSEDE the 2026-10-09 rows (exports 58/18, overrides 1,235/755), which were measured over 5,094 .php files BEFORE .phpt was admitted: a count over 5,094 is not a smaller number than a count over 6,424, it is a DIFFERENT POPULATION.",
-      "exports": { "edges": 59, "files": 19 },
-      "overrides": { "edges": 37, "files": 30 },
-      "mixes_in": { "edges": 320, "files": 107 },
-      "part_of": { "edges": 1494, "files": 1324 }
+      "exports": {
+        "edges": 59,
+        "files": 19
+      },
+      "overrides": {
+        "edges": 37,
+        "files": 30
+      },
+      "mixes_in": {
+        "edges": 320,
+        "files": 107
+      },
+      "part_of": {
+        "edges": 1494,
+        "files": 1324
+      }
     },
     "_gaps_note": "`exports` FIRES, AND THE `\\define()` SHAPE THIS NOTE CALLED A GAP IS MEASURED CLOSED AT HEAD — CORRECTED 2026-10-23 BY MEASUREMENT, NOT INHERITED. The note used to say the ABSOLUTE-FQ spelling `\\define(...)` was refused and that `php/define-exports` FAILED (re-measured 2026-10-15 on HEAD 65b05404b: `bun run script/m14/run-fixtures.ts --lang php` -> 31 pass / 1 fail). MEASURED NOW, HEAD 2026-10-23: `bun run script/m14/run-fixtures.ts --lang php` -> 33 pass / 0 fail, 'fixture baseline gate: no regressions', and `php/define-exports` PASSES — the absolute-FQ shape IS accepted (AUTO_PREPEND_STYLE exported with `meta.calleeShape: absolute-fq` at file level). The 2026-10-15 failure was the MERGE LOSS the fixture's own source comment records (`b8bb87d8d` took an OLDER revision of the fixture while keeping the newer expectation, so the expectation pinned a name no line wrote) and the block was RESTORED 2026-10-16; the spec kept the pre-restore sentence. This is the fleet's 'a claim that outlives its defect' form, and it is worse in a spec because a spec is where the gate reads: it is corrected here rather than inherited. The one named under-emission that DID exist is gone with the restore.",
     "_extended_census": "THE FOUR EXTENDED VALUES, MEASURED AND DECIDED (2026-10-23). `mixes_in` is IMPLEMENTED at R3 with NO grammar change — a 1:1 relabel of the trait-composition rows: 320 rows over 107 files in 4 repositories; the arm resolves 297, leaves 1 ambiguous and 22 unresolved, the 22 being TRAIT NAMES DECLARED NOWHERE IN THE CORPUS (19 the single external trait ArraySubsetAsserts, plus CoveredTrait, ProphecyTrait, T, U) — the vendor boundary this lane's other types live on. `part_of` is IMPLEMENTED at R3 with NO grammar change — a 1:1 relabel of include/require: 1,494 rows over 1,324 files, MEASURED four-way split require 820 · require_once 662 · include 9 · include_once 3; the arm resolves 4, CONFIRMS 1,422 projectFile claims and leaves 68 unresolved whose path the claim cannot place (all four are classes in the declaration's closure and in the cause rulings). Both carry fixtures/expectations/result-level mutants (fixture suite 33 pass / 0 fail; the lane's mutant battery 27 of 27 caught) and the shared oracle patch is a Lead-owned proposal at validation/m14/proposals/php-oracle-patch-mixes-part-of.md. `decorates` is RULED ONTOLOGICAL: the served grammar HAS the construct — 3 of 177 named types are the attribute family and 0 of 177 are a decorator-application family (digest d4df6a6ff08c) — and R3 is technically available but NOT TAKEN because an attribute is PASSIVE METADATA where a decorator is an APPLIED CALLABLE (the csharp ontological precedent). THE DECISIVE COUNTER WAS PRE-REGISTERED BEFORE THE CENSUS AND MEASURED: an attribute whose ARGUMENT is call-shaped = 0 of 6,507 attributes over 1,799 files; the nearest miss is 12 attributes whose argument is a CLOSURE (a callable VALUE, not an application), and the FIRST implementation of the counter over-reached to 1 by counting a call INSIDE a closure body — disclosed and corrected in the artifact rather than quietly re-tuned. `renders` is RULED GRAMMAR-ABSENCE: 0 of 177 named types are a component/element/render family; R2 would have NOTHING TO LEX because the language has no component syntax (the EMPTY form, not the difficulty form); and the near-miss constructs are MEASURED — inline HTML text 1,407 sites and text_interpolation 85 sites over 1,327 files, and the only *element* names in the stem census are array_element_initializer 86,542 / property_element 4,651 / const_element 483, all elemental/member semantics. Artefacts: validation/m14/measurements/php-grammar-nodes.json · validation/m14/measurements/php-emission-census.json · validation/m14/measurements/php-attribute-census.json · validation/m14/verification/PHP-EXTENDED-ADJUDICATION-2026-10-23.md",
@@ -687,7 +699,8 @@
       }
     ],
     "corpusUnexercised": [],
-    "_from": "PHPD40: 'TEN of ten types fire … NUMERATORS (whole phpunit corpus, 3,231 .php files): `exports:3` and `overrides:1`' — the two types the 120-file firing log reads SILENT are a corpus-density artefact, measured on the whole corpus."
+    "_from": "PHPD40: 'TEN of ten types fire … NUMERATORS (whole phpunit corpus, 3,231 .php files): `exports:3` and `overrides:1`' — the two types the 120-file firing log reads SILENT are a corpus-density artefact, measured on the whole corpus.",
+    "_canonical_binding_scope": "Targeted namespace, alias, global/same-leaf, declared-type, late-static and worker/incremental checks: verify-php-type-identities.mts. Project override candidates are exact declaration-hierarchy matches at inferred 0.85; PHP signature compatibility remains unchecked. Historical corpus counts below retain their original dated populations."
   },
   "_unionConflicts": {
     "count": 2,

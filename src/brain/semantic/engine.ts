@@ -7,6 +7,7 @@ import { Config } from "../../config/config"
 import { Provider } from "../../provider/provider"
 import { initLocalModel, embedLocal, projectVocabulary } from "./local-embed"
 import { isEmbeddingConfigured, getEmbeddingConfig, embedOpenAICompatible } from "./openai-embed"
+import { readRuntimeOptions } from "./embedding-config"
 
 
 const log = Log.create({ service: "brain-semantic-engine" })
@@ -27,6 +28,8 @@ function loadConfigWorkerFallback(): Record<string, unknown> {
 export namespace SemanticEngine {
   // Cache embedding availability so we only check once per process
   let _embeddingAvailable: boolean | null = null
+  /** Last provider failure message, for callers that need to report WHY a batch failed. */
+  let _lastEmbeddingError: string | null = null
   let _checked = false
   let _localAvailable: boolean | null = null
   // Canonical label for offline word-vector embeddings. Distinct from any API
@@ -48,7 +51,26 @@ export namespace SemanticEngine {
   let _lastModel: string | null = null
   export const LOCAL_MODEL_LABEL = "local-word-vectors-v3"
 
+  /**
+   * Asymmetric embedding models need different `input_type` on the two sides.
+   * NVIDIA NIM's Nemotron 3.5 embedding family is asymmetric and returns 400
+   * without it; other OpenAI-compatible endpoints we support do not take the field,
+   * so it is sent only for NIM's asymmetric set (and only to NIM's own endpoint).
+   */
+  export function embeddingInputType(
+    cfg: { baseURL: string; model: string },
+    kind: "query" | "passage",
+  ): "query" | "passage" | undefined {
+    if (!/integrate\.api\.nvidia\.com/i.test(cfg.baseURL)) return undefined
+    if (/nemotron-3\.5-embed|llama-nemotron-embed|embed-qa|nv-embedqa/i.test(cfg.model)) return kind
+    return undefined
+  }
+
   /** Model name that produced the most recent embedding (API model or local). */
+  export function lastEmbeddingError(): string | null {
+    return _lastEmbeddingError
+  }
+
   export function getLastEmbeddingModel(): string {
     return _lastModel || LOCAL_MODEL_LABEL
   }
@@ -216,7 +238,9 @@ export namespace SemanticEngine {
             _lastModel = cfg.model
             return cached
           }
-          const res = await embedOpenAICompatible([text], cfg)
+          const res = await embedOpenAICompatible([text], cfg, undefined, {
+            inputType: embeddingInputType(cfg, "query"),
+          })
           if (res.length > 0) {
             _embeddingAvailable = true
             _checked = true
@@ -289,16 +313,53 @@ export namespace SemanticEngine {
   // API. On 429 we back off until the Retry-After window (bounded, with
   // jitter) instead of permanently degrading the run.
   let _apiRetryAt = 0 // epoch ms; API attempts are skipped until this time
-  export const API_BACKOFF_CAP_MS = 30_000 // declared cap for Retry-After
+  let _apiRetryAttempt = 0 // consecutive 429s; reset by a successful batch
+  let _apiRetryDelayMs = 0 // the last backoff window (before jitter)
+  export const API_BACKOFF_CAP_MS = 30_000 // declared cap for Retry-After AND growth
   export const API_BACKOFF_JITTER_MS = 500 // bounded jitter
+  export const API_BACKOFF_BASE_MS = 5_000 // attempt 1 without Retry-After
 
-  function backoffMs(retryAfterSec?: number): number {
-    const base = retryAfterSec && retryAfterSec > 0 ? retryAfterSec * 1000 : 5_000
-    const capped = Math.min(base, API_BACKOFF_CAP_MS)
+  /**
+   * Backoff for one 429. A provider-supplied Retry-After is honoured exactly (the
+   * provider knows when its window closes). Without one, the wait GROWS per
+   * consecutive 429 — 5s, 10s, 20s, then the 30s cap — so a free-tier window has
+   * time to reopen instead of being hammered at a fixed cadence.
+   */
+  export function embeddingBackoffForAttempt(attempt: number, retryAfterSec?: number): number {
+    const retryAfterMs = retryAfterSec && retryAfterSec > 0 ? retryAfterSec * 1000 : 0
+    const base = retryAfterMs > 0 ? retryAfterMs : API_BACKOFF_BASE_MS
+    const grown = retryAfterMs > 0 ? base : Math.min(base * 2 ** Math.max(0, Math.max(1, attempt) - 1), API_BACKOFF_CAP_MS)
+    const capped = Math.min(grown, API_BACKOFF_CAP_MS)
     return capped + Math.floor(Math.random() * API_BACKOFF_JITTER_MS)
   }
 
-  export async function embedMany(texts: string[], projectId?: string): Promise<number[][]> {
+  export interface EmbeddingApiStatus {
+    /** True while a 429 window is still closed. */
+    rateLimited: boolean
+    retryAt: number
+    retryInMs: number
+    /** Consecutive 429 count; 0 means the last attempt succeeded. */
+    attempt: number
+    delayMs: number
+  }
+
+  export function embeddingApiStatus(): EmbeddingApiStatus {
+    const now = Date.now()
+    const retryAt = _apiRetryAt
+    return {
+      rateLimited: retryAt > now,
+      retryAt,
+      retryInMs: retryAt > now ? retryAt - now : 0,
+      attempt: _apiRetryAttempt,
+      delayMs: _apiRetryDelayMs,
+    }
+  }
+
+  export async function embedMany(
+    texts: string[],
+    projectId?: string,
+    opts: { allowLocalFallback?: boolean; timeoutMs?: number } = {},
+  ): Promise<number[][]> {
     if (_checked && !_embeddingAvailable) return []
     if (!texts || texts.length === 0) return []
 
@@ -309,25 +370,51 @@ export namespace SemanticEngine {
       try {
         const cfg = await getEmbeddingConfig()
         if (cfg) {
-          const embeddings = await embedOpenAICompatible(texts, cfg)
+          const embeddings = await embedOpenAICompatible(
+            texts,
+            cfg,
+            opts.timeoutMs !== undefined
+              ? { ...readRuntimeOptions(), timeoutMs: opts.timeoutMs }
+              : undefined,
+            { inputType: embeddingInputType(cfg, "passage") },
+          )
           if (embeddings.length > 0) {
             _apiRetryAt = 0
+            _apiRetryAttempt = 0
+            _apiRetryDelayMs = 0
             _embeddingAvailable = true
             _checked = true
+            _lastEmbeddingError = null
             _lastModel = cfg.model
             return embeddings
           }
         }
       } catch (e: any) {
+        _lastEmbeddingError = e?.message ? String(e.message) : String(e)
         // Per-batch fallback: this batch degrades, the run does not.
         if (e?.name === "EmbeddingApiError" && e?.status === 429) {
-          _apiRetryAt = Date.now() + backoffMs(e?.retryAfterSec)
-          log.debug("API 429 — backing off before next attempt", { retryAfterSec: e?.retryAfterSec })
+          _apiRetryAttempt += 1
+          _apiRetryDelayMs = embeddingBackoffForAttempt(_apiRetryAttempt, e?.retryAfterSec)
+          _apiRetryAt = Date.now() + _apiRetryDelayMs
+          // Visible, not debug: a rate-limited provider slows the run, and the user
+          // must be told why instead of concluding the indexer is weak. The message
+          // names the retry number and the growing wait window.
+          log.warn(
+            `embedding provider rate-limited — retry ${_apiRetryAttempt} in ${Math.max(1, Math.round(_apiRetryDelayMs / 1000))}s (backoff ${(Math.round(_apiRetryDelayMs / 100) / 10).toFixed(1)}s)`,
+            { attempt: _apiRetryAttempt, delayMs: _apiRetryDelayMs, retryAfterSec: e?.retryAfterSec },
+          )
         } else {
           log.debug("API embedding failed for this batch; next batch retries", { error: e?.message?.slice(0, 60) })
         }
       }
     }
+
+    // A caller repairing an existing index must not replace a good provider vector
+    // with a local fallback just because the provider was rate-limited: the local
+    // vector is a DIFFERENT space, so writing it under the old row would lose the
+    // old model's vector and still not produce the new one. Such callers pass
+    // allowLocalFallback:false and keep the old row until the provider succeeds.
+    if (opts.allowLocalFallback === false) return []
 
     // Layer 2: Word vectors (always available, offline)
     try {

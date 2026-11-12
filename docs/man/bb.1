@@ -165,10 +165,14 @@ then the project file
 .BR bb.json .
 The config file holds an API key, so it is written with permissions 0600; if
 it is ever more open, `bb doctor` warns and `bb doctor --fix` repairs the
-permissions. Free-tier providers are offered in the wizard (OpenRouter,
-NVIDIA NIM), and any OpenAI-compatible /embeddings endpoint can be used as a
-custom provider. After adding or changing a model, refresh stored vectors
-with `bb index --force`.
+permissions. The wizard is key-first: it detects the provider from the API key,
+lists the embedding models that key can use, accepts a manually typed model id,
+and validates the selection before saving. NVIDIA NIM is the built-in free,
+rate-limited provider; OpenRouter currently lists no embedding models, so it is
+reachable through the custom base-URL path. `bb setup reset` removes the saved
+embedding settings without touching the index. A changed model is reconciled on
+the next `bb index` by re-embedding stored symbols in place; `bb index --force`
+is the full parse rebuild.
 .SH EXIT STATUS
 .TP
 .B 0

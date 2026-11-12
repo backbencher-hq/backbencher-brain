@@ -2266,7 +2266,7 @@ function extractFrameworkPatterns(symbols: ASTEngine.UniversalSymbol[], content:
 /** The syntax-stated receiver facts one file yields, in one walk. `typeMembers` is
  *  typeName -> memberName -> the member's own declared type, so `cfg.worker.run()` can be
  *  typed one hop beyond the root's annotation. */
-type ReceiverTypeHint = { type: string; evidence: string }
+type ReceiverTypeHint = { type: string; evidence: string; availableFrom?: number }
 type ReceiverFacts = {
   /**
    * THE RECEIVER'S LOCAL TYPES, **SCOPED**.
@@ -2293,6 +2293,7 @@ type ReceiverFacts = {
   localsByScope: Map<number, Map<string, ReceiverTypeHint | null>>
   /** THE SCOPE TREE — scope id -> the id of the scope that encloses it (0 = the module scope). */
   scopeParent: Map<number, number>
+  /** Class declaration offset + instance/static side + field name. */
   classFields: Map<string, ReceiverTypeHint>
   typeMembers: Map<string, Map<string, string>>
   /** D7 RECEIVER-TYPING CLASSES (each is syntax-proven, unit-pinned, and counted in the gate's
@@ -2300,13 +2301,13 @@ type ReceiverFacts = {
   /** C2 DESTRUCTURED ELEMENT TYPES — `const { worker } = cfg` where `cfg` is a typed local/param. */
   /** C3 ARRAY/COLLECTION ELEMENT TYPES — annotation `T[]`/`Array<T>`/`Set<T>`, `new Array<T>()`; the
    *  receiver is `items[0]` (subscript) or a `for (const item of items)` binding. */
-  elementTypes: Map<string, string>
-  /** C4 GENERIC TYPE-ARGUMENT PROPAGATION — instantiated type args per local/field (`Box<Widget>`) and
+  elementTypes: Map<number, Map<string, string>>
+  /** C4 GENERIC TYPE-ARGUMENT PROPAGATION — instantiated type args per lexical local (`Box<Widget>`) and
    *  the declared type parameters per class (`Box<T>`), so a member typed `T` resolves to `Widget`. */
-  localTypeArgs: Map<string, string[]>
+  localTypeArgs: Map<number, Map<string, (string | null)[]>>
   typeParams: Map<string, string[]>
-  /** C5 FACTORY-RETURN TYPING — callable name -> annotated return-type leaf, same file. */
-  returnTypes: Map<string, string>
+  /** C5 FACTORY-RETURN TYPING — lexical binding -> unambiguous annotated return type. */
+  returnTypes: Map<number, Map<string, string | null>>
   /** C7 ENUM-MEMBER RECEIVERS — enum name -> member set; a local/field initialised `Status.Active`. */
   enumMembers: Map<string, Set<string>>
   /** C8 CLASS-STATIC RECEIVERS — class name -> member names declared in its body, so `Cls.staticM()`
@@ -2324,13 +2325,17 @@ function lookupLocalInScope(
   facts: Pick<ReceiverFacts, "localsByScope" | "scopeParent">,
   scope: number,
   name: string,
+  useIndex?: number,
 ): ReceiverTypeHint | null | undefined {
   let s: number | null = scope
   const seen = new Set<number>()
   while (s !== null && !seen.has(s)) {
     seen.add(s)
     const byScope = facts.localsByScope.get(s)
-    if (byScope?.has(name)) return byScope.get(name)
+    if (byScope?.has(name)) {
+      const hint = byScope.get(name)
+      return hint?.availableFrom !== undefined && (useIndex === undefined || useIndex < hint.availableFrom) ? null : hint
+    }
     // THE MODULE SCOPE IS THE LAST STOP. A scope whose parent is 0 walks to 0, and 0's own parent
     // is absent — so the walk ends there. The module scope's own bindings (a module-level
     // `const x = new Widget()`) are visible from EVERY scope, and the walk must reach them.
@@ -2339,9 +2344,27 @@ function lookupLocalInScope(
   return undefined
 }
 
+/** Auxiliary type facts belong to the same lexical binding as the receiver. */
+function lookupReceiverFact<T>(
+  facts: Pick<ReceiverFacts, "localsByScope" | "scopeParent">,
+  values: Map<number, Map<string, T>>, scope: number, name: string,
+): T | undefined {
+  let s: number | null = scope
+  const seen = new Set<number>()
+  while (s !== null && !seen.has(s)) {
+    seen.add(s)
+    if (facts.localsByScope.get(s)?.has(name)) return values.get(s)?.get(name)
+    s = facts.scopeParent.get(s) ?? (s === 0 ? null : 0)
+  }
+  return undefined
+}
+
 const RECEIVER_FUNCTION_SCOPES = new Set([
   "function_declaration", "generator_function_declaration", "function_expression",
   "generator_function", "arrow_function", "method_definition",
+  // Signature parameters bind only within that signature, never in its runtime container.
+  "function_signature", "method_signature", "abstract_method_signature",
+  "function_type", "constructor_type", "call_signature", "construct_signature",
 ])
 const RECEIVER_BLOCK_SCOPES = new Set([
   "statement_block", "catch_clause", "for_statement", "for_in_statement", "switch_body",
@@ -5931,11 +5954,17 @@ class TypeScriptAnalysisRunner {
     }
     buildScopeTree(root)
     const classFields = new Map<string, ReceiverTypeHint>()
+    const topLevelClasses = new Map<string, Node | null>()
     const typeMembers = new Map<string, Map<string, string>>()
-    const elementTypes = new Map<string, string>()
-    const localTypeArgs = new Map<string, string[]>()
+    const elementTypes = new Map<number, Map<string, string>>()
+    const localTypeArgs = new Map<number, Map<string, (string | null)[]>>()
+    const recordFact = <T>(values: Map<number, Map<string, T>>, scope: number, name: string, value: T): void => {
+      let bindings = values.get(scope)
+      if (!bindings) values.set(scope, (bindings = new Map()))
+      bindings.set(name, value)
+    }
     const typeParams = new Map<string, string[]>()
-    const returnTypes = new Map<string, string>()
+    const returnTypes = new Map<number, Map<string, string | null>>()
     const enumMembers = new Map<string, Set<string>>()
     const classMemberNames = new Map<string, Set<string>>()
     const conflictedLocals = new Set<string>()
@@ -5958,7 +5987,31 @@ class TypeScriptAnalysisRunner {
      */
     const pendingDeclarators: Node[] = []
     const pendingFields: Node[] = []
+    const inferredFields: { key: string; owner: string | null; name: string; isStatic: boolean }[] = []
     const pendingAssignments: Node[] = []
+    const bindingDeclarations = new Map<string, Node>()
+    const declaredBindings = new Set<string>()
+    const invalidatedBindings = new Set<string>()
+    const writeSites = new Map<string, Node[]>()
+    const bindingKey = (scope: number, name: string) => `${scope}:${name}`
+    const declarationBindingNames = (node: Node | null): string[] => {
+      if (!node) return []
+      if (["identifier", "shorthand_property_identifier_pattern"].includes(node.type)) return [node.text]
+      if (node.type === "pair_pattern") return declarationBindingNames(node.childForFieldName("value"))
+      if (["assignment_pattern", "object_assignment_pattern"].includes(node.type)) return declarationBindingNames(node.childForFieldName("left"))
+      if (["object_pattern", "array_pattern", "rest_pattern", "parenthesized_expression"].includes(node.type)) {
+        return node.namedChildren.flatMap(child => declarationBindingNames(child))
+      }
+      return []
+    }
+    const bindingScope = (node: Node, name: string): number | undefined => {
+      let scope: number | undefined = scopeOf(node)
+      while (scope !== undefined) {
+        if (localsByScope.get(scope)?.has(name)) return scope
+        scope = scopeParent.get(scope)
+      }
+      return undefined
+    }
     const pendingForIn: Node[] = []
     const pendingDestructured: { pattern: Node; sourceName: string }[] = []
     /** First declaration wins; a second declaration with a DIFFERENT type drops the name from
@@ -5999,8 +6052,20 @@ class TypeScriptAnalysisRunner {
       const bindings = localBindings(scope)
       if (!bindings.has(name)) bindings.set(name, null)
     }
+    const declarePattern = (scope: number, pattern: Node | null): void => {
+      if (!pattern) return
+      if (["identifier", "shorthand_property_identifier_pattern"].includes(pattern.type)) {
+        declareLocal(scope, pattern.text)
+      } else if (pattern.type === "pair_pattern") {
+        declarePattern(scope, pattern.childForFieldName("value"))
+      } else if (["assignment_pattern", "object_assignment_pattern"].includes(pattern.type)) {
+        declarePattern(scope, pattern.childForFieldName("left"))
+      } else if (["array_pattern", "object_pattern", "rest_pattern"].includes(pattern.type)) {
+        for (const child of pattern.namedChildren) declarePattern(scope, child)
+      }
+    }
     const recordLocal = (scope: number, name: string, type: string, evidence: string): void => {
-      if (conflictedByScope.get(scope)?.has(name)) return
+      if (invalidatedBindings.has(bindingKey(scope, name)) || conflictedByScope.get(scope)?.has(name)) return
       const bindings = localBindings(scope)
       const previous = bindings.get(name)
       if (!previous) {
@@ -6013,6 +6078,15 @@ class TypeScriptAnalysisRunner {
         conflicted.add(name)
       }
     }
+    const recordReturn = (scope: number, name: string, type: string | null): void => {
+      const previous = returnTypes.get(scope)
+      recordFact(returnTypes, scope, name,
+        previous?.has(name) && previous.get(name) !== type ? null : type)
+    }
+    const callableAnnotation = (node: Node): string | null => {
+      const annotation = this.typeAnnotationNode(node)?.namedChild(0)
+      return annotation?.type === "function_type" ? this.callableReturnAnnotation(annotation) : null
+    }
     // ── PHASE 1: declaration facts that do not depend on other deferred facts ──────────────────
     const stack: Node[] = [root]
     while (stack.length) {
@@ -6020,27 +6094,46 @@ class TypeScriptAnalysisRunner {
       if (n.type === "variable_declarator") {
         pendingDeclarators.push(n)
         const binding = n.childForFieldName("name")
-        if (binding?.type === "identifier") declareLocal(declarationScope(n), binding.text)
+        declarePattern(declarationScope(n), binding)
+        for (const name of declarationBindingNames(binding)) {
+          const key = bindingKey(declarationScope(n), name)
+          bindingDeclarations.set(key, n)
+          if (this.typeAnnotationNode(n)) declaredBindings.add(key)
+        }
+        if (binding?.type === "identifier") {
+          const value = n.childForFieldName("value")
+          const annotated = this.typeAnnotationNode(n)
+          const ret = annotated ? callableAnnotation(n)
+            : value && ["arrow_function", "function_expression"].includes(value.type)
+              ? this.callableReturnAnnotation(value) : null
+          recordReturn(declarationScope(n), binding.text, ret)
+        }
       } else if (n.type === "catch_clause") {
         const parameter = n.childForFieldName("parameter")
-        if (parameter?.type === "identifier") declareLocal(scopeOf(n), parameter.text)
+        declarePattern(scopeOf(n), parameter)
       } else if (n.type === "public_field_definition" || n.type === "property_signature") {
         pendingFields.push(n)
-      } else if (n.type === "assignment_expression") {
+      } else if (["assignment_expression", "augmented_assignment_expression", "update_expression"].includes(n.type)) {
         pendingAssignments.push(n)
       } else if (n.type === "for_in_statement") {
         pendingForIn.push(n)
+        if (n.children.some(child => child && ["const", "let", "var"].includes(child.type))) {
+          declarePattern(this.scopeIdOf(n, n.children.some(child => child?.type === "var")), n.childForFieldName("left"))
+        } else {
+          pendingAssignments.push(n)
+        }
       } else if (
         n.type === "function_declaration" || n.type === "generator_function_declaration" ||
         n.type === "method_definition" || n.type === "method_signature" || n.type === "function_signature"
       ) {
-        // C5: the annotated RETURN type of a same-file callable, so `const w = makeWidget()` can be
-        // typed by its factory. Every callable declaration kind that can carry `: T` is read.
         const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
-        const ret = n.childForFieldName("return_type")
-        const retLeaf = ret ? this.typeLeafName(ret.namedChild(0) ?? ret) : null
-        if (nameNode && retLeaf && (nameNode.type === "identifier" || nameNode.type === "property_identifier")) {
-          if (!returnTypes.has(nameNode.text)) returnTypes.set(nameNode.text, retLeaf)
+        // Methods do not bind a bare factory name in the surrounding lexical scope.
+        if (nameNode?.type === "identifier" &&
+            ["function_declaration", "function_signature", "generator_function_declaration"].includes(n.type)) {
+          const scope = scopeOf(n.parent)
+          declareLocal(scope, nameNode.text)
+          recordReturn(scope, nameNode.text, n.type === "generator_function_declaration"
+            ? null : this.callableReturnAnnotation(n))
         }
         // C8: a class's declared member names — the proof that `Cls.staticM()` names THIS class's
         // member rather than a same-named thing elsewhere.
@@ -6056,6 +6149,10 @@ class TypeScriptAnalysisRunner {
         n.type === "class_declaration" || n.type === "abstract_class_declaration" || n.type === "interface_declaration"
       ) {
         const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
+        const container = n.parent?.type === "export_statement" ? n.parent.parent : n.parent
+        if (n.type !== "interface_declaration" && container?.type === "program" && nameNode) {
+          topLevelClasses.set(nameNode.text, topLevelClasses.has(nameNode.text) ? null : n)
+        }
         // C4: the class's declared TYPE PARAMETERS, in order, so an instantiated `Box<Widget>` can
         // substitute `T -> Widget` for members typed `T`.
         const tp = this.childOfType(n, "type_parameters")
@@ -6086,8 +6183,13 @@ class TypeScriptAnalysisRunner {
         }
       } else if (n.type === "required_parameter" || n.type === "optional_parameter") {
         const pattern = n.childForFieldName("pattern") ?? n.childForFieldName("name") ?? n.namedChild(0)
+        declarePattern(scopeOf(n), pattern)
+        if (this.typeAnnotationNode(n)) {
+          for (const name of declarationBindingNames(pattern)) declaredBindings.add(bindingKey(scopeOf(n), name))
+        }
         if (pattern && pattern.type === "identifier") {
           declareLocal(scopeOf(n), pattern.text)
+          recordReturn(scopeOf(n), pattern.text, callableAnnotation(n))
           const type = this.annotationTypeName(n)
           // THE PARAMETER'S SCOPE — the scope of the function the parameter BELONGS to. A
           // parameter is bound in its function's scope, and the call sites that use it are in the
@@ -6100,9 +6202,9 @@ class TypeScriptAnalysisRunner {
           // C3: a parameter annotated `Widget[]` names its ELEMENT type, so `items[0].m()` is typed.
           const ann = this.typeAnnotationNode(n)
           const elementType = ann ? this.elementTypeOfAnnotation(ann) : null
-          if (elementType) elementTypes.set(pattern.text, elementType)
+          if (elementType) recordFact(elementTypes, scopeOf(n), pattern.text, elementType)
           const args = ann ? this.typeArgsOfAnnotation(ann) : null
-          if (args && args.length > 0) localTypeArgs.set(pattern.text, args)
+          if (args && args.length > 0) recordFact(localTypeArgs, scopeOf(n), pattern.text, args)
         } else if (pattern && pattern.type === "object_pattern") {
           const ownerType = this.annotationTypeName(n)
           if (ownerType) pendingPatterns.push({ pattern, ownerType, evidence: "param" })
@@ -6114,24 +6216,121 @@ class TypeScriptAnalysisRunner {
       }
     }
 
+    // Same-file, top-level, bare-name inheritance has an unambiguous lexical parent.
+    // Dynamic/qualified parents and nested scopes need stronger binding evidence.
+    const classParents = new Map<number, number>()
+    const ownClassMembers = new Map<string, Set<string>>()
+    const privateClassMembers = new Set<string>()
+    for (const node of topLevelClasses.values()) {
+      if (!node) continue
+      const body = node.childForFieldName("body")
+      for (const member of body?.namedChildren ?? []) {
+        if (!member) continue
+        const name = member.childForFieldName("name")
+        if (!name) continue
+        // Parameter properties are own fields even when their type is unknown.
+        // They must block an inherited hint; ordinary constructor parameters do not.
+        if (name.text === "constructor") {
+          for (const parameter of member.childForFieldName("parameters")?.namedChildren ?? []) {
+            if (!parameter || !parameter.children.some(child => child &&
+                ["public", "private", "protected", "readonly"].includes(child.text))) continue
+            const pattern = parameter.childForFieldName("pattern") ?? parameter.childForFieldName("name")
+            if (pattern?.type !== "identifier") continue
+            const owner = `${node.startIndex}:instance`
+            const names = ownClassMembers.get(owner) ?? new Set<string>()
+            names.add(pattern.text)
+            ownClassMembers.set(owner, names)
+            if (extractModifiersFromNode(parameter).isPrivate) privateClassMembers.add(`${owner}:${pattern.text}`)
+          }
+        }
+        const side = extractModifiersFromNode(member).isStatic ? "static" : "instance"
+        const owner = `${node.startIndex}:${side}`
+        const names = ownClassMembers.get(owner) ?? new Set<string>()
+        names.add(["property_identifier", "private_property_identifier", "identifier"].includes(name.type) ? name.text : "*")
+        ownClassMembers.set(owner, names)
+        if (name.type === "private_property_identifier" || extractModifiersFromNode(member).isPrivate) {
+          privateClassMembers.add(`${owner}:${name.text}`)
+        }
+      }
+      const heritage = this.childOfType(node, "class_heritage")
+      const clause = heritage ? this.childOfType(heritage, "extends_clause") : null
+      const parentName = clause?.namedChild(0)
+      if (parentName && ["identifier", "type_identifier"].includes(parentName.type)) {
+        const parent = topLevelClasses.get(parentName.text)
+        if (parent) classParents.set(node.startIndex, parent.startIndex)
+      }
+    }
+    const declaringField = (owner: string, name: string): string | null => {
+      const [offset, side] = owner.split(":")
+      let current: number | undefined = Number(offset)
+      const seen = new Set<number>()
+      while (current !== undefined && !seen.has(current)) {
+        seen.add(current)
+        const candidate = `${current}:${side}`
+        const names = ownClassMembers.get(candidate)
+        if (names?.has(name) || names?.has("*")) {
+          if (candidate !== owner && privateClassMembers.has(`${candidate}:${name}`)) return null
+          return candidate
+        }
+        current = classParents.get(current)
+      }
+      return null
+    }
+
+    // `var` loops share their function binding. A second loop declaration or a
+    // pre-existing declaration writes that same variable rather than creating a local.
+    const varLoops = new Map<string, Node[]>()
+    for (const loop of pendingForIn) {
+      if (!loop.children.some(child => child?.type === "var")) continue
+      const scope = this.scopeIdOf(loop, true)
+      for (const name of declarationBindingNames(loop.childForFieldName("left"))) {
+        const key = bindingKey(scope, name)
+        const loops = varLoops.get(key) ?? []
+        loops.push(loop)
+        varLoops.set(key, loops)
+      }
+    }
+    for (const [key, loops] of varLoops) {
+      if (loops.length > 1 || bindingDeclarations.has(key)) pendingAssignments.push(...loops)
+    }
+
+    // Resolve every write to its lexical binding, including destructuring, updates,
+    // logical assignments and writes in closures. Do not preserve initializer evidence
+    // for mutable inferred bindings: this pass does not compute a control-flow graph.
+    for (const assignment of pendingAssignments) {
+      const left = assignment.childForFieldName("left") ?? assignment.childForFieldName("argument")
+      for (const name of declarationBindingNames(left)) {
+        const scope = bindingScope(assignment, name)
+        if (scope === undefined) continue
+        const key = bindingKey(scope, name)
+        const sites = writeSites.get(key) ?? []
+        sites.push(assignment)
+        writeSites.set(key, sites)
+        returnTypes.get(scope)?.delete(name)
+        if (!declaredBindings.has(key)) invalidatedBindings.add(key)
+      }
+    }
+
     // ── PHASE 2: the deferred sites, in SOURCE ORDER, against the complete fact set ────────────
     const order = (nodes: Node[]) => nodes.slice().sort((a, b) => a.startIndex - b.startIndex)
     // (a) FIELDS — annotation, `new X()`, or an enum member; and the type-member table every
     // destructured/one-hop class reads.
     for (const n of order(pendingFields)) {
       const nameNode = n.childForFieldName("name") ?? n.namedChild(0)
-      if (!nameNode || (nameNode.type !== "property_identifier" && nameNode.type !== "identifier")) continue
+      if (!nameNode || !["property_identifier", "identifier", "private_property_identifier"].includes(nameNode.type)) continue
       const value = n.childForFieldName("value")
       const enumType = value ? this.enumMemberType(value, enumMembers) : null
-      const type = this.annotationTypeName(n) ?? this.initialiserNewType(n) ?? enumType
-      if (type) record(classFields, conflictedFields, nameNode.text, type, enumType ? "enum" : "this")
-      const fieldAnn = this.typeAnnotationNode(n)
-      const fieldElement = fieldAnn ? this.elementTypeOfAnnotation(fieldAnn) : value && value.type === "new_expression" ? this.elementTypeOfNew(value) : null
-      if (fieldElement) elementTypes.set(nameNode.text, fieldElement)
-      const fieldArgs = fieldAnn ? this.typeArgsOfAnnotation(fieldAnn) : value && value.type === "new_expression" ? this.typeArgsOfNew(value) : null
-      if (fieldArgs && fieldArgs.length > 0) localTypeArgs.set(nameNode.text, fieldArgs)
+      const type = this.typeAnnotationNode(n) ? this.annotationTypeName(n) : this.initialiserNewType(n) ?? enumType
+      const fieldOwner = this.thisFieldOwner(n)
+      if (type && fieldOwner && !this.hasEnclosingTypeParameter(n, type)) {
+        record(classFields, conflictedFields, `${fieldOwner}:${nameNode.text}`, type, enumType ? "enum" : "this")
+      }
       const ownerType = this.enclosingTypeName(n)
-      if (ownerType && type) {
+      if (fieldOwner && type && !this.typeAnnotationNode(n)) {
+        inferredFields.push({ key: `${fieldOwner}:${nameNode.text}`, owner: ownerType,
+          name: nameNode.text, isStatic: extractModifiersFromNode(n).isStatic })
+      }
+      if (ownerType && type && !extractModifiersFromNode(n).isStatic) {
         const byMember = typeMembers.get(ownerType) ?? new Map<string, string>()
         if (!byMember.has(nameNode.text)) byMember.set(nameNode.text, type)
         typeMembers.set(ownerType, byMember)
@@ -6148,7 +6347,7 @@ class TypeScriptAnalysisRunner {
         // C5 FACTORY-RETURN TYPING — `const w = makeWidget()` where `makeWidget` is declared in
         // this file with a return annotation. A call whose callee has no annotated return type
         // states nothing; the initializer's own later members would be a guess.
-        const factoryType = value && value.type === "call_expression" ? this.factoryReturnType(value, returnTypes) : null
+        const factoryType = value && value.type === "call_expression" ? this.factoryReturnType(value, returnTypes, scopedFacts) : null
         // C7 ENUM-MEMBER RECEIVERS — `const status = Status.Active`: the initialiser names a
         // declared enum's declared member, so the local's type is the ENUM.
         const enumType = value ? this.enumMemberType(value, enumMembers) : null
@@ -6160,8 +6359,9 @@ class TypeScriptAnalysisRunner {
         // The evidence class records WHICH statement produced the owner, so the order is part of the
         // published contract rather than an accident of evaluation.
         const annotated = this.annotationTypeName(n)
-        if (annotated) recordLocal(declarationScope(n), nameNode.text, annotated, isNew ? "assignment" : "annotation")
-        else if (castType) recordLocal(declarationScope(n), nameNode.text, castType, "cast")
+        if (this.typeAnnotationNode(n)) {
+          if (annotated) recordLocal(declarationScope(n), nameNode.text, annotated, isNew ? "assignment" : "annotation")
+        } else if (castType) recordLocal(declarationScope(n), nameNode.text, castType, "cast")
         else if (factoryType) recordLocal(declarationScope(n), nameNode.text, factoryType, "factory")
         else if (enumType) recordLocal(declarationScope(n), nameNode.text, enumType, "enum")
         else {
@@ -6171,39 +6371,46 @@ class TypeScriptAnalysisRunner {
         // C3/C4: element type and generic instantiation arguments stated by the declaration.
         const ann = this.typeAnnotationNode(n)
         const elementType = ann ? this.elementTypeOfAnnotation(ann) : value && value.type === "new_expression" ? this.elementTypeOfNew(value) : null
-        if (elementType) elementTypes.set(nameNode.text, elementType)
+        if (elementType && !invalidatedBindings.has(bindingKey(declarationScope(n), nameNode.text))) recordFact(elementTypes, declarationScope(n), nameNode.text, elementType)
         const args = ann ? this.typeArgsOfAnnotation(ann) : value && value.type === "new_expression" ? this.typeArgsOfNew(value) : null
-        if (args && args.length > 0) localTypeArgs.set(nameNode.text, args)
+        if (args && args.length > 0 && !invalidatedBindings.has(bindingKey(declarationScope(n), nameNode.text))) recordFact(localTypeArgs, declarationScope(n), nameNode.text, args)
       } else if (nameNode && nameNode.type === "object_pattern") {
         const ownerType = this.annotationTypeName(n)
         if (ownerType) pendingPatterns.push({ pattern: nameNode, ownerType, evidence: "annotation" })
         else if (value && value.type === "identifier") pendingDestructured.push({ pattern: nameNode, sourceName: value.text })
       }
     }
-    // (c) C2 DESTRUCTURED ELEMENT TYPES FROM A TYPED SOURCE — `const { worker } = cfg` where `cfg`
-    // is a typed local/param: the binding's type is the MEMBER's declared type, one hop. The
-    // evidence class is DESTRUCTURING (the type was inferred from a VALUE), not the source's own.
-    // THE SOURCE IS LOOKED UP IN ITS OWN SCOPE — a `cfg` typed in a sibling function is a
-    // different binding, and using it would type the destructured members wrongly.
-    for (const { pattern, sourceName } of pendingDestructured) {
-      const sourceHint = lookupLocalInScope(scopedFacts, scopeOf(pattern), sourceName)
-      if (sourceHint) pendingPatterns.push({ pattern, ownerType: sourceHint.type, evidence: "destructured" })
-    }
-    // (d) C1 ASSIGNMENT-PROVEN LOCAL TYPES — `x = new Widget()` (a later assignment, not the
-    // declarator initialiser). An ANNOTATION on the declaration is authoritative and is never
-    // overwritten: `let x: Base; x = new Derived()` is a `Base` receiver, and re-typing it from the
-    // assignment would be a guess that the store then acts on.
+    // Admit one standalone initialization in the declaration's own block. Conditional,
+    // repeated, nested-scope and compound writes cannot establish a single owner here.
     for (const n of order(pendingAssignments)) {
       const left = n.childForFieldName("left")
       const right = n.childForFieldName("right")
-      if (!left || left.type !== "identifier" || !right || locals.has(left.text)) continue
-      const assigned = this.initialiserTypeName(right, returnTypes)
-      if (assigned) recordLocal(scopeOf(n), left.text, assigned, "assignment")
+      if (n.type !== "assignment_expression" || left?.type !== "identifier" || !right) continue
+      const scope = bindingScope(n, left.text)
+      if (scope === undefined) continue
+      const key = bindingKey(scope, left.text)
+      const declaration = bindingDeclarations.get(key)
+      if (!declaration || declaration.childForFieldName("value") || writeSites.get(key)?.length !== 1) continue
+      if (this.annotationTypeName(declaration)) continue
+      // A declared `unknown` can be narrowed by one assignment; `any` and union
+      // annotations retain their unsupported declared type instead of borrowing the RHS.
+      const annotation = this.typeAnnotationNode(declaration)
+      if (annotation && annotation.namedChild(0)?.text !== "unknown") continue
+      const statement = n.parent
+      if (statement?.type !== "expression_statement" || scopeOf(statement.parent) !== scope ||
+          !["statement_block", "program"].includes(statement.parent?.type ?? "") || declaration.endIndex > n.startIndex) continue
+      const assigned = this.initialiserTypeName(right, returnTypes, scopedFacts)
+      if (assigned) {
+        invalidatedBindings.delete(key)
+        recordLocal(scope, left.text, assigned, "assignment")
+        const hint = localBindings(scope).get(left.text)
+        if (hint) hint.availableFrom = n.endIndex
+      }
     }
     // (e) C3 ELEMENT BINDING — `for (const item of items)` types `item` as `items`' element type.
     for (const n of order(pendingForIn)) {
       const right = n.childForFieldName("right") ?? n.namedChild(n.namedChildCount - 1)
-      const elem = right ? (right.type === "identifier" ? elementTypes.get(right.text) ?? null : this.elementTypeOfNew(right)) : null
+      const elem = right ? (right.type === "identifier" ? lookupReceiverFact(scopedFacts, elementTypes, scopeOf(n), right.text) ?? null : this.elementTypeOfNew(right)) : null
       if (!elem) continue
       const left = n.childForFieldName("left") ?? n.namedChild(0)
       if (!left) continue
@@ -6219,7 +6426,258 @@ class TypeScriptAnalysisRunner {
           } else if (c.type === "identifier") binders.push(c.text)
         }
       }
-      for (const b of binders) recordLocal(scopeOf(n), b, elem, "element")
+      const declaration = n.children.some(child => child && ["const", "let", "var"].includes(child.type))
+      for (const b of binders) {
+        const scope = declaration ? this.scopeIdOf(n, n.children.some(child => child?.type === "var")) : bindingScope(n, b)
+        if (scope !== undefined) recordLocal(scope, b, elem, "element")
+      }
+    }
+    // Alias provenance is used only to withdraw initializer evidence, never to
+    // invent a resolved call owner. All observed assignments are possible origins:
+    // without flow analysis, rebinding an alias cannot erase its earlier effects.
+    // Every var redeclaration contributes a possible origin to the same binding.
+    // Keep the single-declaration map for late-initialization checks separately.
+    const aliasDeclarations = new Map<string, Node[]>()
+    for (const declaration of pendingDeclarators) {
+      for (const name of declarationBindingNames(declaration.childForFieldName("name"))) {
+        const aliasKey = bindingKey(declarationScope(declaration), name)
+        const declarations = aliasDeclarations.get(aliasKey) ?? []
+        declarations.push(declaration)
+        aliasDeclarations.set(aliasKey, declarations)
+      }
+    }
+    const aliasFieldOwners = (receiver: Node): Set<string> => {
+      const owners = new Set<string>()
+      let root = receiver
+      while (["parenthesized_expression", "as_expression", "satisfies_expression", "non_null_expression"].includes(root.type) && root.namedChild(0)) {
+        root = root.namedChild(0)!
+      }
+      if (root.type !== "identifier" || bindingScope(root, root.text) === undefined) return owners
+      const seen = new Set<string>()
+      const active = new Set<string>()
+      const literalKey = (node: Node | null): string | null => {
+        if (!node) return null
+        if (["property_identifier", "identifier", "shorthand_property_identifier", "shorthand_property_identifier_pattern"].includes(node.type)) return node.text
+        if (node.type === "number" && /^\d+$/.test(node.text)) return node.text
+        if (node.type === "string" && /^(['"])([^\\\r\n]*)\1$/.test(node.text)) return node.text.slice(1, -1)
+        if (node.type === "computed_property_name") {
+          const value = node.namedChild(0)
+          return value && ["string", "number"].includes(value.type) ? literalKey(value) : null
+        }
+        return null
+      }
+      // Project only the binding selected by the pattern. Rest constructs create
+      // copies; treating the copy itself as its source would invalidate unrelated fields.
+      const visitPattern = (pattern: Node | null, source: Node | null, target: string, path: string[], tail: string[]): void => {
+        if (!pattern) return
+        if (["identifier", "shorthand_property_identifier_pattern"].includes(pattern.type)) {
+          if (pattern.text === target) visitOrigin(source, [...path, ...tail])
+        } else if (["assignment_pattern", "object_assignment_pattern"].includes(pattern.type)) {
+          const left = pattern.childForFieldName("left")
+          visitPattern(left, source, target, path, tail)
+          visitPattern(left, pattern.childForFieldName("right"), target, [], tail)
+        } else if (pattern.type === "pair_pattern") {
+          const key = literalKey(pattern.childForFieldName("key"))
+          if (key !== null) visitPattern(pattern.childForFieldName("value"), source, target, [...path, key], tail)
+        } else if (pattern.type === "object_pattern") {
+          for (const member of pattern.namedChildren) {
+            if (!member || member.type === "rest_pattern") continue
+            const key = member.type === "object_assignment_pattern" ? literalKey(member.childForFieldName("left"))
+              : member.type === "shorthand_property_identifier_pattern" ? member.text : null
+            visitPattern(member, source, target, key === null ? path : [...path, key], tail)
+          }
+        } else if (pattern.type === "array_pattern") {
+          let index = 0
+          for (const member of pattern.children) {
+            if (!member) continue
+            if (member.type === ",") index++
+            else if (member.isNamed) visitPattern(member, source, target, [...path, String(index)], tail)
+          }
+        }
+      }
+      const visitOrigin = (value: Node | null, path: string[] = []): void => {
+        if (!value) return
+        if (["parenthesized_expression", "as_expression", "satisfies_expression", "non_null_expression"].includes(value.type)) {
+          visitOrigin(value.namedChild(0), path)
+          return
+        }
+        // A conditional's test does not become its value. Logical expressions
+        // can return either operand; comma expressions return only the last one.
+        if (value.type === "ternary_expression") {
+          visitOrigin(value.childForFieldName("consequence"), path)
+          visitOrigin(value.childForFieldName("alternative"), path)
+          return
+        }
+        if (value.type === "binary_expression" && ["&&", "||", "??"].includes(value.childForFieldName("operator")?.text ?? "")) {
+          visitOrigin(value.childForFieldName("left"), path)
+          visitOrigin(value.childForFieldName("right"), path)
+          return
+        }
+        if (value.type === "sequence_expression") {
+          visitOrigin(value.namedChild(value.namedChildCount - 1), path)
+          return
+        }
+        if (value.type === "assignment_expression") {
+          visitOrigin(value.childForFieldName("right"), path)
+          return
+        }
+        if (value.type === "member_expression" || value.type === "subscript_expression") {
+          const property = value.childForFieldName("property") ?? value.childForFieldName("index")
+          const key = value.type === "subscript_expression" && property?.type === "identifier" ? null : literalKey(property)
+          if (key !== null) visitOrigin(value.childForFieldName("object"), [key, ...path])
+          return
+        }
+        if (value.type === "object" && path.length > 0) {
+          for (const member of value.namedChildren) {
+            if (!member) continue
+            if (member.type === "spread_element") {
+              visitOrigin(member.namedChild(0), path)
+              continue
+            }
+            const key = member.type === "pair" ? literalKey(member.childForFieldName("key")) : literalKey(member)
+            if (key === path[0]) visitOrigin(member.type === "pair" ? member.childForFieldName("value") : member, path.slice(1))
+          }
+          return
+        }
+        if (value.type === "array" && path.length > 0) {
+          // A spread has unknown length; subsequent source positions are not proven.
+          if (value.namedChildren.some(child => child?.type === "spread_element")) return
+          let index = 0
+          for (const member of value.children) {
+            if (!member) continue
+            if (member.type === ",") index++
+            else if (member.isNamed) {
+              if (index === Number(path[0])) visitOrigin(member, path.slice(1))
+            }
+          }
+          return
+        }
+        if (value.type === "this") {
+          const owner = this.thisFieldOwner(value)
+          if (owner && path.length === 0) owners.add(owner)
+          return
+        }
+        if (value.type === "new_expression") {
+          const name = value.childForFieldName("constructor")
+          const owner = name?.type === "identifier" ? topLevelClasses.get(name.text) : null
+          if (owner && path.length === 0) owners.add(`${owner.startIndex}:instance`)
+          return
+        }
+        if (!["identifier", "shorthand_property_identifier"].includes(value.type)) return
+        const scope = bindingScope(value, value.text)
+        if (scope === undefined) {
+          const owner = topLevelClasses.get(value.text)
+          if (owner && path.length === 0) owners.add(`${owner.startIndex}:static`)
+          return
+        }
+        const key = bindingKey(scope, value.text)
+        const projection = `${key}:${JSON.stringify(path)}`
+        if (active.has(key) || seen.has(projection)) return
+        seen.add(projection)
+        active.add(key)
+        // The direct identifier receiver is handled by the ordinary owner path.
+        const hint = value === receiver ? null : lookupLocalInScope(scopedFacts, scope, value.text, value.startIndex)
+        const owner = hint ? topLevelClasses.get(hint.type) : null
+        if (owner && path.length === 0) owners.add(`${owner.startIndex}:instance`)
+        for (const declaration of aliasDeclarations.get(key) ?? []) {
+          if (declaration.childForFieldName("name")?.type === "identifier" && path.length === 0) {
+            visitOrigin(declaration?.childForFieldName("value") ?? null)
+          } else {
+            visitPattern(declaration?.childForFieldName("name") ?? null, declaration?.childForFieldName("value") ?? null, value.text, [], path)
+          }
+        }
+        for (const write of writeSites.get(key) ?? []) {
+          if ((write.type === "assignment_expression" ||
+              (write.type === "augmented_assignment_expression" && ["&&=", "||=", "??="].includes(write.childForFieldName("operator")?.text ?? ""))) &&
+              write.childForFieldName("left")) {
+            visitPattern(write.childForFieldName("left"), write.childForFieldName("right"), value.text, [], path)
+          }
+        }
+        active.delete(key)
+      }
+      visitOrigin(root)
+      return owners
+    }
+
+    // Writes to an inferred field invalidate its initializer evidence for every
+    // read of that declaration. Explicit field annotations remain static evidence.
+    const fieldWriteTargets = (node: Node | null): Node[] => {
+      if (!node) return []
+      if (["member_expression", "subscript_expression"].includes(node.type)) return [node]
+      if (node.type === "pair_pattern") return fieldWriteTargets(node.childForFieldName("value"))
+      if (["assignment_pattern", "object_assignment_pattern"].includes(node.type)) return fieldWriteTargets(node.childForFieldName("left"))
+      if (["array_pattern", "object_pattern", "rest_pattern", "parenthesized_expression"].includes(node.type)) {
+        return node.namedChildren.flatMap(child => fieldWriteTargets(child))
+      }
+      return []
+    }
+    for (const write of pendingAssignments) {
+      for (const target of fieldWriteTargets(write.childForFieldName("left") ?? write.childForFieldName("argument"))) {
+        const receiver = target.childForFieldName("object")
+        const property = target.childForFieldName("property") ?? target.childForFieldName("index")
+        if (!receiver || !property) continue
+        const name = target.type === "member_expression" ? property.text
+          : property.type === "string" && /^(['"])([^\\\r\n]*)\1$/.test(property.text) ? property.text.slice(1, -1) : null
+        const thisOwner = receiver.type === "this" ? this.thisFieldOwner(target) : null
+        const hint = receiver.type === "identifier" ? lookupLocalInScope(scopedFacts, scopeOf(target), receiver.text, target.startIndex) : undefined
+        const staticOwner = receiver.type === "identifier" && hint === undefined && classMemberNames.has(receiver.text) ? receiver.text : null
+        const aliases = aliasFieldOwners(receiver)
+        for (const field of inferredFields) {
+          if (name !== null && name !== field.name) continue
+          const instanceClass = hint ? topLevelClasses.get(hint.type) : null
+          const staticClass = staticOwner !== null ? topLevelClasses.get(staticOwner) : null
+          let matchesOwner = thisOwner !== null ? field.key === `${declaringField(thisOwner, field.name) ?? thisOwner}:${field.name}`
+            : instanceClass ? field.key === `${declaringField(`${instanceClass.startIndex}:instance`, field.name)}:${field.name}`
+            : staticClass ? field.key === `${declaringField(`${staticClass.startIndex}:static`, field.name)}:${field.name}`
+            : hint ? field.owner === hint.type && !field.isStatic
+            : staticOwner !== null && field.owner === staticOwner && field.isStatic
+          for (const owner of aliases) {
+            if (field.key === `${declaringField(owner, field.name) ?? owner}:${field.name}`) matchesOwner = true
+          }
+          if (!matchesOwner) continue
+          classFields.delete(field.key)
+          if (field.owner && !field.isStatic) typeMembers.get(field.owner)?.delete(field.name)
+        }
+      }
+    }
+
+    // Copy only surviving, concrete field facts after write invalidation. A child
+    // declaration of unknown type still shadows its ancestor's field.
+    for (const [name, node] of topLevelClasses) {
+      if (!node) continue
+      for (const side of ["instance", "static"]) {
+        const owner = `${node.startIndex}:${side}`
+        const candidates = new Set<string>()
+        let ancestor = classParents.get(node.startIndex)
+        const seen = new Set<number>([node.startIndex])
+        while (ancestor !== undefined && !seen.has(ancestor)) {
+          seen.add(ancestor)
+          for (const member of ownClassMembers.get(`${ancestor}:${side}`) ?? []) candidates.add(member)
+          ancestor = classParents.get(ancestor)
+        }
+        for (const member of candidates) {
+          const declaring = declaringField(owner, member)
+          if (!declaring || declaring === owner) continue
+          const hint = classFields.get(`${declaring}:${member}`)
+          if (!hint) continue
+          classFields.set(`${owner}:${member}`, hint)
+          if (side === "instance") {
+            const members = typeMembers.get(name) ?? new Map<string, string>()
+            members.set(member, hint.type)
+            typeMembers.set(name, members)
+          }
+        }
+      }
+    }
+
+    // (c) C2 DESTRUCTURED ELEMENT TYPES FROM A TYPED SOURCE — `const { worker } = cfg` where `cfg`
+    // is a typed local/param: the binding's type is the MEMBER's declared type, one hop. The
+    // evidence class is DESTRUCTURING (the type was inferred from a VALUE), not the source's own.
+    // THE SOURCE IS LOOKED UP IN ITS OWN SCOPE — a `cfg` typed in a sibling function is a
+    // different binding, and using it would type the destructured members wrongly.
+    for (const { pattern, sourceName } of pendingDestructured) {
+      const sourceHint = lookupLocalInScope(scopedFacts, scopeOf(pattern), sourceName, pattern.startIndex)
+      if (sourceHint) pendingPatterns.push({ pattern, ownerType: sourceHint.type, evidence: "destructured" })
     }
     // ── DESTRUCTURED BINDINGS, typed from the TYPE MEMBER they name ──────────────────────────
     // `function f({ worker }: Settings)` with `Settings { worker: Widget }` makes `worker.other()`
@@ -6362,25 +6820,63 @@ class TypeScriptAnalysisRunner {
     return null
   }
 
+  /** A return type parameter is not a concrete owner until its call is instantiated. */
+  private callableReturnAnnotation(node: Node): string | null {
+    const ret = node.childForFieldName("return_type")
+    const inner = ret?.type === "type_annotation" ? ret.namedChild(0) : ret
+    const leaf = inner ? this.typeLeafName(inner) : null
+    if (!leaf) return null
+    return this.hasEnclosingTypeParameter(node, leaf) ? null : leaf
+  }
+
+  private hasEnclosingTypeParameter(node: Node, name: string): boolean {
+    for (let ancestor: Node | null = node; ancestor; ancestor = ancestor.parent) {
+      const params = this.childOfType(ancestor, "type_parameters")
+      if (params?.namedChildren.some(param => param && (param.childForFieldName("name") ?? param.namedChild(0))?.text === name)) return true
+    }
+    return false
+  }
+
+  /** `this` is lexical through arrows, but ordinary functions and object methods rebind it. */
+  private thisFieldOwner(node: Node): string | null {
+    let isStatic = false
+    for (let current: Node | null = node; current; current = current.parent) {
+      if (["class", "class_declaration", "abstract_class_declaration"].includes(current.type)) {
+        return `${current.startIndex}:${isStatic ? "static" : "instance"}`
+      }
+      if (current.type === "method_definition") {
+        if (current.parent?.type !== "class_body") return null
+        isStatic = extractModifiersFromNode(current).isStatic
+      } else if (current.type === "public_field_definition") {
+        isStatic = extractModifiersFromNode(current).isStatic
+      } else if (current.type === "class_static_block") {
+        isStatic = true
+      } else if (RECEIVER_FUNCTION_SCOPES.has(current.type) && current.type !== "arrow_function") {
+        return null
+      }
+    }
+    return null
+  }
+
   /** C5: the annotated return type of a same-file callable the call names, if the callee is a bare
    *  identifier (a member call's return type is not this class's evidence). */
-  private factoryReturnType(call: Node, returnTypes: Map<string, string>): string | null {
+  private factoryReturnType(call: Node, returnTypes: ReceiverFacts["returnTypes"], facts: Pick<ReceiverFacts, "localsByScope" | "scopeParent">): string | null {
     if (call.type !== "call_expression") return null
     const callee = call.namedChild(0)
     if (!callee || callee.type !== "identifier") return null
-    return returnTypes.get(callee.text) ?? null
+    return lookupReceiverFact(facts, returnTypes, this.scopeIdOf(call), callee.text) ?? null
   }
 
   /** C1: the type a right-hand side states for an existing local: `= new T()`, `= x as T`,
    *  `= factory()` with an annotated same-file return. */
-  private initialiserTypeName(value: Node, returnTypes: Map<string, string>): string | null {
+  private initialiserTypeName(value: Node, returnTypes: ReceiverFacts["returnTypes"], facts: Pick<ReceiverFacts, "localsByScope" | "scopeParent">): string | null {
     if (value.type === "new_expression") {
       const ctor = value.namedChild(0)
       return ctor ? this.typeLeafName(ctor) : null
     }
     const cast = this.castTypeName(value)
     if (cast) return cast
-    return this.factoryReturnType(value, returnTypes)
+    return this.factoryReturnType(value, returnTypes, facts)
   }
 
   /** C7: `Status.Active` names the ENUM type when the root is a declared enum and the member is one
@@ -6415,16 +6911,17 @@ class TypeScriptAnalysisRunner {
 
   /** C3/C4: type arguments instantiated by `new Foo<A, B>()` and whether the constructor is a
    *  collection whose first argument is its ELEMENT type. */
-  private typeArgsOfNew(value: Node): string[] | null {
+  private typeArgsOfNew(value: Node): (string | null)[] | null {
     if (value.type !== "new_expression") return null
     const args = this.childOfType(value, "type_arguments")
     if (!args) return null
-    const out: string[] = []
+    const out: (string | null)[] = []
     for (let i = 0; i < args.namedChildCount; i++) {
       const c = args.namedChild(i)
       if (!c) continue
       const leaf = this.typeLeafName(c)
-      if (leaf) out.push(leaf)
+      // Unknown arguments occupy their own slot; later arguments must never shift.
+      out.push(leaf && !this.hasEnclosingTypeParameter(c, leaf) ? leaf : null)
     }
     return out.length > 0 ? out : null
   }
@@ -6446,16 +6943,17 @@ class TypeScriptAnalysisRunner {
   }
 
   /** C4: the declared type arguments a type annotation instantiates (`Box<Widget>` -> ["Widget"]). */
-  private typeArgsOfAnnotation(ann: Node): string[] | null {
+  private typeArgsOfAnnotation(ann: Node): (string | null)[] | null {
     const inner = ann.type === "type_annotation" ? (ann.namedChild(0) ?? ann) : ann
     const args = this.childOfType(inner, "type_arguments")
     if (!args) return null
-    const out: string[] = []
+    const out: (string | null)[] = []
     for (let i = 0; i < args.namedChildCount; i++) {
       const c = args.namedChild(i)
       if (!c) continue
       const leaf = this.typeLeafName(c)
-      if (leaf) out.push(leaf)
+      // Unknown arguments occupy their own slot; later arguments must never shift.
+      out.push(leaf && !this.hasEnclosingTypeParameter(c, leaf) ? leaf : null)
     }
     return out.length > 0 ? out : null
   }
@@ -6471,9 +6969,10 @@ class TypeScriptAnalysisRunner {
     receiverName: string,
     receiverType: string,
     memberType: string,
+    scope: number,
   ): { type: string; substituted: boolean } {
     const params = facts.typeParams.get(receiverType)
-    const args = facts.localTypeArgs.get(receiverName)
+    const args = lookupReceiverFact(facts, facts.localTypeArgs, scope, receiverName)
     if (!params || !args) return { type: memberType, substituted: false }
     const idx = params.indexOf(memberType)
     if (idx < 0) return { type: memberType, substituted: false }
@@ -6509,7 +7008,7 @@ class TypeScriptAnalysisRunner {
       // receiver's type that the row's scope does not have. The flat map is the fallback for a
       // caller that built the facts without scope information.
       const hint = facts.localsByScope.size > 0
-        ? lookupLocalInScope(facts, scope, object.text)
+        ? lookupLocalInScope(facts, scope, object.text, callee.startIndex)
         : facts.locals.get(object.text)
       if (hint === null) return undefined
       if (hint) return hint
@@ -6531,7 +7030,7 @@ class TypeScriptAnalysisRunner {
     if (object.type === "subscript_expression") {
       const base = object.childForFieldName("object") ?? object.namedChild(0)
       if (base && base.type === "identifier") {
-        const elem = facts.elementTypes.get(base.text)
+        const elem = lookupReceiverFact(facts, facts.elementTypes, scope, base.text)
         if (elem) return { type: elem, evidence: "element" }
       }
       return undefined
@@ -6548,7 +7047,7 @@ class TypeScriptAnalysisRunner {
         (firstProperty.type === "identifier" || firstProperty.type === "property_identifier")
       ) {
         const rootHint = facts.localsByScope.size > 0
-          ? lookupLocalInScope(facts, scope, root.text)
+          ? lookupLocalInScope(facts, scope, root.text, callee.startIndex)
           : facts.locals.get(root.text)
         if (rootHint) {
           const declaredMemberType = facts.typeMembers.get(rootHint.type)?.get(firstProperty.text)
@@ -6556,7 +7055,8 @@ class TypeScriptAnalysisRunner {
             // C4 GENERIC PROPAGATION: when the member's declared type IS the class's type parameter
             // and the receiver instantiates it (`Box<Widget>`), the owner is the ARGUMENT (Widget),
             // and the evidence class records that the type came through the arguments.
-            const resolved = this.substituteMemberType(facts, root.text, rootHint.type, declaredMemberType)
+            const resolved = this.substituteMemberType(facts, root.text, rootHint.type, declaredMemberType, scope)
+            if (!resolved.substituted && facts.typeParams.get(rootHint.type)?.includes(declaredMemberType)) return undefined
             return resolved.substituted
               ? { type: resolved.type, evidence: "generic" }
               : { type: declaredMemberType, evidence: rootHint.evidence }
@@ -6574,10 +7074,23 @@ class TypeScriptAnalysisRunner {
         inner && inner.type === "this" && property &&
         (property.type === "identifier" || property.type === "property_identifier" || property.type === "private_property_identifier")
       ) {
-        return facts.classFields.get(property.text)
+        const owner = this.thisFieldOwner(callee)
+        return owner ? facts.classFields.get(`${owner}:${property.text}`) : undefined
       }
     }
     return undefined
+  }
+
+  /** An unknown local receiver must not fall back to a file-wide method-name guess. */
+  private hasLocalReceiverBinding(callee: Node, facts: ReceiverFacts, scope: number): boolean {
+    if (callee.type !== "member_expression") return false
+    const receiver = callee.childForFieldName("object")
+    let root = receiver
+    while (root && ["member_expression", "subscript_expression", "parenthesized_expression", "as_expression", "non_null_expression"].includes(root.type)) {
+      root = root.childForFieldName("object") ?? root.namedChild(0)
+    }
+    if (root?.type === "this" && receiver?.type !== "this") return true
+    return root?.type === "identifier" && lookupLocalInScope(facts, scope, root.text, callee.startIndex) !== undefined
   }
 
   /**
@@ -6703,11 +7216,15 @@ class TypeScriptAnalysisRunner {
               // a chain's call does not take the chain's opening line.
               ...this.lineField(callee.type === "member_expression" ? (callee.childForFieldName("property") ?? callee) : callee),
               metadata: {
+                ...(currentSymbol?.range.startIndex !== undefined ? { sourceStartIndex: currentSymbol.range.startIndex } : {}),
+                callSiteStartIndex: n.startIndex,
                 calleeExpression: callee.text,
                 // The receiver's declared type, when the syntax states one. The
                 // store re-resolves the row inside that class (member-owner pass),
                 // which is what stops `c.run()` binding to another file's `run`.
                 ...(ownerHint ? { owner: ownerHint.type, ownerEvidence: ownerHint.evidence } : {}),
+                ...(!ownerHint && this.hasLocalReceiverBinding(callee, receiverTypes, this.scopeIdOf(callee))
+                  ? { typescriptUnresolvedReceiver: true } : {}),
                 // WHICH WRAPPER THE LEAF WAS REDUCED THROUGH, recorded only when there was
                 // one. A consumer can then tell `(foo)()` from `foo()` and `foo!()` from
                 // `foo()` without re-parsing, and an audit of `calleeLeafName`'s allowlist

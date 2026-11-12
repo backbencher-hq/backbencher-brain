@@ -9,6 +9,8 @@ import { createHash } from "crypto"
 import { fileURLToPath } from "url"
 import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
+import type { EmbeddingDrainProgress } from "../ast/parallel-indexer"
+import { formatEmbeddingDrainLine } from "./index-progress"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel, ParallelIndexerConfig } from "../ast/parallel-indexer"
 import { IndexProgressRenderer, SUPPORT_EMAIL } from "./index-progress"
@@ -79,8 +81,10 @@ async function cmdIndex(
   const S = colorEnabled({ isTTY: process.stdout.isTTY })
   // M30.S2: first-run embedding setup. Interactive ONLY on a TTY with no
   // config anywhere; non-TTY never hangs. --no-setup skips entirely.
-  const { maybeRunFirstRunSetup } = await import("../setup/setup-wizard")
-  await maybeRunFirstRunSetup({ noSetup: opts.noSetup === true })
+  // The v2 wizard is key-first: it detects the provider from the key, lists the
+  // embedding models that key can use, and validates the selection before saving.
+  const { maybeRunEmbeddingSetup } = await import("../setup/embedding-setup")
+  await maybeRunEmbeddingSetup({ noSetup: opts.noSetup === true })
   const pid = getProjectId(abs)
   // M40.A5: executable semantics matrix (docs/m40/PLAN.md "bb index flag
   // semantics matrix"). The legal-combination whitelist is the source of
@@ -377,7 +381,7 @@ async function cmdIndex(
   // followed by ~10 minutes of no output at all, which is indistinguishable from a
   // hang (bb's own closing line invites reporting exactly that). Announce the wait,
   // bound it, and report how it ended.
-  const { pendingEmbeddingCount, embeddingDrainPending, flushBackgroundEmbeddings } = await import("../ast/parallel-indexer")
+  const { pendingEmbeddingCount, embeddingDrainPending, flushBackgroundEmbeddings, reconcileEmbeddingModel } = await import("../ast/parallel-indexer")
   const pendingAtEnd = pendingEmbeddingCount()
   // WAIT FOR THE WHOLE QUEUE, NOT JUST ITS ITEM COUNTER. An active drain job is no longer "queued", so
   // the item count can read 0 while provider calls and their writes are in flight — measured 2026-11-01:
@@ -390,13 +394,90 @@ async function cmdIndex(
         ? `  finishing ${pendingAtEnd.toLocaleString()} embedding(s) — the index and its relationships are already complete; these are vectors (waiting up to ${waitSecs}s)`
         : `  finishing embedding work — the index and its relationships are already complete; vectors are still being written (waiting up to ${waitSecs}s)`,
     )
-    const drain = await flushBackgroundEmbeddings({ timeoutMs: waitMs })
+    // A minutes-long wait must be visible and honest. On a TTY this is one rewritten
+    // line; off a TTY it becomes a milestone line every 5s so a log is readable.
+    // A provider 429 is named as a rate limit with its retry countdown and the
+    // growing backoff, never left to look like a weak indexer.
+    const isTTY = Boolean(process.stdout.isTTY)
+    let lastProgress: EmbeddingDrainProgress | null = null
+    // Read through a function: the value is assigned from a polling callback, which
+    // control-flow analysis cannot see, and a direct read would be narrowed to null.
+    const lastDrainProgress = (): EmbeddingDrainProgress | null => lastProgress
+    let lastNonTtyLog = 0
+    const renderDrain = (progress: EmbeddingDrainProgress): void => {
+      lastProgress = progress
+      const line = formatEmbeddingDrainLine(progress)
+      if (isTTY) process.stdout.write(`\r\x1b[K${line}`)
+      else if (Date.now() - lastNonTtyLog >= 5000) {
+        lastNonTtyLog = Date.now()
+        console.log(line)
+      }
+    }
+    const drain = await flushBackgroundEmbeddings({ timeoutMs: waitMs, pollMs: 500, onProgress: renderDrain })
+    if (isTTY) process.stdout.write("\r\x1b[K")
     if (drain.resolved === "drained") {
       console.log("  ✓ embedding queue drained")
     } else {
+      const finalProgress = lastDrainProgress()
+      const rateNote = finalProgress?.rateLimited
+        ? `; provider still rate-limited (retry in ${Math.max(1, Math.ceil(finalProgress.retryInMs / 1000))}s)`
+        : ""
       console.log(
-        `  ⚠ ${drain.pendingItems.toLocaleString()} embedding(s) still queued after ${waitSecs}s — semantic search is partial for those symbols; run \`bb index --changed\` to finish them`,
+        `  ⚠ ${drain.pendingItems.toLocaleString()} embedding(s) still queued after ${waitSecs}s${rateNote} — semantic search is partial for those symbols; run \`bb index --changed\` to finish them`,
       )
+    }
+  }
+
+  // VECTORS ARE DERIVED DATA THAT A MODEL CHANGE INVALIDATES. The incremental path
+  // only queues symbols from files it parsed; an unchanged index parsed nothing, so
+  // changing the provider left every old vector in place (measured on bettercap:
+  // new model saved, `bb index` said "nothing to index", DB still held the old
+  // model's vectors). This runs AFTER the ordinary drain, so a run that parsed files
+  // has already embedded them; the pass then compares the stored models against the
+  // configured one and re-embeds the whole symbol set only when they disagree.
+  if (!stats.cancelled) {
+    let reconcileTTY = Boolean(process.stdout.isTTY)
+    let reconcilePct = -1
+    const clearReconcileLine = (): void => {
+      if (reconcileTTY) process.stdout.write("\r\x1b[K")
+    }
+    try {
+      const reconciled = await reconcileEmbeddingModel(pid, abs, {
+        onStart: (info) => {
+          const previous = info.storedModels.length > 0
+            ? info.storedModels.map((row) => `${row.model} (${row.dimension}d)`).join(", ")
+            : "no vectors yet"
+          console.log(
+            `  embeddings: configured model changed — ${previous} → ${info.configuredModel}; re-embedding ${info.symbols.toLocaleString()} of ${info.totalSymbols.toLocaleString()} symbol(s) still on another model…`,
+          )
+        },
+        onProgress: ({ done, total }) => {
+          const pct = total > 0 ? Math.floor((done / total) * 100) : 100
+          if (reconcileTTY) {
+            process.stdout.write(`\r\x1b[K  embeddings: processed ${done.toLocaleString()}/${total.toLocaleString()} symbols (${pct}%)`)
+          } else if (pct >= reconcilePct + 20 || done === total) {
+            reconcilePct = pct
+            console.log(`  embeddings: processed ${done.toLocaleString()}/${total.toLocaleString()} symbols (${pct}%)`)
+          }
+        },
+      })
+      clearReconcileLine()
+      if (reconciled.status === "reconciled") {
+        const errorNote = reconciled.remaining > 0 && reconciled.lastError
+          ? ` [last provider error: ${String(reconciled.lastError).slice(0, 200)}]`
+          : ""
+        const remainingNote = reconciled.remaining > 0
+          ? reconciled.stoppedEarly
+            ? `; stopped early after repeated provider failures — ${reconciled.remaining.toLocaleString()} still missing it, existing vectors kept; rerun bb index when the provider is available${errorNote}`
+            : `; ${reconciled.remaining.toLocaleString()} still missing it (provider failed/rate-limited — existing vectors kept; rerun bb index to continue)${errorNote}`
+          : ""
+        console.log(
+          `  ✓ embeddings: re-embedded ${reconciled.embedded.toLocaleString()}/${reconciled.symbols.toLocaleString()} pending symbols with ${reconciled.configuredModel}${remainingNote}`,
+        )
+      }
+    } catch (reconcileErr: any) {
+      clearReconcileLine()
+      console.log(`  ⚠ embedding reconcile failed: ${reconcileErr?.message ?? reconcileErr} — old vectors are unchanged; run \`bb index\` again`)
     }
   }
 
@@ -406,6 +487,33 @@ async function cmdIndex(
   const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
   const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
+  // Derived-graph facts for the completion report. Read after the drain, like the
+  // counts above; a query failure must never break the report, so each is guarded.
+  type CountRow = { c: number }
+  const safeCount = (sql: string): number => {
+    try {
+      return Number((db.prepare(sql).get() as CountRow | undefined)?.c ?? 0)
+    } catch {
+      return 0
+    }
+  }
+  const crossLanguage = safeCount("SELECT COUNT(*) AS c FROM brain_relationship WHERE is_cross_language = 1")
+  const taintFlows = safeCount("SELECT COUNT(*) AS c FROM brain_taint_flow")
+  const enriched = safeCount(
+    "SELECT COUNT(*) AS c FROM brain_relationship WHERE metadata IS NOT NULL AND json_valid(metadata) AND json_extract(metadata, '$.inferredAt') IS NOT NULL",
+  )
+  let patternRows: Array<{ pattern: string; count: number }> = []
+  try {
+    patternRows = db
+      .prepare(
+        `SELECT json_extract(metadata, '$.pattern') AS pattern, COUNT(*) AS count
+           FROM brain_relationship
+          WHERE metadata IS NOT NULL AND json_valid(metadata)
+            AND json_extract(metadata, '$.pattern') IS NOT NULL
+          GROUP BY pattern ORDER BY count DESC LIMIT 5`,
+      )
+      .all() as Array<{ pattern: string; count: number }>
+  } catch {}
   // Reclaim the run's WAL. Nothing in bb truncates it, so it is the sum of everything written since the
   // file was created — the previous full index left 766 MB beside a 6.9 GB database, and bb_health
   // reported it (correctly) as a cost on every later read. The writes have stopped here (the embedding
@@ -414,6 +522,10 @@ async function cmdIndex(
   const { reclaimSpace: reclaimEndSpace, formatSpace: formatEndSpace } = await import("../ast/index-space")
   const endSpace = reclaimEndSpace(db, BrainDatabase.getDbPath(pid), { vacuum: false })
   console.log(dim(`  index space: ${formatEndSpace(endSpace)}`, S))
+  // The path is part of the report: a user who wants to free the disk needs to know
+  // which directory holds this project's database, not just that one exists.
+  const indexDbPath = BrainDatabase.getDbPath(pid)
+  console.log(dim(`  index: ${indexDbPath} · remove with: rm -rf ${path.dirname(indexDbPath)}`, S))
   // THE AUTHORITATIVE HEALTH LINE, after the drain — the in-run battery deferred Embedding Coverage
   // while vectors were still being written (see runIndexHealthCheck's deferEmbeddingCoverage), so this
   // is the one verdict that grades a complete index. `bb health` runs the same battery later; the two
@@ -481,6 +593,34 @@ async function cmdIndex(
     console.log(dim(`  note: ${storeFailures} store batch(es) rolled back and were recovered — the index is complete`, S))
   }
   console.log(dim(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`, S))
+  if (!stats.cancelled) {
+    const derived: string[] = []
+    if (crossLanguage > 0) derived.push(`${crossLanguage.toLocaleString()} cross-language edges`)
+    if (taintFlows > 0) derived.push(`${taintFlows.toLocaleString()} taint flows`)
+    if (enriched > 0) derived.push(`${enriched.toLocaleString()} relationships explained`)
+    if (derived.length > 0) console.log(dim(`  graph: ${derived.join(" · ")}`, S))
+    if (patternRows.length > 0) {
+      console.log(dim(`  patterns: ${patternRows.map((row) => `${row.pattern} ${Number(row.count).toLocaleString()}`).join(" · ")}`, S))
+    }
+    // One run line: workers, language count, phase timings and wall time. Every value
+    // comes from the run's own accounting; a missing field is omitted, never zero-filled.
+    const ph = stats.phases
+    const fmtMs = (ms: number | undefined): string | null => (ms == null ? null : ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`)
+    const phaseBits: string[] = []
+    const discovery = fmtMs(ph?.discoveryMs)
+    const parse = fmtMs(ph?.parseMs)
+    const derive = fmtMs(ph?.postProcessingMs)
+    if (discovery) phaseBits.push(`discovery ${discovery}`)
+    if (parse) phaseBits.push(`parse ${parse}`)
+    if (derive) phaseBits.push(`derive ${derive}`)
+    const runBits: string[] = []
+    if (ph?.workerCount) runBits.push(`${ph.workerCount} workers`)
+    const languageCount = ph?.byLanguage ? Object.keys(ph.byLanguage).length : 0
+    if (languageCount > 0) runBits.push(`${languageCount} language${languageCount === 1 ? "" : "s"}`)
+    runBits.push(...phaseBits)
+    runBits.push(`total ${secs}s`)
+    console.log(dim(`  run: ${runBits.join(" · ")}`, S))
+  }
   // Embedding outcomes and the models present in the index.
   //
   // Embeddings are produced after parsing, in the background, so a provider
@@ -517,7 +657,7 @@ async function cmdIndex(
     for (const m of embModels) {
       console.log(`      ${m.model} (${m.dimension}d): ${m.count.toLocaleString()} vectors`)
     }
-    console.log(`    fix: reindex with one provider — \`bb index --force\``)
+    console.log(`    fix: rerun \`bb index\` to continue converting the remaining symbols (no re-parse); or use one provider and rebuild with \`bb index --force\``)
   } else if (embModels.length === 1) {
     console.log(`  embeddings: ${embModels[0].model} (${embModels[0].dimension}d)`)
   }
@@ -1176,12 +1316,29 @@ Full reference: man bb, or docs/indexing/ in the repository.
     .description("embedding provider setup (API key, model)")
   setupCmd
     .action(async () => {
-      const { runSetupWizard } = await import("../setup/setup-wizard")
+      const { runEmbeddingWizard } = await import("../setup/embedding-setup")
       if (!process.stdin.isTTY) {
         console.error("✗ bb setup requires an interactive terminal.")
         process.exit(1)
       }
-      await runSetupWizard()
+      await runEmbeddingWizard({ input: process.stdin, output: process.stdout })
+    })
+  setupCmd
+    .command("reset")
+    .description("remove the saved embedding provider, key and model (keeps the index)")
+    .action(async () => {
+      const { resetEmbeddingConfig } = await import("../setup/embedding-setup")
+      const result = resetEmbeddingConfig()
+      if (!result.existed) {
+        console.log("no embedding config saved — nothing to reset")
+        return
+      }
+      if (result.removed.length === 0) {
+        console.log(`no embedding keys found in ${result.path} — nothing to reset`)
+        return
+      }
+      console.log(`✓ removed ${result.removed.join(", ")} from ${result.path}`)
+      console.log("  Run `bb setup` to configure embeddings again, or `bb index --force` to rebuild without them.")
     })
   setupCmd
     .command("show")

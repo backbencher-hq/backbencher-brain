@@ -16,6 +16,22 @@
 - Language detection: extensions `.ts` / `.mts` / `.cts` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealTypeScriptAnalyzer`
 
+## Current receiver-resolution checks
+
+Array-element and explicit generic-argument evidence follows the declaring
+lexical binding. Sibling functions, nested blocks, and unknown/destructured
+shadowing bindings cannot borrow another binding's type facts. An uninstantiated
+type parameter does not become a concrete receiver owner. When an established
+local binding supplies no receiver type, calls carry
+`typescriptUnresolvedReceiver`; storage withdraws name-only guesses for those
+calls. This marker does not claim complete flow-sensitive inference.
+
+`validation/m14/verify-typescript-receiver-scopes.mts` compares 20 source/site/
+destination tuples with the installed TypeScript compiler, then checks stored
+endpoints and bb_graph callers. Inferred generic constructor arguments remain
+explicitly outside the supported syntax evidence. Factory return maps, class
+field identity, and the broader `uses` oracle are still under review.
+
 ## Symbol contract
 
 | Field | Supported? | How extracted (AST node/field) |
@@ -43,7 +59,7 @@ measurement and is cited as such.
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ yes | `call_expression` → the callee's LEAF name by `calleeLeafName()` (identifier; member → property; private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member publish NO edge); source = the enclosing function/method leaf; builtins filtered (console output, Object leaf methods, `super`). A member call whose receiver type the SYNTAX proves carries `metadata.owner` = that class plus `metadata.ownerEvidence` naming which form stated it (`assignment`, `annotation`, `param`, `this`, and the D7 classes `destructured`, `element`, `generic`, `factory`, `cast`, `enum`, `class-static`) — the STORE channel `src/ast/member-owner-resolution.ts` binds the member inside THAT class instead of by bare name. A name declared with two different types in one file is dropped whole, not guessed | 0.9 |
+| calls | ✅ yes | `call_expression` → the callee's LEAF name by `calleeLeafName()` (identifier; member → property; private `#` kept; `(foo)()` → `foo`; call-of-call / subscript / `super` / anonymous / `await`-wrapped member publish NO edge); source = the enclosing function/method leaf; builtins filtered (console output, Object leaf methods, `super`). A member call whose receiver type the SYNTAX proves carries `metadata.owner` = that class plus `metadata.ownerEvidence` naming which form stated it (`assignment`, `annotation`, `param`, `this`, and the D7 classes `destructured`, `element`, `generic`, `factory`, `cast`, `enum`, `class-static`) — the STORE channel `src/ast/member-owner-resolution.ts` binds the member inside THAT class instead of by bare name. Conflicts within a lexical binding suppress its receiver type; sibling bindings retain separate facts | 0.9 |
 | extends | ✅ yes | `class_heritage` → `extends_clause` → the base name (a qualified base stays qualified; a missing type from error recovery is skipped rather than emitted as `""`). **A CALL-SHAPED heritage is a mixin application: its base name is the CALLEE** (`class Post extends Tagged(Timestamped)` → `Tagged`), so an `extends` edge never names a call expression, measured on the fixture `typescript/mixin-application` whose negative half forbids a target ending in `(` | 1.0 |
 | implements | ✅ yes | `implements_clause` → each interface LEAF name (`heritageBaseName` strips `<...>` AND the qualifier) | 1.0 |
 | uses | ✅ yes | Four syntactic arms, each labelled in metadata: a declared-type reference (`declaredTypeRole`), a type reference (`isTypeReference`), a template interpolation (`isTemplateInterpolation`), a value/member read in expression position (`isFieldAccess`). The duplicate-`references` arbitration is the `references` row's business | 0.85–0.9 |
@@ -585,3 +601,165 @@ the coverage is never pooled into one claim. **The four syntax-proven forms do n
 wall**: they reach about one member call in six; the remaining five need receiver types the
 syntax does not state (unions/primitives, destructuring, factory returns, post-declaration
 assignment) and are left unowned rather than guessed.
+
+### Factory binding verification
+
+Factory-return hints follow lexical callable bindings. An unknown shadowing
+parameter/local, conflicting overload return, uninstantiated type parameter, or
+write to the callable prevents borrowing another declaration's return annotation.
+Calls preserve their source declaration offset through storage, including nested
+functions sharing a source line. The 16-site TypeScript compiler-backed regression
+and three source mutations are in
+`validation/m14/verify-typescript-factory-bindings.mts` and its mutation runner.
+Overload selection and flow-sensitive callable reassignment remain unsupported.
+
+### Field binding verification
+
+Field receiver evidence is local to a class declaration and its static or instance
+side. Arrow functions retain lexical `this`; ordinary functions and object methods
+do not borrow their enclosing class's fields. Unknown field chains remain
+unresolved. Fifteen compiler-backed sites, worker edit/restoration, graph queries,
+and three source mutations cover this pass. Inherited-field lookup and arbitrary
+field writes are still outside this evidence boundary.
+
+### Generic argument positions
+
+Explicit generic arguments retain their positions even when a primitive, union,
+array, or unknown argument cannot name a receiver owner. Visible type parameters
+remain unknown until instantiated. The 12-site compiler-backed generic matrix
+checks direct/worker storage, incremental edits, graph results and three source
+mutations. Defaults and inferred generic arguments are still unsupported here.
+
+### Signature parameter scopes
+
+Parameters in ambient declarations, interface/abstract methods, callable types,
+and constructor signatures belong to the signature, not its surrounding runtime
+scope. The factory matrix includes seven signature forms and rejects removal of
+each boundary independently. Adding an interface parameter named `make` must not
+change a runtime factory call elsewhere in the file.
+
+### Receiver writes
+
+Writes to inferred lexical bindings withdraw initializer and collection evidence;
+destructuring, logical assignments, loop targets and closure writes are included.
+Explicit supported annotations remain static reference evidence, while `any` or
+union annotations cannot silently inherit an initializer owner. One standalone
+late initialization in the declaration block is available only after that site.
+The 36-site compiler-backed write matrix, 22 executable dispatch scenarios, eight
+source mutations and worker edit/restoration checks cover this repair. General
+control flow, alias effects and field/collection content writes remain outside it.
+
+### Same-line call identity
+
+Each `calls` edge carries the call-expression start offset in
+`metadata.callSiteStartIndex`. Storage and bb graph deduplication use it so
+repeated calls on one line survive, including calls to different receiver
+classes with the same method name. Duplicate delivery of the same site remains
+idempotent. Twelve independently compiler-derived source/line/offset/owner tuples,
+Unicode source, nested callers, worker source shifts/restoration, both graph
+directions, six invalid metadata shapes and five source mutations verify this
+path. Existing indexes need the changed TypeScript files reindexed to acquire
+these offsets. Other edge kinds still use their existing identity rules.
+
+### Loop receiver bindings
+
+For-of receiver facts follow JavaScript binding scopes: `var` is function-scoped,
+`let`/`const` are loop-scoped, and a target without a declaration writes its existing
+binding. Repeated var declarations participate in conservative write invalidation.
+Thirteen compiler-backed sites, three source mutations and worker edit/restoration
+checks verify this behavior; loop execution and flow-sensitive narrowing are not
+inferred.
+
+### Inferred field writes
+
+Writes to an inferred field remove its initializer evidence from both `this`
+lookup and class member lookup. Known owners are distinguished by class and
+static/instance side; patterns, computed access and lexical arrows participate.
+Explicit field annotations remain static reference evidence. Twenty-three
+compiler-backed call sites, 15 executable scenarios, five source mutations and
+worker edit/restoration checks cover this path. Untyped aliases, cross-file
+writes and arbitrary mutator calls are not resolved by this scan. The inherited
+field extension below handles a bounded same-file hierarchy. A dynamic property key conservatively invalidates all inferred fields
+on its known owner.
+
+### Inherited fields
+
+Concrete field facts follow unique top-level, same-file classes with bare-name
+parents, through multiple inheritance levels. Unknown own declarations (including
+constructor parameter properties), methods, accessors and computed members block
+ancestor fallback. Static and instance fields remain separate. A known-owner
+write through a subclass invalidates the inferred declaring field before any
+inherited facts are propagated; a child's own field does not invalidate a
+separate parent field. Supported annotations remain static evidence.
+
+The gate `validation/m14/verify-typescript-inherited-fields.mts` checks 33 exact
+source/line/offset/owner tuples and 15 executable scenarios. Seven implementation
+mutants fail. Storage, bb graph caller sets and real worker parent changes,
+source shifts and restoration are checked. Generic parameter substitution across
+heritage, nested/namespace-qualified/dynamic parents, cross-file hierarchies and
+external class-name static field chains remain unsupported by this extension.
+Constructor parameter properties block inherited inference but are not newly
+inferred themselves. Computed own names conservatively block inheritance when
+identity is unavailable. This is not a runtime dispatch guarantee.
+
+### Writes through aliases
+
+For invalidation only, the field-write scan follows lexical identifier aliases
+through declaration initializers and simple assignments. Possible origins survive
+rebindings, including cycles, closure captures, new instances and static class
+aliases. `this` origins respect arrow capture and ordinary-function rebinding;
+parenthesized/cast/non-null wrappers retain the origin. A possible write removes
+an inferred field owner for the whole declaration. Explicit supported field
+annotations retain static reference evidence.
+
+The alias gate checks 37 exact call sites, 19 executable scenarios, five source
+mutations, storage and bb graph callers. Real workers verify write removal and
+restoration as well as source-offset shifts. This bounded provenance scan does
+not infer alias call targets or prove temporal alias identity. Destructured and
+container-derived aliases, conditional/logical alias assignments, arbitrary call
+effects, cross-file aliases and general interprocedural analysis remain open.
+
+### Conditional alias origins
+
+Field invalidation now follows both value branches of a ternary expression,
+logical `&&`/`||`/`??` operands, logical-assignment right sides, assignment-expression
+values and the final operand of comma expressions. Conditions and discarded
+comma operands are excluded. Origins are conservatively combined without
+claiming that a branch executes. The conditional-alias gate verifies 28 exact
+call sites, 12 executions, five source mutants, fresh graph callers and real
+worker edits/restoration. Destructured aliases, containers and arbitrary call
+effects remain separate gaps.
+
+### Destructured alias origins
+
+Field invalidation projects literal-backed object keys and array positions
+through destructuring declarations and assignments. Renamed/nested patterns,
+defaults, shorthand and quoted/computed literal keys, container aliases, static
+member/index reads and object spreads retain possible origins. Array holes count
+as positions. Object/array rest bindings are copies and do not acquire the
+source object's identity. Projecting a property from a typed object does not
+mistake the container itself for that property's value. Recursive projections
+are guarded by active lexical bindings as well as previously visited paths.
+
+The destructured-alias gate checks 50 exact sites, 23 runtime scenarios, six
+source mutants and real-worker write removal/restoration and offset shifts,
+including storage and bb graph. Dynamic keys, array spreads of unknown length,
+container-content mutations, arbitrary calls, parameter-pattern projections and
+cross-file alias effects remain outside this extension. Defaults and spread
+origins are conservative possibilities, not a claim about which branch wins.
+
+### Repeated alias declarations
+
+All declaration initializers contribute possible origins for a shared lexical
+binding, including repeated `var` declarations inside blocks and destructured
+`var` declarations. A declaration without an initializer does not erase an earlier
+origin. Block-scoped shadows remain separate. The existing single-declaration
+map still serves late-initialization checks; alias provenance has its own list.
+Twenty exact call sites, six executable scenarios, two rejected source mutations
+and real-worker origin changes/restoration verify this repair. Loop-produced
+alias values and arbitrary content writes remain outside this declaration scan.
+
+The inheritance and alias regression gates also have a dedicated static check:
+`bunx tsc --noEmit -p validation/m14/tsconfig.alias-gates.json`. It includes all
+ten `.mts` gate and mutation-runner entry points, which the older script ratchet
+does not include. The dedicated check passes with zero diagnostics.

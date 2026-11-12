@@ -97,7 +97,7 @@ async function runSuite(): Promise<void> {
   const sampled = buildStalenessEnvelope({ fresh: 1, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "sampled" }, { kind: "dir" })
   check("envelope mode maps sampled", sampled.mode === "sampled")
   check("registered dir remediation names bb index --changed and bb_index", FRESHNESS_REMEDIATION.dir.includes("bb index --changed") && FRESHNESS_REMEDIATION.dir.includes("bb_index"))
-  check("registered file remediation names bb index with a file path and bb_index", /bb index "/.test(FRESHNESS_REMEDIATION.file) && FRESHNESS_REMEDIATION.file.includes("bb_index"))
+  check("registered file remediation names bb index with a file path and bb_index", /bb index --file "/.test(FRESHNESS_REMEDIATION.file) && FRESHNESS_REMEDIATION.file.includes("bb_index"))
   negative("stale envelope carries non-empty remediation naming the registered interface", env.remediation.includes("bb index --changed"), env.remediation)
   negative("fresh envelope remediation is empty (silence when fresh)", buildStalenessEnvelope({ fresh: 5, stale: 0, missing: 0, staleRatio: 0, freshnessMode: "complete" }, { kind: "dir" }).remediation === "")
 
@@ -144,7 +144,7 @@ async function runSuite(): Promise<void> {
     const file = await run("bb_search", { mode: "file", filePath: "src/app.ts" })
     check("file mode: block present with exact keys", file.freshness && JSON.stringify(Object.keys(file.freshness).sort()) === JSON.stringify([...REGISTERED_KEYS].sort()), JSON.stringify(file.freshness))
     check("file mode: stale flag true after edit", file.stale === true)
-    negative("file mode: remediation names this exact file via registered form", typeof file.freshness.remediation === "string" && file.freshness.remediation.includes('bb index "src/app.ts"') && file.freshness.remediation.includes("bb_index"), file.freshness.remediation)
+    negative("file mode: remediation names this exact file via registered form", typeof file.freshness.remediation === "string" && file.freshness.remediation.includes('bb index --file "src/app.ts"') && file.freshness.remediation.includes("bb_index"), file.freshness.remediation)
     const freshFile = await run("bb_search", { mode: "file", filePath: "src/other.ts" })
     negative("file mode: remediation empty when file is fresh", freshFile.stale === false && freshFile.freshness.remediation === "", freshFile.freshness.remediation)
   } finally {

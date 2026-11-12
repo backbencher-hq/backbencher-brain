@@ -765,7 +765,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     payloads: {
       complexity: { key: "expectComplexity", pin: "php/payload-and-complexity" },
     },
-    title: "php managed-OO wave (#268)",
+    title: "php managed-OO wave (#268); canonical namespace/type binding verified with native and worker controls",
   },
   objc: {
     analyzerFile: "src/ast/real-objective-c-analyzer.ts",

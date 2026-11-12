@@ -170,11 +170,17 @@ export const handler: ToolHandler = async (args, { projectId }) => {
         // above was DERIVED from the stored kind and confidence — a reader can
         // tell a stored claim from a derivation without a second query.
         evidenceClass: e.metadata?.evidenceClass ?? null,
+        // The stored enrichment "why" (role, pattern, layerFlow, criticality,
+        // frequency and the inferredAt marker), nested exactly as the graph engine
+        // parsed it. Absent when the row carries no enrichment; nothing is inferred
+        // at read time.
+        ...(e.metadata?.enrichment ? { enrichment: e.metadata.enrichment } : {}),
         ...(e.metadata?.method === "regex" ? { extractionMethod: "regex" } : {}),
         isCrossLanguage: e.isCrossLanguage === true,
         bridgeMechanism: e.bridge ?? e.bridgeMechanism ?? null,
         depth: e.depth,
         callSite: e.callSite ?? null,
+        ...(e.metadata?.callSiteStartIndex !== undefined ? { callSiteStartIndex: e.metadata.callSiteStartIndex } : {}),
         // Whether the edge is about the symbol that was asked for, or about one of
         // its members folded on by the owner cascade. `matchedMember` names the
         // member the stored row actually referenced, which is what makes the

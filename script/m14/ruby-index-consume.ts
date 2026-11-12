@@ -4,10 +4,9 @@
  *   1 REOPEN: a class opened in two files is ONE declaration with both members (merged spec);
  *     RED control: the SAME index built with mergeSameKindTypeDecls=false counts 2 (what the build edit prevents)
  *   2 FAIL-CLOSED: flag off, absent index, or incomplete index ⇒ relationships byte-identical to pre-index
- *   3 OVERRIDE cross-file: base class+method in a sibling file ⇒ metadata.projectIndexVerified + structural confidence
- *   4 INSTANTIATION cross-file: class declared in a sibling file ⇒ metadata.projectIndexDeclared
- *   5 MIXIN sibling-module: include Mod with module declared elsewhere ⇒ projectIndexDeclared
- *   6 EXTENDS cross-file: superclass declared elsewhere ⇒ projectIndexDeclared
+ *   3 OVERRIDE cross-file: a matching name is an inferred candidate, never structural proof
+ *   4-6 INSTANTIATION / MIXIN / EXTENDS: name matches carry projectIndexNameCandidate;
+ *       the shallow index does not prove lexical constant resolution
  *   7 CALLS UNTOUCHED: no calls row gains projectIndex metadata (name-only binding forbidden)
  * usage: BB_RUBY_INDEX_CONSUME=1 bun run script/m14/ruby-index-consume.ts
  */
@@ -71,18 +70,18 @@ const ctx = { projectIndex: index }
 const rel = (r: any, type: string, target: string): any => (r.relationships ?? []).find((e: any) => String(e.type) === type && String(e.target) === target)
 const childOut = analyze(childSrc, "child.rb", ctx)
 const ov = rel(childOut, "overrides", "Base.run")
-check("cross-file override verified (metadata.projectIndexVerified + structural confidence)", !!ov?.metadata?.projectIndexVerified && (ov?.confidence ?? 0) >= 0.9)
+check("cross-file override stays an inferred name candidate", !!ov?.metadata?.projectIndexNameCandidate && !ov?.metadata?.projectIndexVerified && ov?.confidence === 0.65 && ov?.metadata?.evidenceClass === "inferred")
 check("overrides declined counted (metadata.projectIndex.declined present)", typeof childOut.metadata?.projectIndex === "object")
 const extendsEdge = rel(childOut, "extends", "Base")
-check("cross-file extends declared", !!extendsEdge?.metadata?.projectIndexDeclared)
+check("cross-file extends name candidate", !!extendsEdge?.metadata?.projectIndexNameCandidate && !extendsEdge?.metadata?.projectIndexDeclared)
 const consumerOut = analyze("class Consumer\n  def go\n    Thing.new\n  end\nend\n", "consumer.rb", ctx)
-check("cross-file instantiation declared", !!rel(consumerOut, "instantiates", "Thing")?.metadata?.projectIndexDeclared)
+check("cross-file instantiation name candidate", !!rel(consumerOut, "instantiates", "Thing")?.metadata?.projectIndexNameCandidate)
 const mixedOut = analyze("class Mixed\n  include Helpers\nend\n", "mixed.rb", ctx)
-check("sibling-module mixin declared", !!rel(mixedOut, "mixes_in", "Helpers")?.metadata?.projectIndexDeclared)
+check("sibling-module mixin name candidate", !!rel(mixedOut, "mixes_in", "Helpers")?.metadata?.projectIndexNameCandidate)
 
 // 7 CALLS UNTOUCHED
 const callsTouched = (childOut.relationships ?? []).some((e: any) => String(e.type) === "calls" && e.metadata?.projectIndexVerified === true)
 check("calls untouched by the index (no call binding)", !callsTouched)
 
 if (failures.length > 0) { console.error(`INDEX CONSUME CONTRACT FAILED — ${failures.length}`); process.exit(1) }
-console.log("INDEX CONSUME CONTRACT PASSED — reopen-merge, fail-closed, and four decidable classes exercised; calls untouched")
+console.log("INDEX CONSUME CONTRACT PASSED — reopen-merge, fail-closed, inferred name candidates; calls untouched")

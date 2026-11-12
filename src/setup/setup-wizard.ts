@@ -230,7 +230,16 @@ export async function validateKey(baseURL: string, apiKey: string, model: string
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`, // [pin]
       },
-      body: JSON.stringify({ model, input: "test", encoding_format: "float" }),
+      body: JSON.stringify({
+        model,
+        input: "test",
+        encoding_format: "float",
+        // NVIDIA NIM's Nemotron 3.5 embedding models are asymmetric and require
+        // the passage/query distinction; a setup probe is a document passage.
+        ...(/integrate\.api\.nvidia\.com/i.test(baseURL) && /nemotron-3\.5-embed|llama-nemotron-embed|embed-qa|nv-embedqa/i.test(model)
+          ? { input_type: "passage" as const }
+          : {}),
+      }),
       signal: AbortSignal.timeout(15000), // [pin]
     })
   } catch (caught) {

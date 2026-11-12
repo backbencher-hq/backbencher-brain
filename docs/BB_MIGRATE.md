@@ -227,7 +227,7 @@ file cannot be resolved counts as `missing`, not fresh.
 
 The tool **does not auto-refresh** and has no `refresh` option: the flags describe the
 index as it stands. Repair is manual: `bb index --changed` (or the `bb_index` tool with
-the project path — incremental, changed files only), or `bb index "<file>"` for one
+the project path — incremental, changed files only), or `bb index --file "<file>"` for one
 file. Nothing stale → no remediation text.
 
 ## Known limits

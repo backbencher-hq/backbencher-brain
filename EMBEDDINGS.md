@@ -10,17 +10,30 @@ brain-core ships two embedding layers:
 
 ## Interactive setup: `bb setup` (recommended first run)
 
-`bb setup` walks you through provider choice with prefilled base URL and model
-so you only paste the API key (input is hidden). It validates the key with one
-live `/embeddings` call before saving, writes `~/.bb/config.json` with mode
-0600 (owner-only), and never stores the key anywhere else. The built-in free
-options are:
+The flow starts from the only thing that identifies a provider in practice: your
+API key (input is hidden, never echoed). `bb setup` detects the provider from the
+key prefix, asks the provider for the models that key can use, filters that list
+to embedding models, and shows a numbered menu plus `m) type a model id`. There
+is no provider-wide "is an embedding model" flag, so the name filter is only a
+hint; the selection is validated with one live `/embeddings` call before
+anything is written. A failed validation keeps you in the menu
+(`r) retry m) change model k) change key s) skip`) instead of exiting with
+nothing saved. On success it writes `~/.bb/config.json` with mode 0600
+(owner-only) and never stores the key anywhere else.
 
-| Provider | base_url (prefilled) | model (prefilled) |
+| Provider | Detected from | base_url |
 |---|---|---|
-| OpenRouter free | `https://openrouter.ai/api/v1` | `liquid/lfm-2.5-embedding-350m:free` |
-| NVIDIA NIM free | `https://integrate.api.nvidia.com/v1` | `nvidia/nemotron-3-embed-1b` |
-| Custom / paid | you supply both | you supply both |
+| NVIDIA NIM (free, rate-limited) | `nvapi-` / `nvcf-` keys | `https://integrate.api.nvidia.com/v1` |
+| OpenAI | `sk-…` keys (except OpenRouter) | `https://api.openai.com/v1` |
+| Google Gemini | `AIza…` keys | `https://generativelanguage.googleapis.com/v1beta/openai` |
+| OpenRouter | `sk-or-v1-…` keys | `https://openrouter.ai/api/v1` |
+| Custom / paid | any other key, or Enter at the key prompt | you supply the base URL |
+
+**OpenRouter lists no embedding models today.** Its embeddings route exists but
+its catalogue has none, so the wizard says exactly that and offers the manual
+model-id path; it never claims a free embedding tier it cannot serve. NVIDIA
+NIM's model list is public and currently includes `nvidia/nemotron-3-embed-1b`,
+`nvidia/nemotron-3.5-embed-8b`, `nvidia/llama-3.2-nv-embedqa-1b-v1` and others.
 
 If you skip setup or have no key, `bb index` shows exactly this notice (one
 line, non-interactive environments never block on it):
@@ -31,7 +44,20 @@ note: no embedding key — semantic search will use local vectors (weaker). Setu
 
 The wizard runs **once**: an explicit skip is remembered (a `setup_skipped`
 marker in the 0600 config), so `bb index` never re-prompts after you chose to
-skip. Entering a key later via `bb setup` replaces the skip automatically.
+skip. The skip message names the way back:
+
+```
+Skipped — local word vectors are used for now. Add or change embeddings any time
+with `bb setup`; remove them with `bb setup reset`.
+```
+
+`bb setup` re-runs the key-first flow and replaces the skip automatically.
+`bb setup reset` removes `embedding_base_url`, `embedding_api_key`,
+`embedding_model` and the skip marker from the config (unrelated keys are
+preserved). Existing indexes are repaired automatically on the next `bb index`:
+when the configured model differs from the stored vectors, bb re-embeds the
+already-indexed symbols in place (no re-parse) and replaces the old rows. Use
+`bb index --force` only when you want a full parse rebuild.
 
 ### What a failed key validation means (pre-save, `bb setup`)
 
@@ -55,8 +81,18 @@ what follows: indexing does not re-run key validation, so a 503 seen here is not
 proof that indexing will retry the same way. Concretely, at index time:
 
 - A **429** degrades only that batch, per-batch, to local word vectors, and
-  further batches are held off by a bounded `Retry-After` window in the engine
-  (never a process-wide latch, so the run recovers by itself).
+  further batches are held off by a backoff window in the engine (never a
+  process-wide latch, so the run recovers by itself). A provider `Retry-After`
+  is honoured exactly; without one the wait grows per consecutive 429 — 5s, 10s,
+  20s, then a 30s cap — so a free-tier window has time to reopen. The 429 is
+  visible while it happens: the engine logs `embedding provider rate-limited —
+  retry N in Xs (backoff Ys)`, and the CLI's drain line names the countdown.
+
+When a model change is re-embedding an existing index, a rate-limited provider
+does not overwrite the vectors already stored: the pass keeps the existing rows,
+converts only what the provider accepted, and reports how many symbols remain.
+Rerun `bb index` to continue from there — each pass only sends symbols that still
+lack the configured model, so progress accumulates instead of restarting.
 - A **5xx, timeout, or unreachable provider** degrades that batch to local word
   vectors. The next batch tries again — there is no wait, so a provider that is
   down for a whole run costs one degraded batch per batch, not one at the end.
@@ -176,6 +212,21 @@ bb index ./my-project          # vectors stored under text-embedding-004
 BB_EMBEDDING_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
 BB_EMBEDDING_MODEL=text-embedding-004
 ```
+
+### Asymmetric models (NVIDIA Nemotron 3.5 and relatives)
+
+NVIDIA NIM's `nvidia/nemotron-3.5-embed-8b` (and the other Nemotron 3.5 /
+Nemotron-embed families) are asymmetric: the API requires an `input_type`, and
+documents and queries are not interchangeable. bb sends `input_type: "passage"`
+when it embeds stored symbols and `input_type: "query"` when it embeds a search
+query, and the setup probe sends `passage` too, so selecting one of these models
+during `bb setup` validates instead of failing with a 400.
+
+These models are served directly by NVIDIA NIM (`https://integrate.api.nvidia.com/v1`)
+with an `nvapi-...` key. The model id on NIM has no `:free` suffix. OpenRouter's
+free embedding route proxies the same model but caps free-model requests per day;
+that cap is fine for a small index and far too small for a bulk re-embed of tens of
+thousands of symbols. For a full index, use the NVIDIA NIM endpoint directly.
 
 ### NVIDIA NIM (key from build.nvidia.com)
 

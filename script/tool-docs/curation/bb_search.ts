@@ -16,6 +16,7 @@ export const curation: CuratedToolDocumentation = {
         "`symbols` mode: one text line per match (name [kind] file:line (language), plus a snippet when includeContent is set) and a final machine-readable `[match-set] searchMode=symbols totalMatches=… returned=… truncated=… staleCount=…` line",
         "`content` mode: JSON with the match set (`total`, `returned`, `truncated`, optional `truncationReason`), the route (`matchMode` phrase/terms, `termMatch` on the terms route), `bodyCoverage`, page-local `staleCount`/`freshCount`/`pageStaleCount`, and a `freshness` block",
         "`symbol` mode: JSON `matches` of exact indexed symbol records (id, fileId, name, symbolType, lineStart, byteStart, byteEnd, language), `found`, `totalMatches`, `returned`/`truncated` when paged, per-match `stale`, and a `freshness` block",
+        "A `filePath` with directories scopes symbol lookup to that exact indexed file. The file is checked for freshness even if no symbols match. A bare filename retains basename lookup across indexed directories.",
         "`file` mode: JSON source envelope (`searchMode`, project-relative `file`, `fileId`, `language`, `content`, `contentLength`, `truncated` at 100,000 characters, `totalMatches: 1`, `stale`) plus a file-scoped `freshness` block",
     ],
     errors: [

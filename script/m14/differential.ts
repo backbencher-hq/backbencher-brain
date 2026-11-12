@@ -67,6 +67,7 @@ import { derivePhpExportsTruth } from "./oracles/php-exports"
 // rather than measured; the spec declared that state, and this import discharges the
 // declaration.
 import { derivePhpOverridesTruth } from "./oracles/php-overrides"
+import { phpClassReferenceIdentity, phpDeclaredClassIdentity, phpFunctionReferenceCandidates } from "./oracles/php-class-names"
 import { deriveDartImportsTruth } from "./oracles/dart-imports"
 import { deriveDartOverridesTruth } from "./oracles/dart-overrides"
 // M14 ontology wave (2026-10-13): `references` — the TENTH dart label, and the last one this
@@ -1449,7 +1450,39 @@ export function sharpnessInvariants(s: { truth: number; covered: number; missing
   return bad
 }
 
-interface TreeEdge { label: string; from: string; target: string; targetUnverified?: boolean }
+interface TreeEdge { label: string; from: string; target: string; targetUnverified?: boolean; line?: number }
+
+// Disambiguate repeated callable names by the declaration that contains the
+// reported site. An absent or ambiguous site remains explicitly unverified.
+export function qualifyCallableSources(root: any, edges: readonly TreeEdge[]): TreeEdge[] {
+  const declarations = new Map<string, Array<{ start: number; end: number }>>()
+  const stack = [root]
+  while (stack.length) {
+    const node = stack.pop()
+    let name: string | undefined
+    if (["method", "singleton_method", "function_declaration"].includes(node.type)) {
+      const field = node.childForFieldName("name")
+      name = field?.text
+      if (node.type === "function_declaration" && field &&
+          (field.type === "custom_operator" || !field.isNamed)) name = `operator ${name}`
+    } else if (node.type === "init_declaration") name = "constructor"
+    if (name) {
+      name = name.replace(/^`|`$/g, "")
+      const sites = declarations.get(name) ?? []
+      sites.push({ start: node.startPosition.row + 1, end: node.endPosition.row + 1 })
+      declarations.set(name, sites)
+    }
+    for (const child of node.namedChildren) stack.push(child)
+  }
+  return edges.map(edge => {
+    const sites = declarations.get(edge.from)
+    if (!sites || sites.length < 2) return edge
+    const matches = sites.filter(site => typeof edge.line === "number" &&
+      site.start <= edge.line && edge.line <= site.end)
+    if (matches.length !== 1) return { ...edge, from: "(expr)" }
+    return { ...edge, from: `${edge.from}@${matches[0].start}` }
+  })
+}
 
 // Count distinct graph relationships. Call-site multiplicity requires an
 // oracle that supplies comparable locations on both sides.
@@ -9619,6 +9652,19 @@ export function deriveCSharpContains(root: any): { label: string; from: string; 
       return
     }
 
+    if (t === "local_function_statement") {
+      const name = n.childForFieldName("name")?.text
+      let parent = n.parent
+      while (parent && !["method_declaration", "constructor_declaration", "local_function_statement"].includes(parent.type)) parent = parent.parent
+      const owner = parent?.type === "constructor_declaration" ? "constructor" : parent?.childForFieldName("name")?.text
+      if (owner && name) {
+        const key = `${owner}|${name}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          out.push({ label: "contains", from: owner, target: name })
+        }
+      }
+    }
     if (SYMBOL_DECLS.has(t)) {
       const isType = TYPE_DECLS.has(t) || t === "enum_declaration" || t === "delegate_declaration"
       const names = namesOf(n)
@@ -10567,9 +10613,21 @@ export function deriveCSharpUsingReferences(root: any): { label: string; from: s
   return out
 }
 
-export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { label: string; from: string; target: string }[] {
+export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>, compareSources = false): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  const sourceOf = (node: any): string => {
+    if (!compareSources) return "(expr)"
+    for (let owner = node.parent; owner; owner = owner.parent) {
+      if (owner.type === "constructor_declaration") return "constructor"
+      if (owner.type === "destructor_declaration") return "Finalize"
+      if (["method_declaration", "local_function_statement", "property_declaration",
+           "class_declaration", "struct_declaration", "record_declaration"].includes(owner.type)) {
+        return owner.childForFieldName("name")?.text ?? "(expr)"
+      }
+    }
+    return "global"
+  }
   const leafOf = (t: string): string => {
     // generic_name: IComparer<Circle> -> IComparer; qualified: A.B.C -> C
     const lt = t.indexOf("<")
@@ -10816,11 +10874,11 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
           if (b.type === "primary_constructor_base_type") {
             const t = b.childForFieldName?.("type") ?? (b.namedChildren ?? []).find((c: any) =>
               c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name" || c.type === "nullable_type")
-            if (t) baseTypes.push(leafOf(t.text))
+            if (t) baseTypes.push(compareSources ? csharpTypeSpelling(t.text).split(/[<?]/, 1)[0].trim() : leafOf(t.text))
             continue
           }
           if (b.type === "argument_list") continue
-          baseTypes.push(leafOf(b.text))
+          baseTypes.push(compareSources ? csharpTypeSpelling(b.text).split(/[<?]/, 1)[0].trim() : leafOf(b.text))
         }
         const isInterfaceDecl = n.type === "interface_declaration"
         for (let i = 0; i < baseTypes.length; i++) {
@@ -10917,8 +10975,8 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         n.namedChildren.find((c: any) => c.type === "type_argument_list")
       if (typeNode) {
         const t = csharpTypeSpelling(typeNode.text).split(/[<?]/, 1)[0].trim()
-        let from = "(expr)"
-        if (t.includes(".")) {
+        let from = sourceOf(n)
+        if (!compareSources && t.includes(".")) {
           for (let owner = n.parent; owner; owner = owner.parent) {
             if (["method_declaration", "constructor_declaration", "local_function_statement",
                  "class_declaration", "struct_declaration", "record_declaration"].includes(owner.type)) {
@@ -10957,10 +11015,11 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
       // inst: key dedups explicit+implicit constructions of one type per file.
       const t = csharpImplicitNewType(n, memberTypes)
       if (t) {
-        const key = "inst:(expr):" + t
+        const from = sourceOf(n)
+        const key = `inst:${from}:${t}`
         if (!seen.has(key)) {
           seen.add(key)
-          edges.push({ label: "instantiates", from: "(expr)", target: t })
+          edges.push({ label: "instantiates", from, target: t })
         }
       }
     } else if (n.type === "invocation_expression") {
@@ -11028,10 +11087,11 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         // slot pointer indexes / element-addresses as the callee. A real target
         // is a clean, non-keyword identifier.
         const isKeyword = /^(if|for|foreach|while|do|switch|case|else|return|throw|using|new|delegate|in|is|as|sizeof|fixed|lock|checked|unchecked|params|ref|out|base|this|get|set|nameof)$/.test(leaf)
-        const key = "call:" + leaf
+        const from = sourceOf(n)
+        const key = JSON.stringify(["call", from, leaf])
         if (leaf && !isKeyword && /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) && !isSuppressed && !seen.has(key)) {
           seen.add(key)
-          edges.push({ label: "calls", from: "(expr)", target: leaf })
+          edges.push({ label: "calls", from, target: leaf })
         }
       }
     }
@@ -11877,6 +11937,10 @@ function swRecoveryHeader(n: any): { kind: string | null; nameNode: any } {
   return { kind, nameNode }
 }
 function swRecoveryName(n: any): string | null {
+  if (n.type === "class_declaration" || n.type === "protocol_declaration") {
+    const name = n.childForFieldName("name")
+    if (name?.type === "type_identifier") return name.text
+  }
   const { nameNode } = swRecoveryHeader(n)
   if (!nameNode) return null
   if (nameNode.type === "user_type") {
@@ -11897,6 +11961,7 @@ function swIsNominalRecovery(n: any): boolean {
 
 function swiftOracleCallableSource(root: any, stripQuoting: (name: string) => string): (node: any) => string {
   const functionName = (n: any): string | undefined => {
+    if (n.type === "init_declaration") return "constructor"
     if (n.type !== "function_declaration") return undefined
     const name = n.childForFieldName("name")
     if (!name) return undefined
@@ -11904,29 +11969,22 @@ function swiftOracleCallableSource(root: any, stripQuoting: (name: string) => st
     if (name.type === "custom_operator" || !name.isNamed) return `operator ${name.text}`
     return undefined
   }
-  const functionCounts = new Map<string, number>()
-  const declarations = [root]
-  while (declarations.length) {
-    const n = declarations.pop()
-    const name = functionName(n)
-    if (name) functionCounts.set(name, (functionCounts.get(name) ?? 0) + 1)
-    for (let i = 0; i < n.namedChildCount; i++) declarations.push(n.namedChild(i))
-  }
   return (node: any): string => {
     for (let n = node.parent; n; n = n.parent) {
       const name = functionName(n)
-      if (name) return functionCounts.get(name) === 1 ? name : "(expr)"
-      if (n.type === "lambda_literal" || n.type === "init_declaration" ||
-          n.type === "deinit_declaration" || n.type === "subscript_declaration" ||
-          n.type === "class_declaration" || swIsNominalRecovery(n)) break
+      if (name) return name
+      if (n.type === "class_declaration" || n.type === "protocol_declaration" || swIsNominalRecovery(n)) {
+        return swRecoveryName(n) ?? n.namedChildren.find((child: any) => child.type === "type_identifier")?.text ?? "(expr)"
+      }
     }
-    return "(expr)"
+    return "root"
   }
 }
 
-export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
+export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { label: string; from: string; target: string; line?: number }[] {
+  const edges: { label: string; from: string; target: string; line?: number }[] = []
   const seen = new Set<string>()
+  let currentLine: number | undefined
   const SWIFT_BUILTINS = new Set([
     "print", "debugPrint", "assert", "precondition", "fatalError",
     "String", "Int", "Double", "Float", "Bool", "Array", "Dictionary",
@@ -11962,19 +12020,19 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   // and its dropped `.0`/`.1` edges as missing truth.
   const swStripQuoting = (t: string): string =>
     t.length >= 2 && t.charCodeAt(0) === 96 && t.charCodeAt(t.length - 1) === 96 ? t.slice(1, -1) : t
-  const key = (label: string, target: string, from: string) => JSON.stringify([label, from, target])
+  const key = (label: string, target: string, from: string) => JSON.stringify([label, from, target, currentLine])
   const push = (label: string, target: string, from = "(expr)") => {
     target = swStripQuoting(target)
     const k = key(label, target, from)
-    if (!seen.has(k)) { seen.add(k); edges.push({ label, from, target }) }
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from, target, line: currentLine }) }
   }
   // SW-B candidates (head + leaf), resolved post-walk against declared
   // enum cases; matched leaf calls convert to instantiates.
-  const swEnumCtorCandidates: Array<{ head: string | null; owner: string | null; leaf: string; removeCalls: boolean; from: string }> = []
+  const swEnumCtorCandidates: Array<{ head: string | null; owner: string | null; leaf: string; removeCalls: boolean; from: string; line?: number }> = []
   // Track site counts per caller so enum conversion only removes its own call.
   const swCallsSites = new Map<string, number>()
   const swNoteCallsSite = (target: string, from: string): void => {
-    const site = key("calls", target, from)
+    const site = JSON.stringify([from, target, currentLine])
     swCallsSites.set(site, (swCallsSites.get(site) ?? 0) + 1)
     push("calls", target, from)
   }
@@ -12070,6 +12128,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
   const stack: any[] = [{ n: root, parentType: "" }]
   while (stack.length > 0) {
     const { n, parentType } = stack.pop()!
+    currentLine = n.startPosition.row + 1
     const t = n.type
     // #940 mirror: an ERROR-recovered nominal header is the container, exactly
     // as a reduced `class_declaration` is (the keyword-token scan and the base
@@ -12263,10 +12322,10 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
             }
             const receiver = parts.length >= 2 ? parts[parts.length - 2] : null
             if (receiver && isCapitalized(receiver) && receiver !== "Self" && receiver !== "super" && receiver !== "this") {
-              swEnumCtorCandidates.push({ head: receiver, owner: null, leaf, removeCalls: true, from })
+              swEnumCtorCandidates.push({ head: receiver, owner: null, leaf, removeCalls: true, from, line: currentLine })
             } else if (receiver === "Self" && enclosingType) {
               // SW-H mirror: Self.a(v) in an enum builds the enclosing enum.
-              swEnumCtorCandidates.push({ head: null, owner: enclosingType, leaf, removeCalls: true, from })
+              swEnumCtorCandidates.push({ head: null, owner: enclosingType, leaf, removeCalls: true, from, line: currentLine })
             }
           }
         }
@@ -12317,7 +12376,7 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
               }
               own = own.parent
             }
-            if (onm) swEnumCtorCandidates.push({ head: null, owner: onm, leaf, removeCalls: false, from: caller(n) })
+            if (onm) swEnumCtorCandidates.push({ head: null, owner: onm, leaf, removeCalls: false, from: caller(n), line: currentLine })
           }
         }
       }
@@ -12475,22 +12534,25 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
       // #938/#942: retire only the contributing SITES, then drop a `calls`
       // edge whose site count fell to zero, then append the instantiates
       // edges. Splicing by (label,target) deleted another site's real call.
-      const constructions: Array<{ typeName: string; from: string }> = []
+      const constructions: Array<{ typeName: string; from: string; line?: number }> = []
       for (const cand of swEnumCtorCandidates) {
         const typeName = cand.head ?? cand.owner
         if (!typeName || !enumCases.has(`${typeName}.${cand.leaf}`)) continue
         if (cand.removeCalls) {
-          const site = key("calls", cand.leaf, cand.from)
+          const site = JSON.stringify([cand.from, cand.leaf, cand.line])
           swCallsSites.set(site, (swCallsSites.get(site) ?? 0) - 1)
         }
-        constructions.push({ typeName, from: cand.from })
+        constructions.push({ typeName, from: cand.from, line: cand.line })
       }
       for (let k = edges.length - 1; k >= 0; k--) {
         if (edges[k].label !== "calls") continue
-        if ((swCallsSites.get(key("calls", edges[k].target, edges[k].from)) ?? 0) > 0) continue
+        if ((swCallsSites.get(JSON.stringify([edges[k].from, edges[k].target, edges[k].line])) ?? 0) > 0) continue
         edges.splice(k, 1)
       }
-      for (const { typeName, from } of constructions) push("instantiates", typeName, from)
+      for (const { typeName, from, line } of constructions) {
+        currentLine = line
+        push("instantiates", typeName, from)
+      }
     }
   }
   return edges
@@ -12502,8 +12564,8 @@ export function deriveSwiftEdges(root: any, corpusProtocols?: Set<string>): { la
 // must not be a local/param the current function binds (CGD15), and must not
 // sit in a declaration, chain-leaf, callee or write-LHS position. Truth still
 // derives every EDGE from tree structure; only the inventory is shared.
-export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
+export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: string; from: string; target: string; line?: number }[] {
+  const edges: { label: string; from: string; target: string; line?: number }[] = []
   const seen = new Set<string>()
   const membersByOwner = new Map<string, Set<string>>()
   for (const s of symbols ?? []) {
@@ -12517,12 +12579,12 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
   const stripQuoting = (t: string): string =>
     t.length >= 2 && t.charCodeAt(0) === 96 && t.charCodeAt(t.length - 1) === 96 ? t.slice(1, -1) : t
   const caller = swiftOracleCallableSource(root, stripQuoting)
-  const push = (name: string, from: string): void => {
+  const push = (name: string, from: string, line: number): void => {
     name = stripQuoting(name)
-    const key = from + "\u0000" + name
+    const key = JSON.stringify([from, name, line])
     if (seen.has(key)) return
     seen.add(key)
-    edges.push({ label: "uses", from, target: name })
+    edges.push({ label: "uses", from, target: name, line })
   }
   // Mirrors NOT_A_READ in the analyzer: declarations, plus the two positions
   // that name something other than a member of the enclosing type — an
@@ -12640,7 +12702,7 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
           const cc = rest.charCodeAt(k)
           if (cc < 48 || cc > 57) { allDigits = false; break }
         }
-        if (!allDigits) {
+        if (allDigits || rest.length === 0) {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (c) walk(c, cTy, cLocals)
@@ -12660,7 +12722,7 @@ export function deriveSwiftBareUses(root: any, symbols: any[] = []): { label: st
         !cLocals.has(txt) &&
         !cLocals.has(lookup) &&
         isMember
-      ) push(lookup, caller(n))
+      ) push(lookup, caller(n), n.startPosition.row + 1)
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
@@ -13426,12 +13488,8 @@ export function phpIndependentStaticIncludePath(node: any): string | undefined {
  * honest edge at the same time, which is precisely the R10 defect this rule exists to
  * prevent, and which this function's own predecessor did until R10 fixed it.
  *
- * `relative_name` (`namespace\f()`) is declined on purpose and the corpora cannot
- * argue either way: it occurs **0 times** in phpunit and phpmyadmin. Declining it
- * publishes nothing, so it cannot fabricate; declining it may MISS a real call, which
- * is the honest direction for a rule whose target must be nameable. Disclosed here for
- * the same reason `namespace_use_group` is: a construct the corpora do not contain
- * cannot be validated by them.
+ * Namespace-relative names are supported; namespace/import candidates are
+ * derived separately by the test-only namespace walker.
  *
  * MEASURED over the full git-tracked corpus of both pinned repos (4,463 files):
  * **16,164 call sites with a callee name and 325 without, on both sides; 0
@@ -13443,7 +13501,7 @@ export function phpIndependentCallableName(fn: any): string | undefined {
     const t = String(fn.text ?? "").trim()
     return t || undefined
   }
-  if (fn.type === "qualified_name") {
+  if (fn.type === "qualified_name" || fn.type === "relative_name") {
     // The LEAF is the text after the LAST separator — and the search must run from
     // the END of the string, not from a position. `\Foo\Bar\baz` must yield `baz`.
     //
@@ -13537,8 +13595,8 @@ export function phpIndependentCallableName(fn: any): string | undefined {
  */
 export function derivePhpDeclaredTypeEdgesIndependent(
   root: any,
-  symbols: any[],
-): { label: string; from: string; target: string }[] {
+  _symbols: any[],
+): TreeEdge[] {
   // --- the shape map, transcribed from script/m60/tmp/php-type-shapes.mts ---
   // A declaration that WRITES a type name depends on the type it names. `owner` is
   // whose dependency it is: a member's belongs to the enclosing TYPE, a parameter's
@@ -13559,9 +13617,14 @@ export function derivePhpDeclaredTypeEdgesIndependent(
   const NAMED_TYPES = new Set(["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"])
   const CALLABLES = new Set(["method_declaration", "function_definition", "anonymous_function", "arrow_function"])
 
-  const declaredBase = new Map<string, string>()
-  for (const s of symbols ?? []) {
-    if (s?.kind === "class" && s?.metadata?.baseClass && s?.name) declaredBase.set(String(s.name), String(s.metadata.baseClass))
+  const parentDisplay = (node: any, ownName: string): string | undefined => {
+    let declaration = node.parent
+    while (declaration && declaration.type !== "class_declaration") declaration = declaration.parent
+    const clause = declaration?.namedChildren.find((child: any) => child.type === "base_clause")
+    const raw = clause?.namedChild(0)?.text
+    if (!raw || phpClassReferenceIdentity(declaration, raw) === phpDeclaredClassIdentity(declaration, ownName)) return undefined
+    const leaf = raw.split("\\").at(-1)!
+    return raw.includes("\\") && leaf === ownName ? raw.replace(/^\\/, "") : leaf
   }
 
   /** The trailing `name` of a `qualified_name` — the LEAF every other php edge keys on. */
@@ -13594,8 +13657,8 @@ export function derivePhpDeclaredTypeEdgesIndependent(
   /** Every NAMED type inside one written type. Container-generic: an allowlist of
    *  wrappers would miss `disjunctive_normal_form_type` and any wrapper the grammar
    *  adds later, and the grammar is the thing being measured. */
-  const members = (typeRoot: any, ownerType: string): string[] => {
-    const acc: string[] = []
+  const members = (typeRoot: any, ownerType: string): { target: string; targetUnverified?: boolean }[] => {
+    const acc: { target: string; targetUnverified?: boolean }[] = []
     const walk = (n: any): void => {
       if (!n) return
       if (NON_DEPENDENCY_TYPES.has(n.type)) return
@@ -13607,14 +13670,15 @@ export function derivePhpDeclaredTypeEdgesIndependent(
           if (text) break
         }
         if (!text) return
-        if (RELATIVE.has(text)) {
+        const relative = text.toLowerCase()
+        if (RELATIVE.has(relative)) {
           // self/static name the ENCLOSING class; parent names its declared base, and
           // an unresolvable parent emits nothing — a wrong edge is worse than no edge.
-          if (text === "parent") { const b = ownerType ? declaredBase.get(ownerType) : undefined; if (b) acc.push(b); return }
-          if (ownerType) acc.push(ownerType)
+          if (relative === "parent") { const b = ownerType ? parentDisplay(n, ownerType) : undefined; if (b) acc.push({ target: b }); return }
+          if (ownerType) acc.push({ target: ownerType, ...(relative === "static" ? { targetUnverified: true } : {}) })
           return
         }
-        acc.push(text)
+        acc.push({ target: text })
         return
       }
       for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
@@ -13623,7 +13687,7 @@ export function derivePhpDeclaredTypeEdgesIndependent(
     return acc
   }
 
-  const edges: { label: string; from: string; target: string }[] = []
+  const edges: TreeEdge[] = []
   const seen = new Set<string>()
   const stack: any[] = [root]
   while (stack.length > 0) {
@@ -13645,12 +13709,12 @@ export function derivePhpDeclaredTypeEdgesIndependent(
           else source = own || ownerType || "global"
         }
         if (source) {
-          for (const target of members(typeRoot, ownerType)) {
-            const t = unlead(target)
-            const k = `${source}\u0000${t}`
+          for (const member of members(typeRoot, ownerType)) {
+            const t = unlead(member.target)
+            const k = `${source}\u0000${t}\u0000${member.targetUnverified === true}`
             if (seen.has(k)) continue
             seen.add(k)
-            edges.push({ label: "references", from: source, target: t })
+            edges.push({ label: "references", from: source, target: t, ...(member.targetUnverified ? { targetUnverified: true } : {}) })
           }
         }
       }
@@ -13660,16 +13724,61 @@ export function derivePhpDeclaredTypeEdgesIndependent(
   return edges
 }
 
-export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
+export function derivePhpEdges(root: any, compareSources = false): TreeEdge[] {
+  const edges: TreeEdge[] = []
   const seen = new Set<string>()
   const classBase = new Map<string, string>()  // class -> declared base (for new parent)
   // Import the analyzer's EXACT builtin set (never a hand-duplicated copy —
   // a drift here would fabricate or hide call edges).
-  const key = (label: string, target: string) => label + ":" + target
+  let currentSource = "(expr)"
+  let currentNode: any
+  const memberNames = new Set<string>()
+  const declarations = [root]
+  while (declarations.length) {
+    const n = declarations.pop()
+    if (["method_declaration", "property_element", "const_element", "property_promotion_parameter", "enum_case"].includes(n.type)) {
+      let owner = n.parent
+      while (owner && !["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"].includes(owner.type)) owner = owner.parent
+      const type = owner?.childForFieldName("name")?.text
+      const name = n.childForFieldName("name")?.text ?? n.namedChildren.find((c: any) => ["name", "variable_name"].includes(c.type))?.text
+      if (type && name) memberNames.add(type + "." + name.replace(/^\$/, ""))
+    }
+    for (const child of n.namedChildren) declarations.push(child)
+  }
+  const sourceOf = (node: any): string => {
+    for (let n = node; n; n = n.parent) {
+      if (["method_declaration", "function_definition"].includes(n.type)) {
+        return n.childForFieldName("name")?.text ?? "(expr)"
+      }
+      if (["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"].includes(n.type)) {
+        return n.childForFieldName("name")?.text ?? "(expr)"
+      }
+    }
+    return "global"
+  }
+  const key = (label: string, target: string) => JSON.stringify([label, currentSource, target])
   const push = (label: string, target: string) => {
+    if (compareSources && label === "uses" && ["variable_name", "encapsed_string", "dynamic_variable_name"].includes(currentNode?.type)) {
+      target = currentSource + BINDING_SEP + target
+    }
+    if (compareSources && ["calls", "uses"].includes(label)) {
+      const receiver = currentNode?.childForFieldName("object") ?? currentNode?.childForFieldName("scope")
+        ?? (currentNode?.type === "class_constant_access_expression" ? currentNode.namedChild(0) : null)
+      let owner: string | undefined
+      if (receiver?.text === "$this" || ["self", "static"].includes(receiver?.text)) {
+        let type = currentNode.parent
+        while (type && !["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"].includes(type.type)) type = type.parent
+        owner = type?.childForFieldName("name")?.text
+      } else if (receiver && ["name", "qualified_name"].includes(receiver.type)) owner = receiver.text.split("\\").pop()
+      if (owner && memberNames.has(owner + "." + target)) target = owner + "." + target
+    }
     const k = key(label, target)
-    if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
+    if (!seen.has(k)) {
+      seen.add(k)
+      const late = label === "instantiates" && currentNode?.type === "object_creation_expression" &&
+        currentNode.namedChildren.some((child: any) => child.text.toLowerCase() === "static")
+      edges.push({ label, from: currentSource, target, ...(late ? { targetUnverified: true } : {}) })
+    }
   }
 
   // PHP2 mirror helpers: bare-name extraction, bind-site test, scope
@@ -13917,22 +14026,12 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     }
     return leaf
   }
-  // PHPD10 mirror, widened by PHPD43 (final review): returns undefined when the
-  // clause resolves to the declaration's OWN name, in EITHER spelling.
-  //
-  // The old form (`t === ownName && raw !== t`) covered only the qualified route
-  // (`class Foo extends \\Foo`); the bare route (`enum Foo implements Foo`) has
-  // `raw === t`, so the guard did not fire and BOTH sides agreed on a truth row for
-  // a declaration whose parent is itself. That agreement is why no gate saw it: a
-  // differential cannot report a disagreement between two implementations that share
-  // the same defect.
-  //
-  // The separable case is untouched — `class Forms\\Setup\\FeaturesForm extends
-  // \\Forms\\User\\FeaturesForm` resolves to a name that is NOT the declaration's own,
-  // so its heritage and its truth row both survive with the qualification kept.
-  const heritageOrSkip = (raw: string, ownName: string): string | undefined => {
+  // Independently resolve the namespace/import environment before rejecting
+  // self-heritage. A global type can share its display leaf with a namespaced
+  // declaration; the two distinct identities still form a real dependency.
+  const heritageOrSkip = (raw: string, ownName: string, declaration: any): string | undefined => {
     const t = heritageTarget(raw, ownName)
-    if (t === ownName) return undefined
+    if (phpClassReferenceIdentity(declaration, raw) === phpDeclaredClassIdentity(declaration, ownName)) return undefined
     return t
   }
   // PHP-E mirror: sole-`...` arguments never invoke (first-class callable).
@@ -13980,7 +14079,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
           if (bc && pn.type === "class_declaration") {
             const first = bc.namedChild(0)
             if (first) {
-              const t = heritageOrSkip(first.text, nm)
+              const t = heritageOrSkip(first.text, nm, pn)
               if (t) baseByClass.set(nm, t)
             }
           }
@@ -14048,6 +14147,8 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
   while (stack.length > 0) {
     const { n, parent, inBody, cls, base, scope } = stack.pop()!
     const t = n.type
+    currentNode = n
+    currentSource = compareSources ? sourceOf(n) : "(expr)"
     if (t === "class_declaration") {
       const nameNode = n.namedChildren.find((c: any) => c.type === "name")
       const className = nameNode?.text ?? "?"
@@ -14056,7 +14157,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       if (baseClause) {
         const first = baseClause.namedChild(0)
         if (first) {
-          declaredBase = heritageOrSkip(first.text, className)
+          declaredBase = heritageOrSkip(first.text, className, n)
           if (declaredBase) push("extends", declaredBase)
         }
       }
@@ -14065,7 +14166,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         for (let i = 0; i < ifaceClause.namedChildCount; i++) {
           const c = ifaceClause.namedChild(i)
           if (c) {
-            const ifaceT = heritageOrSkip(c.text, className)
+            const ifaceT = heritageOrSkip(c.text, className, n)
             if (ifaceT) push("implements", ifaceT)
           }
         }
@@ -14085,7 +14186,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         for (let i = 0; i < ifaceClause.namedChildCount; i++) {
           const c = ifaceClause.namedChild(i)
           if (c) {
-            const ifaceT = heritageOrSkip(c.text, enumCls)
+            const ifaceT = heritageOrSkip(c.text, enumCls, n)
             if (ifaceT) push("implements", ifaceT)
           }
         }
@@ -14099,7 +14200,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         for (let i = 0; i < baseClause.namedChildCount; i++) {
           const c = baseClause.namedChild(i)
           if (c) {
-            const extT = heritageOrSkip(c.text, ifaceName)
+            const extT = heritageOrSkip(c.text, ifaceName, n)
             if (extT) push("extends", extT)
           }
         }
@@ -14132,6 +14233,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     // children are the clauses (the grouped form) — and the prefix join is the rule both
     // sides state: a grouped member's module is `prefix + \\ + member`.
     if (t === "namespace_use_declaration") {
+      if (compareSources) currentSource = "global"
       let prefix = ""
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
@@ -14179,23 +14281,15 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       if (p) push("part_of", p)
     }
     if (t === "function_call_expression") {
-      // R10 (#835): the analyzer's OWN callee rule, not a mirror. A variable
-      // callee (`$callable()`) has no callee NAME; both sides previously derived
-      // `calls -> $callable` from the same raw text, so the differential agreed
-      // and could not see it.
-      const target = phpIndependentCallableName(n.childForFieldName?.("function"))
+      const fn = n.childForFieldName?.("function")
+      const target = phpIndependentCallableName(fn)
       if (target) {
-        // M37.13 mirror: the analyzer's processFunctionCall returns EARLY for
-        // the WordPress hook registrars (framework detection only, no calls
-        // edge). Without this mirror the oracle fabricated calls:add_action/
-        // add_filter truth on every procedural WP-style file.
-        const isWpHook = target === "add_action" || target === "add_filter"
-        // PHP-E mirror: sole-`...` is a tear-off reference, never a call.
-        if (phpIsTearOff(n)) {
-          if (!isWpHook && !PHP_BUILTINS.has(target)) push("uses", target)
-        } else if (!isWpHook && !PHP_BUILTINS.has(target)) push("calls", target)
+        const candidates = phpFunctionReferenceCandidates(n, fn.text)
+        const globalBuiltin = candidates.length === 1 && PHP_BUILTINS.has(candidates[0])
+        if (!globalBuiltin) push(phpIsTearOff(n) ? "uses" : "calls", target)
       }
     }
+
     if (t === "member_call_expression" || t === "nullsafe_member_call_expression") {
       const nameNode = n.childForFieldName?.("name")
       if (nameNode) {
@@ -14215,10 +14309,11 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       // enclosing class; parent -> declared base class (probe-verified:
       // pinned grammar parses new self/parent/static as name, not
       // relative_scope). Unresolvable parent emits NOTHING.
-      const named = n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name")
+      const named = n.namedChildren.find((c: any) => c.type === "name" || c.type === "qualified_name" || c.type === "relative_name")
       if (named) {
-        if (named.text === "self" || named.text === "static" || named.text === "parent") {
-          const resolved = named.text === "parent" ? base : cls
+        const relative = named.text.toLowerCase()
+        if (relative === "self" || relative === "static" || relative === "parent") {
+          const resolved = relative === "parent" ? base : cls
           if (resolved) push("instantiates", resolved)
         } else {
           push("instantiates", leafName(named.text))
@@ -25124,7 +25219,7 @@ async function main() {
         }
       }
       if (lang === "csharp") {
-        for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
+        for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES, checkEdgeIdentities)) {
           // The legacy walker emits a qualified alias for interface members.
           // The dedicated override oracle emits the stored member identity.
           if (checkEdgeIdentities && e.label === "overrides") continue
@@ -25367,7 +25462,7 @@ async function main() {
         }
       }
       if (lang === "php") {
-        for (const e of derivePhpEdges(root)) {
+        for (const e of derivePhpEdges(root, checkEdgeIdentities)) {
           ;(truth as any[]).push(e)
         }
         // R9 (#835): declared-type references — the analyzer emits them, so the truth
@@ -25567,7 +25662,7 @@ async function main() {
         // mixes_in) + imports/exports derivations + overrides external-base cause channel. The
         // in-file mirror was deleted in the same change; two implementations was how the stale
         // 8-label set happened.
-        for (const e of deriveRubyLaneEdges(root)) {
+        for (const e of deriveRubyLaneEdges(root, undefined, relPath)) {
           ;(truth as any[]).push(e)
         }
         void RUBY_LANE_LABELS // consumed by the relationship-coverage gate below (stale-set guard)
@@ -25821,8 +25916,9 @@ async function main() {
         // name the analyzer edge (previously dropped — an UNEXPLAINED sample
         // printed a target with no caller, and triage had to re-derive).
         from: String(r.source ?? r.from ?? r.fromSymbol ?? ""),
-        ...(lang === "ruby" && r.type === "overrides" &&
-            ["first-parent-guess", "companion-index"].includes(r.metadata?.reasonCode)
+        ...((lang === "ruby" && r.type === "overrides" &&
+            ["first-parent-guess", "companion-index"].includes(r.metadata?.reasonCode)) ||
+            (lang === "php" && r.metadata?.lateStaticBinding === true)
           ? { targetUnverified: true } : {}),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
@@ -26508,7 +26604,10 @@ async function main() {
           ...truth.filter(edge => edge.label !== "calls" || edge.from !== "(expr)"),
           ...deriveJavaScriptEdges(root, { callSources: true }).filter(edge => edge.label === "calls"),
         ] : truth
-        const result = compareEdgeIdentities(endpointTruth, relationshipsWithSources)
+        const sourceAware = lang === "ruby" || lang === "swift"
+        const expectedEdges = sourceAware ? qualifyCallableSources(root, endpointTruth) : endpointTruth
+        const actualEdges = sourceAware ? qualifyCallableSources(root, relationshipsWithSources) : relationshipsWithSources
+        const result = compareEdgeIdentities(expectedEdges, actualEdges)
         identityMatched += result.matched
         identityMissing += result.missing.length
         identityUnexpected += result.unexpected.length

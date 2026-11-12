@@ -21,6 +21,103 @@
 - Wiring: `ASTEngine.getAnalyzer("php")` → `RealPhpAnalyzer` (`src/ast/engine.ts:2396`)
 
 
+## Current namespace and project-resolution scope
+
+The analyzer preserves display targets and separately records canonical class
+identities through namespace and class-import resolution. The store uses those
+identities for heritage, trait composition, construction, class imports, and
+declared-type references. Missing, duplicate, and kind-incompatible targets stay
+unresolved. Global and namespaced types with the same leaf remain distinct;
+exact qualified self-inheritance is suppressed. `new static()` and `static`
+return types retain late-binding evidence instead of a concrete class target.
+
+Project-wide implicit class overrides are reconciled from exact stored class
+and method IDs after full or incremental indexing. These candidates are
+**inferred at 0.85**: hierarchy and declaration identity are established, with
+bounded signature checks described below. Per-file local candidates also use
+0.85 inferred evidence; name-only companion candidates remain 0.65 inferred.
+Native PHP 8.3.6, graph/impact, worker transport,
+mutation, and incremental checks are recorded in
+[the launch verification log](../../validation/m14/analyzer-launch-review.md).
+Historical measurements below keep their original populations and dates.
+
+Calling-shape checks now reject increased required arity, removed accepted
+parameter positions, lost variadics, incompatible parameter reference modes,
+and removal of a reference return. Concrete constructors retain PHP's signature
+exception; abstract constructor contracts are checked. Worker metadata preserves
+the extracted shape, and stored override candidates declare
+`signatureShapeChecked`. Promoted parameters without defaults are required.
+
+Type variance is checked over canonical namespace identities, scalar types,
+nullable types, unions, intersections/DNF, and available class/interface
+inheritance. Parameter types are compared contravariantly; return types
+covariantly. Missing/ambiguous hierarchy, callable-object inference, and
+version-sensitive late-static types return an unknown verdict. Stored edges
+record `signatureCompatibility: checked` only when these comparisons are known;
+otherwise it remains `unchecked`. All project override candidates remain
+inferred at 0.85. Direct extraction also rejects final-method overrides,
+static/instance mismatches, narrowed visibility, duplicate methods, and cyclic
+local ancestry. This is not a full PHP compiler or a validation of method bodies.
+
+Member-position edges carry `phpMemberReference`. When no receiver declaration
+identity is available, the store retains the call/read spelling with an
+unresolved target. It does not attach an untyped object's method or property to
+an arbitrary same-named declaration. Named scopes and known receiver identities
+continue through the canonical member resolver. This is a precision boundary;
+flow-sensitive receiver inference is not established by these checks.
+
+Stable single-class parameter annotations now supply a conservative receiver
+identity, including nullable parameters and lexical class/import names. These
+member edges carry `receiverTypeEvidence: stable-parameter`, confidence 0.8,
+and inferred evidence. Writes, unions/intersections, variadics, reference
+parameters, captures, unknown argument escapes, dynamic variables, eval, and
+includes prevent this inference. Closures and nested functions use their own
+parameter scopes. The result identifies a static declaration; subtype dispatch
+can still select an overriding implementation at runtime. Property-chain and
+assignment-flow inference remain outside this implementation.
+
+Trait composition is stored separately from class inheritance and preserved by
+workers. Canonical member resolution now follows class declarations, composed
+traits, then the nearest parent implementation. It handles nested traits,
+method aliases, `insteadof`, and an inherited implementation satisfying an
+abstract trait requirement. Interface method contracts and constants remain
+resolvable. A trait alias targets its original source declaration; no synthetic
+alias declaration is invented.
+
+Missing/duplicate traits, unresolved method conflicts, cycles, and parser-error
+adaptations decline binding. An unqualified alias remains ambiguous if multiple
+traits declare its original name, even after `insteadof`. Trait/parent property
+and constant collisions are left unresolved because their rules differ between
+PHP versions. These boundaries follow the
+[PHP trait manual](https://www.php.net/manual/en/language.oop5.traits.php) and
+native PHP 8.3.6 probes. Visibility adaptation does not establish call-site
+accessibility. Project reconciliation resolves ordinary trait-origin overrides
+to their source declarations, preserving the consuming class identity and
+alias visibility. Trait-relative self/parent signature types are instantiated in
+that consuming class's scope before variance checks. Abstract constructor
+requirements are checked through intermediate concrete constructors. Per-file override extraction stops
+at composition and leaves those candidates to the project pass. Calls inside a reusable trait are static declaration facts,
+not consumer-specific runtime dispatch proofs.
+
+Inside reusable trait bodies, `$this`, relative scopes, and parameters typed as
+`self`/`parent` do not establish a unique receiver. Their member destinations
+remain null, as do consumer-bound type references and relative constructions.
+An explicit concrete parameter type can still establish a declaration. Native
+execution with two different consuming classes verifies that this distinction
+prevents binding shared trait-body calls to the wrong implementation.
+
+Function calls, first-class function references, and `use function` imports carry
+`phpFunctionReference` with ordered canonical `functionCandidates`. The store
+binds only function declarations, uses the namespaced declaration before the
+global fallback, and declines ambiguous identities. Function aliases, grouped
+and mixed imports, namespace-prefix aliases, absolute names, and
+`namespace\\name` are supported. A builtin spelling inside a namespace is
+retained because a project function may shadow it in another file. Only a
+single canonical global builtin candidate is omitted. Hook registration keeps
+a call to the registrar; it does not assert callback invocation. These are
+static declaration bindings; conditional declarations and runtime loading can
+still affect whether a function exists at execution time.
+
 ## Symbol contract
 
 | Construct | Symbol | AST source |
@@ -59,16 +156,16 @@ no count here is invented.
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ emitted | `function_call_expression` / `member_call_expression` / `nullsafe_member_call_expression` / `scoped_call_expression` → callee leaf; source = enclosing function/method else `global`; PHP builtins filtered after leaf-flattening; a first-class tear-off `foo(...)` is `uses`, not `calls` (`real-php-analyzer.ts:2050`, `:2193`, `:2228`); 112,067 edges / 4,952 files | 0.9 · `usage_contextual` |
+| calls | ✅ emitted | `function_call_expression` / `member_call_expression` / `nullsafe_member_call_expression` / `scoped_call_expression` → callee leaf; source = enclosing function/method else `global`; only canonical global builtins filtered; namespace and function-import candidates retained; a first-class tear-off `foo(...)` is `uses`, not `calls` (`real-php-analyzer.ts:2050`, `:2193`, `:2228`); 112,067 edges / 4,952 files | 0.9 · `usage_contextual` |
 | extends | ✅ emitted | class → its declared superclass (`:802`) and interface → its extended interface (`:871`); a qualified base keeps its qualification, and a base that resolves to the declaring type itself emits nothing (a self-extends would be a fabrication); 3,178 edges / 3,159 files | 1.0 · `structural` |
 | implements | ✅ emitted | `class_interface_clause` on classes (`:710`) and on enums (`:955`) → each interface; a clause naming the declaring type itself emits nothing; 1,205 edges / 1,112 files | 1.0 · `structural` |
 | uses | ✅ emitted | value/read edges: `$this->p` / `$o->p` (`:1842`), `C::$p` (`:1872`), `C::K` (`:1902`), first-class tear-offs (`:2040`, `:2183`, `:2218`), subscript bases / interpolations / closure captures, bare `$var` through the frame chain → file functions → superglobals (`:3211`, target spelled `<source>\u0000<binding>` with `metadata.localBinding`), file-constant reads (`:3341`); a braced dynamic member `$o->{$x}` emits no member edge; 157,345 edges / 3,748 files | 0.9 · `usage_contextual` |
 | imports | ✅ emitted | a `use` clause → the module FQN as written (the alias is NOT part of the target; a grouped `use C\{D, E}` records each member qualified), source = file scope `global` (`:3007`); an `ImportInfo[]` payload is ALSO published (`:2991`, returned `:579`); 28,519 edges / 4,321 files | 1.0 · `import_based` |
 | exports | ✅ emitted | file-scope `define('NAME', …)`: the callee must resolve to the GLOBAL `define` (bare name or absolute-FQ `\define`; `Other\define`, `namespace\define` and variable callees are refused); the first argument's value is a string literal read through the `argument` wrapper; no enclosing function/method/class; source `global` → NAME (`:1713`); an `ExportInfo[]` payload is ALSO published (`:1728`); 59 edges / 19 files | 1.0 · `import_based` |
 | contains | ✅ emitted | one edge per owned symbol: a member → its class/interface/trait/enum (`:1394`, `metadata.isContained`) and, since M60, a top-level declaration → its namespace (`ownerKind: Namespace`, `:783`/`:886`/`:916`/`:969`/`:1045`/`:1534`); 35,580 edges / 5,019 files | 1.0 · `structural` |
-| references | ✅ emitted | the R9 declared-type graph ONLY: property types, typed class-constant types (PHP 8.3), parameter types and return types; wrappers descend (`?Dep`, `Dep\|Other`); primitives are silent; `self`/`static` → enclosing class and `parent` → declared base; `metadata.relationshipType` is `declared_type` or `return_type`, `metadata.declaredOn` names the position (`:3711`); 10,376 edges / 2,444 files | 0.9 · `import_based` |
-| overrides | ✅ emitted | a method whose nearest in-file ancestor declares the same inherited name, resolved using class namespaces and import aliases. An ambiguous stored `Owner.member` endpoint suppresses the edge. An external base can supply an inferred candidate through `AnalyzeContext.overrideCompanion` | 0.95 structural in-file, 0.65 inferred from the companion |
-| instantiates | ✅ emitted | `object_creation_expression` (`new C(...)`, incl. `new self/static/parent`); `self`/`static` → the enclosing class, `parent` → its declared base, and an unresolvable `parent` emits nothing (`:2290`); 15,279 edges / 3,067 files | 0.9 · `structural` |
+| references | ✅ emitted | the R9 declared-type graph ONLY: property types, typed class-constant types (PHP 8.3), parameter types and return types; wrappers descend (`?Dep`, `Dep\|Other`); primitives are silent; `self` → enclosing class and `parent` → declared base; `static` retains unresolved late binding; `metadata.relationshipType` is `declared_type` or `return_type`, `metadata.declaredOn` names the position (`:3711`); 10,376 edges / 2,444 files | 0.9 · `import_based` |
+| overrides | ✅ emitted | Namespace-aware ancestor candidates with modifier, calling-shape, and bounded variance checks. Full/incremental indexing reconciles exact source/declaring-ancestor IDs across files. Unknown type compatibility is declared unchecked. | Local/project: 0.85 inferred; companion: 0.65 inferred |
+| instantiates | ✅ emitted | `object_creation_expression` (`new C(...)`, incl. `new self/static/parent`); `self` → the enclosing class, `parent` → its declared base; `static` is a late-bound candidate with no concrete stored type target; 15,279 edges / 3,067 files in the historical census | 0.9 concrete / 0.65 late-bound inferred |
 | decorates | ❌ **not emitted** | **0** `RelationshipType.Decorates` references in the analyzer (the whole-file grep) and no edge is published: PHP 8 attributes parse and are PASSIVE, lazily-instantiated metadata, not an applied callable. RULED ONTOLOGICAL with the pre-registered counter measured: **0 of 6,507 attributes over 1,799 files** had a call-shaped direct argument (`validation/m14/measurements/php-attribute-census.json`); excluded in `script/m14/spec/php-completeness.json` | — (ruled; no confidence to state) |
 | renders | ❌ **not emitted** | **0** `RelationshipType.Renders` references. RULED GRAMMAR-ABSENCE: **0 of 177** named types are a component/element/render family, R2 has nothing to lex (no component syntax — the EMPTY form), and the near misses are counted: inline HTML `text` **1,407** sites + `text_interpolation` **85** sites over 1,327 files (`validation/m14/measurements/php-emission-census.json`); excluded in the spec | — (ruled; no confidence to state) |
 | mixes_in | ✅ emitted | trait `use` inside a class body (and trait-in-trait): source = the composing type, target = the trait's leaf, `metadata.isTraitUse` retained (`:1200`); the 1:1 relabel of the rows that were `uses` before 2026-10-23, evidence tier structural because the construct is a declaration-header clause; 320 edges / 107 files | 1.0 · `structural` |
@@ -243,7 +340,7 @@ edge. `AnalyzeContext.overrideCompanionVisibility` is still populated and is cor
 
 ### Override evidence
 
-An inherited method declared on an in-file ancestor emits at 0.95. A name-only
+An inherited method declared on an in-file ancestor emits at 0.85 inferred. A name-only
 match through `AnalyzeContext.overrideCompanion` is inferred at 0.65.
 
 This analyzer previously also emitted a 0.5 `first-parent-guess` edge for every
@@ -255,7 +352,7 @@ override was that guess. `script/m12/php-override-audit.ts` measured it on
 removed: it sat below the 0.7 threshold, so `pool-worker` already dropped it
 and it never reached the graph — it bought no real cross-file override while
 manufacturing a majority-false unverified bucket. Restoring cross-file
-coverage honestly means populating the companion index, not guessing.
+coverage is now supplied by the canonical project reconciliation described above.
 
 ## Supported constructs
 
@@ -2063,11 +2160,11 @@ caught — `php/drop-nested-function-symbols` (the pre-fix state), `php/publish-
 and `php/publish-nested-functions-as-bare-globals` (the rejected readings),
 `php/publish-damaged-body-declarations-as-nested-functions` (the damage guard removed).
 
-**Known and NOT changed, recorded with its count rather than blessed:** call/read edges inside a
-nested function's body are attributed to the ENCLOSING callable — `calls registerHelper -> decorate`
-on the fixture, where the call is written in `nestedHelper`'s body. It is an attribution decision,
-not an unexplained endpoint (the enclosing callable is published, so the census is silent about it),
-and the fixture records the behaviour without pinning it as correct.
+**Current source attribution:** the body walker enters the nested callable with
+its own name and fresh scope. The fixture requires `nestedHelper -> decorate`
+exactly once and forbids `registerHelper -> decorate`. The previous paragraph
+claiming enclosing-callable attribution was stale documentation.
+
 ### 3. The ambiguity ceiling, priced before anything was implemented
 
 `ambiguous:multiple-declarations` is the largest class the census reports — **126,342 endpoints,

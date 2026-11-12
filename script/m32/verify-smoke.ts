@@ -234,18 +234,18 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     const dataDir = path.join(proj, "bbdata")
     mkdirSync(dataDir, { recursive: true })
     writeFileSync(path.join(proj, "a.ts"), "export function foo() { return 1 }\n")
-    const r1 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", inputMarkers: [/Choice \[1-4\]:/], timeoutMs: 60000, pty: true })
+    const r1 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "\r", inputMarkers: [/API key \(hidden/], timeoutMs: 60000, pty: true })
     const clean1 = stripAnsi(r1.stdout)
-    check("SM1.B: wizard prompt fires on real TTY", clean1.includes("Choice [1-4]") && clean1.includes("embedding setup"), clean1.slice(0, 200))
+    check("SM1.B: key-first wizard prompt fires on real TTY", clean1.includes("API key (hidden") && clean1.includes("bb — embeddings"), clean1.slice(0, 300))
     check("SM1.B: skip flow resolves (no hang)", !r1.timedOut, r1.timedOut ? "timed out" : "")
     const cfg = readDataConfig(dataDir)
     check("SM1.B: skip persisted as setup_skipped", cfg?.json?.setup_skipped === true, JSON.stringify(cfg?.json))
     check("SM1.B: config saved with mode 0600", cfg?.mode === 0o600, cfg ? `mode=${cfg.mode?.toString(8)}` : "no config file")
     check("SM1.B: skip writes no key material", !cfg?.json?.embedding_api_key, JSON.stringify(Object.keys(cfg?.json ?? {})))
 
-    const r2 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", inputMarkers: [/Choice \[1-4\]:/], timeoutMs: 60000, pty: true })
+    const r2 = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "\r", timeoutMs: 60000, pty: true })
     const clean2 = stripAnsi(r2.stdout)
-    check("SM1.C: no second prompt after explicit skip (prompt-once)", !clean2.includes("Choice [1-4]"), clean2.slice(0, 200))
+    check("SM1.C: no second prompt after explicit skip (prompt-once)", !clean2.includes("API key (hidden"), clean2.slice(0, 300))
     rmSync(proj, { recursive: true, force: true })
   }
 
@@ -258,8 +258,8 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     const setup = await runProcess(bbPath, ["setup"], {
       env: { BB_DATA_DIR: dataDir },
       cwd: proj,
-      input: ["3", mockURL, "mock-model", "smoke-test-key-1234"].join("\n"),
-      inputMarkers: [/Choice \[1-4\]:/, /Base URL \(e\.g\. https:\/\/api\.openai\.com\/v1\):/, /Model name \(e\.g\. text-embedding-3-small\):/, /API key \(input hidden\):/],
+      input: ["smoke-test-key-1234", mockURL, "mock-model"].join("\n"),
+      inputMarkers: [/API key \(hidden/, /Base URL \(OpenAI-compatible/, /Model id \(Enter to skip\):/],
       timeoutMs: 45000,
       pty: true,
     })
@@ -268,7 +268,7 @@ async function smokeSuite(bbPath: string, mockURL: string): Promise<void> {
     const cfg = readDataConfig(dataDir)
     check("SM1.D: key+model saved to 0600 config", cfg?.mode === 0o600 && cfg?.json?.embedding_model === "mock-model" && typeof cfg?.json?.embedding_api_key === "string", cfg ? `mode=${cfg.mode?.toString(8)} keys=${Object.keys(cfg.json).join(",")}` : "no config file")
     const idx = await runProcess(bbPath, ["index", "."], { env: { BB_DATA_DIR: dataDir }, cwd: proj, input: "4", timeoutMs: 60000, pty: true })
-    check("SM1.D: configured install never prompts on bb index", !stripAnsi(idx.stdout).includes("Choice [1-4]"), stripAnsi(idx.stdout).slice(0, 200))
+    check("SM1.D: configured install never prompts on bb index", !stripAnsi(idx.stdout).includes("API key (hidden"), stripAnsi(idx.stdout).slice(0, 300))
     rmSync(proj, { recursive: true, force: true })
   }
 }

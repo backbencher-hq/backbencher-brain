@@ -297,7 +297,13 @@ function isRetryable(error: EmbeddingApiError, attempt: number, maxAttempts: num
   return error.kind === "rate_limit" || error.kind === "server" || error.kind === "timeout" || error.kind === "network"
 }
 
-async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: EmbeddingRuntimeOptions, source: string): Promise<AttemptResult> {
+async function attemptRequest(
+  texts: string[],
+  cfg: EmbeddingConfig,
+  options: EmbeddingRuntimeOptions,
+  source: string,
+  inputType?: "query" | "passage",
+): Promise<AttemptResult> {
   // Stamped onto every error raised below, so a diagnostic reading a failure out
   // of this process can name WHICH endpoint and model it came from instead of
   // printing a status with no subject. The base URL only — never the key.
@@ -307,6 +313,10 @@ async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: Em
     model: cfg.model,
     input: texts.length === 1 ? texts[0] : texts,
     encoding_format: "float",
+    // Asymmetric embedding models (NVIDIA Nemotron 3.5 etc.) require this to be
+    // explicit, and the two sides are NOT interchangeable: passages for stored
+    // symbols, query for the search query. Sending neither is a 400 from NIM.
+    ...(inputType ? { input_type: inputType } : {}),
   })
   const parsedUrl = new URL(url)
   const endpoint = parseEndpoint(cfg.baseURL)
@@ -480,6 +490,7 @@ export async function embedOpenAICompatible(
   texts: string[],
   cfg: EmbeddingConfig,
   optionsOverride?: EmbeddingRuntimeOptions,
+  requestOptions?: { inputType?: "query" | "passage" },
 ): Promise<number[][]> {
   if (!Array.isArray(texts) || texts.length === 0) return []
   const options = optionsOverride ?? readRuntimeOptions()
@@ -496,7 +507,7 @@ export async function embedOpenAICompatible(
   if (latched) throw latched
 
   try {
-    return await runProvider(texts, cfg, options, "primary", 1)
+    return await runProvider(texts, cfg, options, "primary", 1, requestOptions?.inputType)
   } catch (primaryError: any) {
     if (primaryError?.name !== "EmbeddingApiError") throw primaryError
     if (primaryError.kind === "auth" || primaryError.kind === "not_found") {
@@ -526,7 +537,7 @@ export async function embedOpenAICompatible(
     const fbLatched = authLatch.get(latchKey(fbCfg.baseURL, fbCfg.model))
     if (fbLatched) throw fbLatched
     try {
-      const vectors = await runProvider(texts, fbCfg, options, "fallback", options.fallbackRetries + 1)
+      const vectors = await runProvider(texts, fbCfg, options, "fallback", options.fallbackRetries + 1, requestOptions?.inputType)
       log.debug("fallback embedding provider served the batch", { model: fbCfg.model })
       return vectors
     } catch (fallbackError: any) {
@@ -548,6 +559,7 @@ async function runProvider(
   options: EmbeddingRuntimeOptions,
   source: string,
   maxAttempts: number,
+  inputType?: "query" | "passage",
 ): Promise<number[][]> {
   // One request per chunk, and the chunk size is a CEILING rather than a
   // partition: a 100-input indexing batch is still a single request, which is the
@@ -563,7 +575,7 @@ async function runProvider(
     let attempt = 0
     for (;;) {
       try {
-        const result = await attemptRequest(batch, cfg, options, source)
+        const result = await attemptRequest(batch, cfg, options, source, inputType)
         out.push(...result.vectors)
         break
       } catch (e: any) {

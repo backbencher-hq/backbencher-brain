@@ -204,7 +204,7 @@ dropped citations, no-evidence); the gap inventory lives in `unknowns` and is no
   `freshness` envelope always carries `{ fresh, stale, missing, staleRatio, mode, remediation, passed }`,
   where `passed` is the envelope's own verdict (`stale === 0 && missing === 0`).
 - **Envelope scope follows the document**: a document citing exactly one file gets the registered
-  FILE-scope remediation (`bb index "<file>"`); a document citing several files gets the
+  FILE-scope remediation (`bb index --file "<file>"`); a document citing several files gets the
   project-scope one. When the repair was declined because it is disabled, the markdown footer uses
   the manual-only constants — it never claims an automatic behaviour that did not run, and it
   names the files as cited files, not as another tool's findings.

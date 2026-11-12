@@ -23,6 +23,7 @@ import { isTestFileCandidate } from "./test-classification"
 import { createStoreDiagnostics } from "./store-diagnostics"
 // M50.A2 (#764): dense-vector read accelerator (JSON stays the source of truth).
 import { encodeVectorBlob, scanJsonVectorInto } from "../brain/semantic/vector-binary"
+import { SemanticEngine } from "../brain/semantic/engine"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
 import { readdir, stat, open } from "fs/promises"
@@ -41,7 +42,10 @@ import {
 } from "./import-resolution"
 import { retargetCrossFileOverrides } from "./override-retarget"
 import { retargetJuliaMethodTableBindings } from "./julia-binding-collapse"
-import { claimOwnerCarryingTargets } from "./member-owner-resolution"
+import { claimOwnerCarryingTargets, resolveMemberTargetsByOwner } from "./member-owner-resolution"
+import { reconcilePhpProjectOverrides } from "./php-project-overrides"
+import { reconcilePhpTypeTargets } from "./php-type-resolution"
+import { reconcilePhpFunctionTargets } from "./php-function-resolution"
 import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
@@ -2479,9 +2483,17 @@ interface BackgroundEmbedJob {
   projectId: ProjectID
   projectPath: string
   items: any[]
+  /** false: provider-only pass; a failed batch keeps old rows instead of writing local fallback. */
+  allowFallback?: boolean
+  /** true: report a failed batch once at the pass level, not with two warns per batch. */
+  quiet?: boolean
+  /** Provider request timeout for this job; a repair batch of long documents can exceed the 30s default. */
+  timeoutMs?: number
 }
 const backgroundEmbedJobs: BackgroundEmbedJob[] = []
 let backgroundEmbedActive = false
+/** Last provider failure seen by a provider-only (reconcile) batch; surfaced by the CLI. */
+let lastBackgroundEmbedError: string | null = null
 let backgroundEmbedQueuedItems = 0
 let embeddingFlushWaiters: Array<() => void> = []
 
@@ -2511,6 +2523,51 @@ export function pendingEmbeddingCount(): number {
  */
 export function embeddingDrainPending(): boolean {
   return backgroundEmbedActive || backgroundEmbedJobs.length > 0 || backgroundEmbedQueuedItems > 0
+}
+
+export interface EmbeddingDrainProgress {
+  /** Items accepted into this process's queue so far. */
+  queued: number
+  /** Items whose outcome is known (embedded, fallback, failed, invalid, dropped, skipped). */
+  completed: number
+  /** queued - completed, floored at 0. An active job can still have items in flight. */
+  pending: number
+  active: boolean
+  embedded: number
+  fallback: number
+  failed: number
+  invalid: number
+  dropped: number
+  rateLimited: boolean
+  retryInMs: number
+  retryAttempt: number
+  retryDelayMs: number
+}
+
+/**
+ * A live snapshot of the embedding drain for the CLI's wait line. The counters are
+ * the queue's own; the retry window and attempt come from the engine's 429 state,
+ * so a rate-limited provider is reported as retrying rather than as a slow indexer.
+ */
+export function embeddingDrainProgress(): EmbeddingDrainProgress {
+  const metrics = backgroundEmbedMetrics
+  const completed = metrics.embedded + metrics.fallback + metrics.failed + metrics.invalid + metrics.dropped + metrics.skipped
+  const api = SemanticEngine.embeddingApiStatus()
+  return {
+    queued: metrics.queued,
+    completed,
+    pending: Math.max(0, metrics.queued - completed),
+    active: backgroundEmbedActive,
+    embedded: metrics.embedded,
+    fallback: metrics.fallback,
+    failed: metrics.failed,
+    invalid: metrics.invalid,
+    dropped: metrics.dropped,
+    rateLimited: api.rateLimited,
+    retryInMs: api.retryInMs,
+    retryAttempt: api.attempt,
+    retryDelayMs: api.delayMs,
+  }
 }
 const EMBED_QUEUE_ITEM_CAP = Number(process.env.BB_EMBEDDING_QUEUE_LIMIT || 25000)
 
@@ -2848,28 +2905,258 @@ export const backgroundEmbedMetrics = {
  * semantic vectors durable before reading them back (verify-embed,
  * verify-semantic).
  */
-export async function flushBackgroundEmbeddings(opts: { timeoutMs?: number } = {}): Promise<{ resolved: "drained" | "timeout"; pendingItems: number }> {
+export interface EmbeddingReconcileStart {
+  configuredModel: string
+  storedModels: Array<{ model: string; dimension: number; count: number }>
+  /** Symbols still missing a vector for the configured model (the work set). */
+  symbols: number
+  totalSymbols: number
+}
+
+export interface EmbeddingReconcileResult {
+  status: "unconfigured" | "no-index" | "in-sync" | "busy" | "reconciled"
+  configuredModel: string | null
+  storedModels: Array<{ model: string; dimension: number; count: number }>
+  /** Symbols that needed the configured model at the start of this pass. */
+  symbols: number
+  totalSymbols: number
+  /** Symbols converted to the configured model by this pass. */
+  embedded: number
+  /** Symbols still missing the configured model after this pass. */
+  remaining: number
+  failed: number
+  /** True when the pass stopped because consecutive batches converted nothing. */
+  stoppedEarly: boolean
+  /** Last provider error from a failed provider-only batch, for the CLI. */
+  lastError: string | null
+}
+
+/**
+ * Repair the VECTOR LAYER when the configured embedding model differs from what
+ * the index stores. Embeddings are derived data, but an unchanged index parses no
+ * files, so the normal incremental path never queues a symbol again — before this,
+ * running `bb setup` with a new model and then `bb index` reported "nothing to
+ * index" while every stored vector still came from the old model (measured on
+ * bettercap: config changed, DB still local-word-vectors-v3, summary printed the
+ * stale model).
+ *
+ * The pass is INCREMENTAL and PROVIDER-ONLY:
+ *  · only symbols with no row for the configured model are sent to the provider;
+ *    symbols already converted are never re-embedded on a later run;
+ *  · the local fallback is disabled for these batches, so a rate-limited/failed
+ *    provider keeps the symbol's existing vector instead of replacing a good
+ *    4096-dimensional vector with a 50-dimensional one. A retry therefore
+ *    continues from where the last pass stopped;
+ *  · superseded model rows are deleted only for symbols that now hold the
+ *    configured model;
+ *  · the result reports stored coverage (`remaining`), not provider attempts.
+ *
+ * It does not re-parse. `bb index --force` remains the full parse rebuild.
+ */
+export async function reconcileEmbeddingModel(
+  projectId: ProjectID,
+  projectPath: string,
+  opts: {
+    onStart?: (info: EmbeddingReconcileStart) => void
+    onProgress?: (progress: { done: number; total: number }) => void
+  } = {},
+): Promise<EmbeddingReconcileResult> {
+  const empty: EmbeddingReconcileResult = {
+    status: "unconfigured",
+    configuredModel: null,
+    storedModels: [],
+    symbols: 0,
+    totalSymbols: 0,
+    embedded: 0,
+    remaining: 0,
+    failed: 0,
+    stoppedEarly: false,
+    lastError: null,
+  }
+  const { getEmbeddingConfig } = await import("../brain/semantic/openai-embed")
+  const cfg = await getEmbeddingConfig().catch(() => null)
+  if (!cfg) return empty
+  empty.configuredModel = cfg.model
+  lastBackgroundEmbedError = null
+
+  const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const totalSymbols = Number(
+    (rawDb.prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE project_id = ?").get(projectId) as any)?.c ?? 0,
+  )
+  const storedModels = rawDb
+    .prepare(
+      `SELECT embedding_model AS model, vector_dimension AS dimension, COUNT(*) AS count
+         FROM brain_semantic_embedding WHERE project_id = ?
+        GROUP BY embedding_model, vector_dimension ORDER BY count DESC`,
+    )
+    .all(projectId) as Array<{ model: string; dimension: number; count: number }>
+  empty.totalSymbols = totalSymbols
+  empty.storedModels = storedModels
+  if (totalSymbols === 0) return { ...empty, status: "no-index", storedModels }
+
+  const mismatched =
+    storedModels.length === 0 ||
+    storedModels.some((row) => row.model !== cfg.model) ||
+    (cfg.dimension !== undefined && storedModels.some((row) => row.dimension !== cfg.dimension && row.model === cfg.model))
+  if (!mismatched) return { ...empty, status: "in-sync", storedModels }
+
+  if (embeddingDrainPending()) return { ...empty, status: "busy", storedModels }
+
+  // INCREMENTAL: symbols that already have a row for the configured model are
+  // left alone; only the missing ones are sent. A rate-limited run that converted
+  // 5,800 of 55,785 symbols makes the next run ask for 49,985, not 55,785.
+  const rows = rawDb
+    .prepare(
+      `SELECT s.id, s.file_id, s.name, s.qualified_name, s.symbol_type, s.docstring, s.source_text
+         FROM brain_symbol s
+         LEFT JOIN brain_semantic_embedding e
+           ON e.project_id = s.project_id AND e.entity_id = s.id AND e.embedding_model = ?
+        WHERE s.project_id = ? AND e.entity_id IS NULL`,
+    )
+    .all(cfg.model, projectId) as Array<{
+      id: string
+      file_id: string
+      name: string
+      qualified_name: string | null
+      symbol_type: string
+      docstring: string | null
+      source_text: string | null
+    }>
+  const items: any[] = []
+  for (const row of rows) {
+    const snippet = (row.source_text || [row.name, row.qualified_name, row.docstring].filter(Boolean).join(" ")).slice(0, 4000)
+    if (!snippet.trim()) continue
+    items.push({ symbolId: row.id, fileId: row.file_id, name: row.name, kind: row.symbol_type, snippet })
+  }
+  const symbols = items.length
+  const cleanupSuperseded = (): void => {
+    // Delete old-model rows only where the symbol now holds the configured model.
+    // A failed symbol keeps its existing vector; coverage is never silently lost.
+    try {
+      rawDb
+        .prepare(
+          `DELETE FROM brain_semantic_embedding
+            WHERE project_id = ? AND embedding_model != ?
+              AND entity_id IN (
+                SELECT entity_id FROM brain_semantic_embedding WHERE project_id = ? AND embedding_model = ?
+              )`,
+        )
+        .run(projectId, cfg.model, projectId, cfg.model)
+    } catch {}
+  }
+  const countRemaining = (): number => {
+    try {
+      return Number(
+        (rawDb
+          .prepare(
+            `SELECT COUNT(*) AS c FROM brain_symbol s
+               LEFT JOIN brain_semantic_embedding e
+                 ON e.project_id = s.project_id AND e.entity_id = s.id AND e.embedding_model = ?
+              WHERE s.project_id = ? AND e.entity_id IS NULL`,
+          )
+          .get(cfg.model, projectId) as any)?.c ?? 0,
+      )
+    } catch {
+      return symbols
+    }
+  }
+  if (symbols === 0) {
+    cleanupSuperseded()
+    return { ...empty, status: "in-sync", storedModels }
+  }
+
+  opts.onStart?.({ configuredModel: cfg.model, storedModels, symbols, totalSymbols })
+  const batchSize = 250
+  let stalledBatches = 0
+  let stoppedEarly = false
+  for (let start = 0; start < items.length; start += batchSize) {
+    const before = { ...backgroundEmbedMetrics }
+    queueBackgroundEmbeddings(projectId, projectPath, items.slice(start, start + batchSize), {
+      allowFallback: false,
+      quiet: true,
+      // A batch of long source snippets can legitimately take longer than the
+      // 30s default; the repair is not interactive, so allow two minutes.
+      timeoutMs: 120_000,
+    })
+    // Drain each batch before enqueueing the next: this bounds memory, keeps the
+    // queue cap from dropping a large reconcile, and lets a rate-limited run stop
+    // with a truthful remaining count instead of piling up fallback writes.
+    await flushBackgroundEmbeddings()
+    // A provider that is rate-limiting or down converts nothing. Stop after two
+    // consecutive empty batches: continuing would print one failure per batch and
+    // churn 49,985 symbols to reach the same "0 converted". The next run resumes.
+    const convertedThisBatch = backgroundEmbedMetrics.embedded - before.embedded
+    stalledBatches = convertedThisBatch === 0 ? stalledBatches + 1 : 0
+    opts.onProgress?.({ done: Math.min(start + batchSize, symbols), total: symbols })
+    if (stalledBatches >= 2) {
+      stoppedEarly = true
+      break
+    }
+  }
+  cleanupSuperseded()
+  const remaining = countRemaining()
+  return {
+    status: "reconciled",
+    configuredModel: cfg.model,
+    storedModels,
+    symbols,
+    totalSymbols,
+    embedded: Math.max(0, symbols - remaining),
+    remaining,
+    failed: remaining,
+    stoppedEarly,
+    lastError: lastBackgroundEmbedError,
+  }
+}
+
+export async function flushBackgroundEmbeddings(
+  opts: { timeoutMs?: number; pollMs?: number; onProgress?: (progress: EmbeddingDrainProgress) => void } = {},
+): Promise<{ resolved: "drained" | "timeout"; pendingItems: number }> {
   // M40.A9: no production caller BY DESIGN — the background queue drains
   // itself on its own loop; this is the deterministic-drain seam for
   // verifier/e2e harnesses (script/m18, script/m21) that must await
   // embedding durability. Keep exported; do not call from product paths.
+  //
+  // The optional progress poller exists for the CLI: waiting minutes for vectors
+  // with no output reads as a hang, and a provider 429 window must be named as a
+  // rate limit (with its retry countdown) rather than as a slow indexer.
   const deadline = opts.timeoutMs && opts.timeoutMs > 0 ? Date.now() + opts.timeoutMs : undefined
-  while (backgroundEmbedActive || backgroundEmbedJobs.length > 0) {
-    if (deadline !== undefined && Date.now() >= deadline) {
-      return { resolved: "timeout", pendingItems: backgroundEmbedQueuedItems }
+  let timer: ReturnType<typeof setInterval> | null = null
+  if (opts.onProgress) {
+    const emit = (): void => {
+      try {
+        opts.onProgress!(embeddingDrainProgress())
+      } catch {}
     }
-    const wait = deadline !== undefined
-      ? new Promise<void>((resolve) => {
-          const t = setTimeout(() => resolve(), Math.max(1, deadline - Date.now()))
-          embeddingFlushWaiters.push(() => { clearTimeout(t); resolve() })
-        })
-      : new Promise<void>((resolve) => embeddingFlushWaiters.push(resolve))
-    await wait
+    emit()
+    timer = setInterval(emit, Math.max(50, opts.pollMs ?? 500))
+    ;(timer as any).unref?.()
   }
-  return { resolved: "drained", pendingItems: 0 }
+  try {
+    while (backgroundEmbedActive || backgroundEmbedJobs.length > 0) {
+      if (deadline !== undefined && Date.now() >= deadline) {
+        return { resolved: "timeout", pendingItems: backgroundEmbedQueuedItems }
+      }
+      const wait = deadline !== undefined
+        ? new Promise<void>((resolve) => {
+            const t = setTimeout(() => resolve(), Math.max(1, deadline - Date.now()))
+            embeddingFlushWaiters.push(() => { clearTimeout(t); resolve() })
+          })
+        : new Promise<void>((resolve) => embeddingFlushWaiters.push(resolve))
+      await wait
+    }
+    return { resolved: "drained", pendingItems: 0 }
+  } finally {
+    if (timer) clearInterval(timer)
+  }
 }
 
-function queueBackgroundEmbeddings(projectId: ProjectID, projectPath: string, items: any[]) {
+function queueBackgroundEmbeddings(
+  projectId: ProjectID,
+  projectPath: string,
+  items: any[],
+  opts: { allowFallback?: boolean; quiet?: boolean; timeoutMs?: number } = {},
+) {
   if (items.length === 0) return
   const embedBatchLimit = Number(process.env.BB_EMBEDDING_BATCH_LIMIT || 50000)
   if (items.length >= embedBatchLimit) {
@@ -2892,7 +3179,7 @@ function queueBackgroundEmbeddings(projectId: ProjectID, projectPath: string, it
   backgroundEmbedMetrics.queued += items.length
   // Keep project identity, not a live SQLite handle. A caller may close or
   // remove a project while this non-blocking queue is draining.
-  backgroundEmbedJobs.push({ projectId, projectPath, items })
+  backgroundEmbedJobs.push({ projectId, projectPath, items, allowFallback: opts.allowFallback, quiet: opts.quiet, timeoutMs: opts.timeoutMs })
   if (!backgroundEmbedActive) {
     backgroundEmbedActive = true
     setImmediate(() => {
@@ -2954,7 +3241,15 @@ async function drainBackgroundEmbeddings() {
               // Word vectors are position-independent, so both sides sharing a
               // vocabulary is a pure coverage increase rather than a change of
               // vector space — see local-embed.ts `wordVector`.
-              SemanticEngine.embedMany(docs, job.projectId),
+              SemanticEngine.embedMany(
+                docs,
+                job.projectId,
+                job.allowFallback === false
+                  ? { allowLocalFallback: false, ...(job.timeoutMs ? { timeoutMs: job.timeoutMs } : {}) }
+                  : job.timeoutMs
+                    ? { timeoutMs: job.timeoutMs }
+                    : {},
+              ),
               EMBED_CALL_TIMEOUT_MS,
               `embedding provider call exceeded ${EMBED_CALL_TIMEOUT_MS}ms bound`,
             ),
@@ -3083,7 +3378,24 @@ async function drainBackgroundEmbeddings() {
         }
         log.debug("background embedding pass completed", { embedded: accounted })
       } catch (e: any) {
-        log.warn("background semantic embedding failed", { error: e?.message })
+        if (!job.quiet) log.warn("background semantic embedding failed", { error: e?.message })
+        if (job.allowFallback === false) {
+          // Provider-only pass (embedding reconcile): keep whatever vector the
+          // symbol already had. Writing a local fallback would replace an existing
+          // 4096-dimensional vector with a 50-dimensional one and still leave the
+          // symbol without the configured model. The reconcile pass reports the
+          // stall itself; per-batch warnings here would be hundreds of lines.
+          backgroundEmbedMetrics.failed += job.items.length - accounted
+          accounted = job.items.length
+          lastBackgroundEmbedError = SemanticEngine.lastEmbeddingError() || e?.message || String(e)
+          if (!job.quiet) {
+            log.warn("embedding provider required; keeping existing vectors for this batch", {
+              error: e?.message,
+              items: job.items.length,
+            })
+          }
+          continue
+        }
         // Fall back to TF-IDF for the unaccounted remainder of the batch.
         // Items already embedded/failed in committed chunks must not be
         // re-processed (that would double-count AND write duplicate
@@ -3225,6 +3537,7 @@ export function buildStoreableSpans(
   symbols: any[],
   fileId: string,
   isStoreable: (nm: string | undefined, startLine: number) => boolean,
+  idForSymbol?: (symbol: any) => string,
 ): StoreableSpan[] {
   const out: StoreableSpan[] = []
   for (const s of symbols ?? []) {
@@ -3233,7 +3546,7 @@ export function buildStoreableSpans(
     if (sStart < 1) continue
     if (!isStoreable(s.name, sStart)) continue
     out.push({
-      id: `${fileId}:${s.name}:${sStart}`,
+      id: idForSymbol ? idForSymbol(s) : `${fileId}:${s.name}:${sStart}`,
       name: String(s.name || ""),
       start: sStart,
       end: Math.max(sEnd, sStart),
@@ -3865,6 +4178,26 @@ export async function storeResults(
          // Hoisted per-file index structures — used by both symbol storage and
          // relationship source resolution (which runs outside the symbols block).
          const fileLang = (result.language || "").toLowerCase()
+         const phpSymbolIds = new Map<any, string>()
+         const symbolStorageId = (symbol: any): string => phpSymbolIds.get(symbol) ??
+           `${fileId}:${symbol.name}:${symbol.startLine ?? symbol.range?.startLine ?? 0}`
+         if (fileLang === "php") {
+           const groups = new Map<string, any[]>()
+           for (const symbol of result.symbols ?? []) {
+             const key = symbolStorageId(symbol)
+             const group = groups.get(key) ?? []
+             group.push(symbol)
+             groups.set(key, group)
+           }
+           for (const group of groups.values()) {
+             if (group.length < 2) continue
+             for (const [index, symbol] of group.entries()) {
+               const offset = symbol.startIndex ?? symbol.range?.startIndex ?? index
+               const line = symbol.startLine ?? symbol.range?.startLine ?? 0
+               phpSymbolIds.set(symbol, `${fileId}:${symbol.name}@${offset}:${line}`)
+             }
+           }
+         }
          // JS-global names are only noise for JS-family languages; a Scala
          // `object Global` or `def process` is a legitimate declaration and
          // must survive indexing. Universal entries below are keywords and
@@ -3882,6 +4215,7 @@ export async function storeResults(
            fileLang,
          )
          const nameToSymbol = new Map<string, any>()
+         const sourceDeclarationsByOffset = new Map<number, any>()
          const containersByStart: { name: string; start: number; end: number }[] = []
          // M59/#855: intervals of the symbols this file will ACTUALLY STORE, so
          // an edge whose analyzer source is a synthetic scope the store filters
@@ -3968,6 +4302,10 @@ export async function storeResults(
            // containersByStart: container symbols sorted by startLine ascending for
            // line-containment lookups (replaces two full-array scans per symbol).
            for (const s of result.symbols) {
+             const start = s.startIndex ?? s.range?.startIndex
+             if (typeof start === "number" && ["function", "method"].includes(s.kind ?? s.type)) {
+               sourceDeclarationsByOffset.set(start, s)
+             }
              const nm = s.name || ""
              if (nm && !nameToSymbol.has(nm)) nameToSymbol.set(nm, s)
              // #17 seam repair: elixir function-scope relationship sources carry
@@ -4028,7 +4366,7 @@ export async function storeResults(
            // THE BUILD IS HOISTED, INCLUDING ITS SORT. `storeableName` is passed IN as the predicate
            // rather than read from module scope — see the note below: it is PER-CALL MUTABLE STATE and
            // a module-level denylist would leak the fallback entries across files.
-           storeableSpans.push(...buildStoreableSpans(result.symbols, fileId, storeableName))
+           storeableSpans.push(...buildStoreableSpans(result.symbols, fileId, storeableName, fileLang === "php" ? symbolStorageId : undefined))
            // First container-kind symbol in sorted order (used for this/self resolution)
            const INTRA_CONTAINER_KINDS = new Set(["class", "interface", "struct", "trait", "enum", "object", "actor", "impl"])
            firstContainerSymbol = result.symbols.find((s: any) => INTRA_CONTAINER_KINDS.has(s.type || s.kind || "unknown"))
@@ -4081,7 +4419,7 @@ export async function storeResults(
              const symbolEndIndex = symbol.endIndex ?? symbol.range?.endIndex ?? null
  
              if (symbol.snippet && symbol.snippet.length > 0) {
-               const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
+               const symbolId = symbolStorageId(symbol)
                semanticBatch.push({
                  symbolId,
                  fileId,
@@ -4091,12 +4429,12 @@ export async function storeResults(
                })
              }
  
-             const symbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
+             const symbolId = symbolStorageId(symbol)
              let ownerSymbolId: string | null = null
              const _ownerName = symbol.ownerName || symbol.scope
              if (_ownerName) {
                const parentSymbol = nameToSymbol.get(_ownerName)
-               const ownSymbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
+               const ownSymbolId = symbolId
                // #612 (the structural twin of the containment source rule): the
                // lookup above is FIRST-WINS, so a file that repeats a container
                // name assigns this symbol's owner to whichever declaration the
@@ -4153,7 +4491,7 @@ export async function storeResults(
                if (!ownerSymbolId && parentSymbol && parentSymbol.name !== symbol.name) {
                  const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
                  if (storeableName(parentSymbol.name, parentStartLine)) {
-                   ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
+                   ownerSymbolId = symbolStorageId(parentSymbol)
                  }
                }
              } else {
@@ -4266,6 +4604,17 @@ export async function storeResults(
              // numeric prefixes, punctuation) are legitimate symbol contracts
              // (CSS selectors, Markdown headings, F# active patterns, YAML
              // merge keys). The regex fallback path gets the strict filter.
+             if (fileLang === "php" && _ownerName && typeof symbolStartIndex === "number") {
+               const owners = result.symbols.filter((candidate: any) => {
+                 const start = candidate.startIndex ?? candidate.range?.startIndex
+                 const end = candidate.endIndex ?? candidate.range?.endIndex
+                 return candidate !== symbol && candidate.name === _ownerName &&
+                   CONTAINER_TYPES_LOOKUP.has(candidate.kind ?? candidate.type) &&
+                   typeof start === "number" && typeof end === "number" &&
+                   start <= symbolStartIndex && end >= (symbolEndIndex ?? symbolStartIndex)
+               }).sort((a: any, b: any) => (b.startIndex ?? b.range?.startIndex) - (a.startIndex ?? a.range?.startIndex))
+               if (owners.length) ownerSymbolId = symbolStorageId(owners[0])
+             }
              const nameIsArtifact = isFallbackResult
                ? isIndexArtifactNameStrict(symbol.name)
                : isIndexArtifactName(symbol.name)
@@ -4530,8 +4879,6 @@ export async function storeResults(
                "java", "python", "go", "php", "ruby", "csharp", "kotlin", "scala",
                "typescript", "javascript", "tsx", "jsx", "rust", "swift", "dart",
              ])
-             const fileLang = (result.language || "").toLowerCase()
- 
              if (!symbol.taintSources && !symbol.taintSinks && symbolKind === "function" && LANGUAGES_WITH_SQL.has(fileLang)) {
                const snippet = symbol.snippet || ""
                const qualifiedCalls = symbol.qualifiedCalls || []
@@ -4774,8 +5121,13 @@ export async function storeResults(
              // contains-source-hint-612 and contains-source-span-delta-612).
              const relLine =
                typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
-             const sourceIdFromSpan =
-               relType === "contains" && relLine !== null
+             const declaredSource = ["php", "typescript"].includes(fileLang) && typeof rel.metadata?.sourceStartIndex === "number"
+               ? sourceDeclarationsByOffset.get(rel.metadata.sourceStartIndex) : undefined
+             const sourceIdFromSpan = declaredSource ? symbolStorageId(declaredSource) :
+               // PHP type, function and member facts name their declaring source. A
+               // property or enum case on the same line must not steal it via
+               // the generic innermost-span fallback.
+               (relType === "contains" || (fileLang === "php" && (rel.metadata?.phpTypeReference === true || rel.metadata?.phpFunctionReference === true || rel.metadata?.phpMemberReference === true))) && relLine !== null
                  ? (enclosingStoreableIdByName(String(sourceLeaf), relLine) ??
                     enclosingStoreableIdByName(String(sourceName), relLine))
                  : null
@@ -4812,7 +5164,7 @@ export async function storeResults(
                  if (/^[a-z][a-z0-9_.]*$/.test(name) && name.includes(".")) continue
                  if (sourceSymbol.type === "package" || sourceSymbol.kind === "package") continue
                }
-               sourceId = `${fileId}:${sourceSymbol.name}:${sourceSymbol.startLine || 0}`
+               sourceId = fileLang === "php" ? symbolStorageId(sourceSymbol) : `${fileId}:${sourceSymbol.name}:${sourceSymbol.startLine || 0}`
              } else {
                // Phase 4: No dummy symbols. Use source_external for relationships
                // where the source symbol isn't in the same file (top-level calls,
@@ -5089,7 +5441,9 @@ export async function storeResults(
  
              if (
                leafForCheck.length > MAX_SYMBOL_NAME_LENGTH ||
-               GENERIC_SOURCE_NAMES.has(leafForCheck) ||
+               // A concrete declaration can legitimately be named `unknown`.
+               // Placeholder spellings without declaration evidence remain filtered.
+               (GENERIC_SOURCE_NAMES.has(leafForCheck) && !declaredSource) ||
                isBlockScopeName
              ) {
                continue
@@ -5146,7 +5500,13 @@ export async function storeResults(
               // blocks above, so the id and the column agree. An ATTRIBUTED row
               // is untouched: its identity already names its source symbol.
               const sourceIdentity = sourceId ?? `file:${relativePath}`
-              const relId = `${projectId}:rel:${sourceIdentity}:${targetName}:${relType}:${relLine ?? "?"}`
+              // TypeScript calls carry an exact syntax offset. Two calls on one line
+              // are separate graph facts even when their source and target names agree.
+              const callSite = fileLang === "typescript" && relType === "calls" &&
+                Number.isSafeInteger(rel.metadata?.callSiteStartIndex) && rel.metadata.callSiteStartIndex >= 0
+                  ? rel.metadata.callSiteStartIndex : null
+              const siteIdentity = callSite === null ? "" : `:site:${callSite}`
+              const relId = `${projectId}:rel:${sourceIdentity}:${targetName}:${relType}:${relLine ?? "?"}${siteIdentity}`
 
  
              stmt.insertRelationship.run(
@@ -5445,6 +5805,9 @@ export async function storeResults(
          // declares is left exactly as it was, which keeps it visible as declared
          // low-confidence suspicion rather than silently deleting a real override.
          retargetCrossFileOverrides(rawDb as any, projectId)
+         reconcilePhpProjectOverrides(rawDb as any, projectId)
+         reconcilePhpTypeTargets(rawDb as any, projectId)
+         reconcilePhpFunctionTargets(rawDb as any, projectId)
 
          // JULIA'S METHOD TABLE, the second landing site for the gate rule
          // (`script/m14/incoming-gate.ts --binding-collapse`, measured there as 1,489 edges moving
@@ -6249,6 +6612,10 @@ async function resolveRelationships(projectId: ProjectID): Promise<ResolvePlanSt
       }
     }
 
+    reconcilePhpProjectOverrides(rawDb as any, projectId)
+    reconcilePhpTypeTargets(rawDb as any, projectId)
+    reconcilePhpFunctionTargets(rawDb as any, projectId)
+
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
     // worker-pool flow (batches are stored with skipResolution=true, so a TS
@@ -6815,7 +7182,7 @@ export async function indexProjectParallel(
         // Send warmup so the worker initializes and responds with "ready"
         testWorker.send({ type: "warmup", workerId: 0 })
       })
-      _log.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
+      _log.log(`[brain] ✓ worker pool available — using ${ParallelIndexerConfig.concurrency} workers with 45s timeouts`)
       log.info("worker pool fork test passed — using parallel workers")
     } catch (e: any) {
       if (signal?.aborted) throw new Error("index cancelled during worker startup")
@@ -7584,7 +7951,7 @@ export async function indexProjectParallel(
       if (stats.summary) stats.summary.derivedPass = failedPhases.length > 0 ? "partial" : "full"
     } else if (options.isIncremental && !options.skipPostProcessing && !stats.cancelled) {
       // M40.A2: bounded incremental post-pass — derived data stays consistent
-      // at write-cost proportional to what THIS run touched, never O(project).
+      // with scoped writes and receiver lookup over the complete declaration index.
       const postProcessingStart = Date.now()
       const bounded = await runBoundedPostProcessing(projectId, {
         projectPath,
@@ -7979,11 +8346,26 @@ export async function runPostProcessing(
   }
   let integrityHealth: number | null = null
 
+  // Phase heartbeat: a phase that runs for tens of seconds must never look hung.
+  // Every 5s it says the phase is still alive and for how long; the interval is
+  // cleared on both success and failure, so it cannot outlive the phase.
+  const withHeartbeat = async <T>(label: string, fn: () => Promise<T>): Promise<T> => {
+    const started = Date.now()
+    const timer = setInterval(() => {
+      _log.log(`        … ${label} still running (${Math.round((Date.now() - started) / 1000)}s)`)
+    }, 5000)
+    try {
+      return await fn()
+    } finally {
+      clearInterval(timer)
+    }
+  }
+
   try {
-    _log.log("  Resolving cross-file relationships...")
+    _log.log("  [1/8] resolving cross-file relationships…")
     let _t = Date.now()
     try {
-      const relStats = await resolveRelationships(projectId)
+      const relStats = await withHeartbeat("cross-file resolution", () => resolveRelationships(projectId))
       recordPhase("relationships", Date.now() - _t, "ok")
       // The plan's own numbers ride the phase line because the scaling gate
       // (`script/perf/verify-scaling-linear.ts`) parses THIS line: it has to read
@@ -7992,6 +8374,12 @@ export async function runPostProcessing(
       // absent evidence, which the gate rejects, never a zero that reads as a
       // perfect score.
       _log.log(`  ✓ resolved in ${Date.now()-_t}ms [plan=${relStats?.plan ?? "none"} largest-intermediate=${relStats ? relStats.largestIntermediate : -1}]`)
+      try {
+        const crossLanguage = Number(
+          (rawDb.prepare("SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND is_cross_language = 1").get(projectId) as any)?.c ?? 0,
+        )
+        if (crossLanguage > 0) _log.log(`        cross-language: ${crossLanguage.toLocaleString()} edges`)
+      } catch {}
     } catch (relErr: any) {
       recordPhase("relationships", Date.now() - _t, "failed")
       log.warn("relationship resolution failed", { error: relErr?.message })
@@ -8000,7 +8388,7 @@ export async function runPostProcessing(
     // Enrich relationships with architectural reasoning (Phase 1+2)
     try {
       const { enrichRelationships } = await import("../brain/brain-relationship-enrichment")
-      _log.log("  Enriching relationships with architectural context...")
+      _log.log("  [2/8] enriching relationships (the why: role, pattern, layer, criticality)…")
       _t = Date.now()
       const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
         // `\r` + erase-code only rewrites a line on a real terminal. Written to a
@@ -8016,12 +8404,34 @@ export async function runPostProcessing(
       })
       recordPhase("enrichment", Date.now() - _t, "ok")
       _log.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)
+      try {
+        const patternRows = rawDb
+          .prepare(
+            `SELECT json_extract(metadata, '$.pattern') AS pattern, COUNT(*) AS count
+               FROM brain_relationship
+              WHERE project_id = ? AND metadata IS NOT NULL AND json_valid(metadata)
+                AND json_extract(metadata, '$.pattern') IS NOT NULL
+              GROUP BY pattern ORDER BY count DESC LIMIT 6`,
+          )
+          .all(projectId) as Array<{ pattern: string; count: number }>
+        if (patternRows.length > 0) {
+          _log.log(`        patterns: ${patternRows.map((row) => `${row.pattern} ${Number(row.count).toLocaleString()}`).join(" · ")}`)
+        }
+      } catch {}
+      {
+        const extra = enrichResult as typeof enrichResult & { danglingSources?: number; unresolvedTargets?: number; truncated?: boolean }
+        const notes: string[] = []
+        if (extra.danglingSources) notes.push(`${extra.danglingSources.toLocaleString()} dangling sources`)
+        if (extra.unresolvedTargets) notes.push(`${extra.unresolvedTargets.toLocaleString()} unresolved targets`)
+        if (extra.truncated) notes.push("pass truncated")
+        if (notes.length > 0) _log.log(`        ⚠ ${notes.join(", ")} — declared, not hidden`)
+      }
     } catch (enrichErr) {
       recordPhase("enrichment", Date.now() - _t, "failed")
       log.warn("relationship enrichment failed", { error: enrichErr })
     }
 
-    _log.log("  Computing gravity scores...")
+    _log.log("  [3/8] computing gravity scores…")
     _t = Date.now()
     try {
       await calculateGravityScores(projectId)
@@ -8034,19 +8444,26 @@ export async function runPostProcessing(
 
     // Taint and health are independent phases: each records its own timing
     // and outcome so a failure in one never mislabels the other.
-    _log.log("  Analyzing taint flows & security...")
+    _log.log("  [4/8] analyzing taint flows & security…")
     _t = Date.now()
     try {
-      await resolveCrossSymbolTaints(projectId)
+      await withHeartbeat("taint analysis", () => resolveCrossSymbolTaints(projectId))
       recordPhase("taint", Date.now() - _t, "ok")
+      try {
+        const taintFlows = Number(
+          (rawDb.prepare("SELECT COUNT(*) AS c FROM brain_taint_flow WHERE project_id = ?").get(projectId) as any)?.c ?? 0,
+        )
+        if (taintFlows > 0) _log.log(`        taint flows: ${taintFlows.toLocaleString()}`)
+      } catch {}
     } catch (postErr: any) {
       recordPhase("taint", Date.now() - _t, "failed")
       log.warn("post-indexing taint analysis failed", { error: postErr?.message })
     }
     const taintMs = Date.now() - _t
+    _log.log("  [5/8] computing project health…")
     _t = Date.now()
     try {
-      await (await import("./project-health")).computeAndStoreProjectHealth(projectId)
+      await withHeartbeat("project health", async () => (await import("./project-health")).computeAndStoreProjectHealth(projectId))
       recordPhase("health", Date.now() - _t, "ok")
     } catch (healthErr: any) {
       recordPhase("health", Date.now() - _t, "failed")
@@ -8055,6 +8472,7 @@ export async function runPostProcessing(
     _log.log(`  ✓ taint(${taintMs}ms) + health(${Date.now()-_t}ms)`)
 
     // Lightweight post-index integrity validation (4 fast checks)
+    _log.log("  [6/8] integrity & freshness…")
     try {
       _t = Date.now()
       const { runIndexHealthCheck } = await import("../brain/brain-index-health")
@@ -8062,7 +8480,7 @@ export async function runPostProcessing(
       // not grade a half-drained table as "no vectors, keyword-only". Defer it, and let the CLI print
       // the authoritative health line after the drain (measured lie, 2026-11-01).
       const embeddingsStillDraining = embeddingDrainPending()
-      const health = await runIndexHealthCheck(projectId, { deferEmbeddingCoverage: embeddingsStillDraining })
+      const health = await withHeartbeat("integrity checks", () => runIndexHealthCheck(projectId, { deferEmbeddingCoverage: embeddingsStillDraining }))
       recordPhase("integrity", Date.now() - _t, "ok")
       integrityHealth = health.overallHealth
       _log.log(`  ✓ health check in ${Date.now()-_t}ms`)
@@ -8090,9 +8508,10 @@ export async function runPostProcessing(
     // successive post runs instead of blocking this one, and the remaining
     // count is always declared. Rows whose JSON is not a dense numeric vector
     // are never touched (they keep working through the JSON path).
+    _log.log("  [7/8] vector blobs…")
     _t = Date.now()
     try {
-      const vb = await backfillEmbeddingBlobs(projectId)
+      const vb = await withHeartbeat("vector blob backfill", () => backfillEmbeddingBlobs(projectId))
       recordPhase("vectorBlobs", Date.now() - _t, "ok")
       _log.log(
         `  ✓ vector blobs: ${vb.promoted.toLocaleString()}/${vb.scanned.toLocaleString()} promoted in ${Date.now()-_t}ms` +
@@ -8110,6 +8529,7 @@ export async function runPostProcessing(
     // bb_graph call; bb_patterns timed out at 45s). With sqlite_stat1 present
     // the same hops are sub-millisecond. Measured one-time cost: ~8s on a
     // 4.8GB/168k-symbol DB, fully covered by the single-flight index lock.
+    _log.log("  [8/8] planner stats (ANALYZE)…")
     _t = Date.now()
     try {
       rawDb.exec("ANALYZE")
@@ -8470,6 +8890,14 @@ export async function repairInEdges(
     // zero while the DB was already changed. One writer, one reporter.
     if (opts.out) opts.out.healedZeroLines = healed.changes
 
+    // The FK clears a removed target without clearing its derived cross-file
+    // flag. A surviving unresolved inbound edge no longer has a target file.
+    rawDb.prepare(`
+      UPDATE brain_relationship SET is_cross_file = 0
+      WHERE project_id = ? AND target_symbol_id IS NULL AND is_cross_file != 0
+        AND id IN (SELECT rel_id FROM _m40_inbound)
+    `).run(projectId)
+
     // What is left is the honest remainder: the row survives, its symbol is
     // gone, and no symbol of the re-stored files answers to its spelling.
     // COUNTED OVER THE ROWS THIS REPAIR IS THE ONLY WRITER FOR (`own_source = 0`):
@@ -8768,6 +9196,33 @@ export async function runBoundedPostProcessing(
     }
   }
 
+  // Match the full pass's authoritative receiver channel after name-based
+  // repair. A changed or deleted base can affect callers in untouched files,
+  // including previously unresolved calls, so receiver lookup reads across the
+  // project. Reconciliation writes only targets that actually changed; it does
+  // not clear and rewrite every owner-carrying relationship on each refresh.
+  {
+    const _t = Date.now()
+    try {
+      const owners = resolveMemberTargetsByOwner(rawDb as any, projectId, { reconcile: true })
+      const overrides = reconcilePhpProjectOverrides(rawDb as any, projectId)
+      const types = reconcilePhpTypeTargets(rawDb as any, projectId)
+      const functions = reconcilePhpFunctionTargets(rawDb as any, projectId)
+      touchedSymbols.push(...functions.changedSourceIds)
+      gravityScope.push(...functions.changedSourceIds, ...functions.changedTargetIds)
+      touchedSymbols.push(...types.changedSourceIds)
+      gravityScope.push(...types.changedSourceIds, ...types.changedTargetIds)
+      touchedSymbols.push(...overrides.changedSourceIds)
+      gravityScope.push(...overrides.changedSourceIds, ...overrides.changedTargetIds)
+      if (overrides.insertedOrUpdated || overrides.withdrawn) _log.log(`  bounded: reconciled ${overrides.insertedOrUpdated} PHP override(s), withdrew ${overrides.withdrawn}`)
+      if (owners.reconciledChanges) _log.log(`  bounded: reconciled ${owners.reconciledChanges} receiver-owned relationship row(s)`)
+      recordPhase("relationships", Date.now() - _t, "ok")
+    } catch (e: any) {
+      recordPhase("relationships", Date.now() - _t, "failed")
+      log.warn("bounded receiver resolution failed", { error: e?.message })
+    }
+  }
+
   // 3. enrichment — scoped to touched sources
   {
     const _t = Date.now()
@@ -8996,10 +9451,13 @@ export async function reindexFilesParallel(
   const lock = await acquireIndexLock(projectId, { kind: "reindex" })
   try {
   const deleted = changes.filter((c) => c?.type === "deleted")
+  let deletedSnapshot: InEdgeSnapshotRow[] = []
   if (deleted.length > 0) {
     try {
       const rawDb = await BrainDatabase.getRawInstance(projectId)
       rawDb.prepare(`DELETE FROM brain_query_cache WHERE project_id = ?`).run(projectId)
+      deletedSnapshot = await snapshotInEdges(projectId, deleted.map(change =>
+        `${projectId}:${path.relative(realProjectPath, change.path)}`))
       const deleteSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
       const deleteImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
       const deleteFile = rawDb.prepare(`DELETE FROM brain_file WHERE id = ?`)
@@ -9132,6 +9590,36 @@ export async function reindexFilesParallel(
       result.errors++
     }
   }
+  // Deletion-only updates do not enter the parsing branch. Their surviving
+  // callers and importers still need repair and receiver reconciliation.
+  if (result.deleted > 0) {
+    try {
+      const bounded = await runBoundedPostProcessing(projectId, {
+        projectPath: realProjectPath,
+        touchedFiles: deleted.map(change => change.path),
+        snapshot: deletedSnapshot,
+        ...(options?.logger ? { logger: options.logger } : {}),
+      })
+      const prior = result.derived
+      const phases = [...(prior?.phases ?? []), ...bounded.phases]
+      const partial = phases.some(phase => phase.outcome === "failed")
+      result.derived = {
+        pass: partial ? "partial" : "bounded",
+        phases,
+        repairedInEdges: (prior?.repairedInEdges ?? 0) + bounded.repairedInEdges,
+        touchedSymbols: (prior?.touchedSymbols ?? 0) + bounded.touchedSymbols,
+        resolvedStoredEdges: (prior?.resolvedStoredEdges ?? 0) + bounded.resolvedStoredEdges,
+        stillUnresolvedInEdges: (prior?.stillUnresolvedInEdges ?? 0) + bounded.stillUnresolvedInEdges,
+        healedZeroLines: (prior?.healedZeroLines ?? 0) + bounded.healedZeroLines,
+        importResolvedInEdges: (prior?.importResolvedInEdges ?? 0) + bounded.importResolvedInEdges,
+      }
+      if (partial) await BrainDatabase.updateIndexStatus(projectId, { status: "partial" })
+    } catch (error) {
+      log.error("failed to repair relationships after file deletion", { error })
+      result.errors++
+    }
+  }
+
   // The CLI reclaims the WAL at the end of a run; this path never did, so every
   // agent-fresh reindex left the write WAL to grow until the next full CLI
   // index. Best effort: a refused checkpoint (another reader holds a snapshot)

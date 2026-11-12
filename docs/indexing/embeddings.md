@@ -88,17 +88,25 @@ than pretending.
 bb setup
 ```
 
-It validates the endpoint with a real request before saving, maps failures to
-actionable messages (a 401 means the key was rejected, a 429 means the key is
-fine and you are rate-limited, a 404 means the model name is wrong), and writes
+The flow is key-first: it detects the provider from the key prefix, lists the
+embedding models that key can use (with `m) type a model id` as the escape
+hatch), and validates the chosen model with a real `/embeddings` request before
+saving. Failures stay in the menu (`r` retry, `m` change model, `k` change key,
+`s` skip) instead of exiting with nothing saved. It maps failures to actionable
+messages (a 401 means the key was rejected, a 429 means the key is fine and you
+are rate-limited, a 404 means the model name is wrong), and writes
 `~/.bb/config.json` with mode **0600** via a temp file and an atomic rename
-(`src/setup/setup-wizard.ts:181-182`), and re-checks the mode afterwards
-(`:191-192`).
+(`src/setup/embedding-setup.ts`), then re-checks the mode. `bb setup reset`
+removes the embedding keys and the skip marker without touching the index.
+Changing the provider/model does not require a full re-parse: the next
+`bb index` detects the stored-vector model mismatch, re-embeds the existing
+symbols in place, and deletes the superseded rows; `bb index --force` remains the
+full parse rebuild.
 
 `bb setup` requires an interactive terminal and exits with
 `✗ bb setup requires an interactive terminal.` otherwise
-(`src/cli/index.ts:783-786`). In a non-TTY, `bb index` never blocks: it prints a
-one-line notice instead (`src/setup/setup-wizard.ts:363-368`).
+(`src/cli/index.ts` (setup command)). In a non-TTY, `bb index` never blocks: it prints a
+one-line notice instead (`src/setup/embedding-setup.ts` (first-run hook)).
 
 ### Option B — environment variables
 

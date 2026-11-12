@@ -569,6 +569,9 @@ function edgeMetadata(meta: string | null): EdgeMetadata | undefined {
   try {
     const parsed = JSON.parse(meta) as Record<string, unknown>
     const out: EdgeMetadata = {}
+    if (typeof parsed.callSiteStartIndex === "number" && Number.isSafeInteger(parsed.callSiteStartIndex) && parsed.callSiteStartIndex >= 0) {
+      out.callSiteStartIndex = parsed.callSiteStartIndex
+    }
     if (parsed.method === "regex") {
       out.method = "regex"
       out.evidenceClass = "inferred"
@@ -970,7 +973,7 @@ export async function traverseGraph(
   // Same-site spelling rows (`Async` vs `cekernel.Async`) are DISTINCT
   // rowIds, so row-level dedupe cannot see them. They are collapsed by SITE:
   // same relationship type, same source symbol, same resolved target, same
-  // file + line. Measured guard (cats-effect, probe-rel-identity): the site
+  // file + line + exact offset when the analyzer supplies it. Measured guard (cats-effect, probe-rel-identity): the site
   // key is applied ONLY to rows carrying a real call-site line — the NULL-line
   // groups the store shows (YAML `contains`, 15 distinct keypaths in one
   // group) are genuinely different sites that a NULL line cannot distinguish,
@@ -1127,7 +1130,7 @@ export async function traverseGraph(
         // rows look like one spelling variant. Measured on a fixture: a caller
         // line calling `m.a()` and `m.b()` answered ONE edge naming `a` with
         // `spellingVariantsCollapsed: 1`.
-        const siteKey = `${row.relType}|${row.symId ?? ""}|${row.matchedId ?? symbolId}|${row.srcFileRel ?? ""}|${row.lineNumber}`
+        const siteKey = `${row.relType}|${row.symId ?? ""}|${row.matchedId ?? symbolId}|${row.srcFileRel ?? ""}|${row.lineNumber}|${edgeMetadata(row.meta)?.callSiteStartIndex ?? ""}`
         if (emittedCallerSites.has(siteKey)) {
           collapsedSpellingVariants++
           continue
@@ -1351,7 +1354,7 @@ export async function traverseGraph(
       if (row.lineNumber != null && row.lineNumber > 0) {
         // Same rule from the other end: the SOURCE identity is the id the row
         // matched (a member, under the cascade), not the traced owner.
-        const calleeKey = `${row.relType}|${row.matchedId ?? symbolId}|${row.symId ?? `ext:${row.extName ?? ""}`}|${row.srcFileRel ?? ""}|${row.lineNumber}`
+        const calleeKey = `${row.relType}|${row.matchedId ?? symbolId}|${row.symId ?? `ext:${row.extName ?? ""}`}|${row.srcFileRel ?? ""}|${row.lineNumber}|${edgeMetadata(row.meta)?.callSiteStartIndex ?? ""}`
         if (emittedCalleeSites.has(calleeKey)) {
           collapsedSpellingVariants++
           continue

@@ -21,10 +21,10 @@
 //   (source, target, type): relId has no line component
 //   (src/ast/parallel-indexer.ts). That store collapse is what this gate proves.
 //
-// SCOPE, DECLARED: this gate asserts the per-site contract for a LINE-EMITTING
-// language (java). For the languages that still emit no line, the site rows
-// cannot be distinguished, and that is tracked by #825 / the analyzer lane —
-// this gate reports their state and never counts it as a pass.
+// Current scope: both Java and TypeScript emit call-site lines. Check exactly the
+// `calls` relationships, select the root by file, and verify both stored and
+// graph-reported sites. Non-call references are different facts, not extra calls.
+// Same-line multiplicity is covered by verify-typescript-call-sites.mts.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -116,7 +116,7 @@ async function main() {
          JOIN brain_file f ON f.id = s.file_id
          LEFT JOIN brain_symbol ts ON ts.id = r.target_symbol_id
          WHERE f.language = ?
-           AND r.relationship_type IN ('calls','call','uses','references')
+           AND r.relationship_type = 'calls'
            AND (s.name LIKE '%caller%')
            AND (COALESCE(ts.name,'') LIKE '%target%' OR COALESCE(r.target_external,'') LIKE '%target%')`,
       )
@@ -138,19 +138,8 @@ async function main() {
   // sites. A store that keeps 4 rows the tool cannot surface would be worthless.
   console.log("\n=== through the real tool path (graphTraversal — bb_graph's engine) ===")
   try {
-    const t = await graphTraversal(pid, "target", {})
-    // THE CALL SITES ARE THE `calls` EDGES, and this gate used to count every
-    // kind. A default traversal covers all ten stored kinds, so the caller set
-    // also carries STRUCTURE — here the class's own `contains` rows, which is the
-    // documented owner relationship (a class contains its methods) and is also
-    // the documented range-fold: the cascade covers the whole container, so
-    // `Multi contains caller` is folded onto the traced member `target` as well.
-    // Counting those as call sites made this gate read "6 edges on 6 lines where
-    // the source has 4 calls" and fail on a store that keeps all four sites
-    // correctly (the DB rows above are 4/4 on lines 4-7). The claim under test is
-    // about CALL SITES, so the count is scoped to them — and the other edges are
-    // not ignored, they are asserted separately below (every one must be a stored
-    // `contains` row that traces to its own rowId).
+    const t = await graphTraversal(pid, "target", { rootFile: "src/Multi.java", direction: "callers", relationshipTypes: ["calls"] })
+    // Root names collide across the two files; file identity is part of this check.
     const callEdges = t.callers.filter((e: any) => e.relationshipType === "calls")
     const otherEdges = t.callers.filter((e: any) => e.relationshipType !== "calls")
     for (const e of t.callers) {
@@ -160,39 +149,25 @@ async function main() {
     const knownSites = sites.filter((l: number | null) => typeof l === "number" && l > 0)
     check(
       "tool-reports-every-call-site",
-      callEdges.length >= javaExpected && new Set(knownSites).size === javaExpected,
+      callEdges.length === javaExpected && new Set(knownSites).size === javaExpected,
       `${callEdges.length} \`calls\` caller edge(s) on ${new Set(knownSites).size} distinct line(s) for ${javaExpected} true call sites` +
         ` (the answer also carries ${otherEdges.length} non-call edge(s): ${JSON.stringify([...new Set(otherEdges.map((e: any) => e.relationshipType))])})`,
     )
-    // The non-call edges are structure, and structure must trace to the store.
-    // Without this, an EXTRA CALL edge could hide inside the "other kinds" a
-    // looser count would tolerate.
-    const storedContains = Number(
-      (raw
-        .prepare(
-          `SELECT COUNT(*) c FROM brain_relationship r JOIN brain_symbol ts ON ts.id = r.target_symbol_id
-            WHERE r.project_id = ? AND r.relationship_type = 'contains'
-              AND (ts.name = 'target' OR ts.qualified_name LIKE '%target')`,
-        )
-        .get(pid) as any).c,
-    )
-    const otherRowIdsResolve = otherEdges.every((e: any) => {
-      const row = raw.prepare(`SELECT id FROM brain_relationship WHERE id = ?`).get(e.rowId) as any
-      return !!row && e.relationshipType === "contains"
-    })
-    check(
-      "non-call-callers-are-stored-structure",
-      otherEdges.length >= storedContains && otherRowIdsResolve,
-      `${otherEdges.length} non-call edge(s) against ${storedContains} stored \`contains\` row(s) naming the traced member; every one is a \`contains\` rowId present in the store: ${otherRowIdsResolve}`,
-    )
+    check("relationship-filter-keeps-only-calls", otherEdges.length === 0,
+      `calls-only traversal returned ${otherEdges.length} non-call edges`)
   } catch (e: any) {
     check("tool-reports-every-call-site", false, `graphTraversal threw: ${e?.message}`)
   }
 
-  console.log("\n=== typescript (no line yet — reported, NOT counted as a pass) ===")
+  console.log("\n=== typescript: stored and graph call sites ===")
   for (const r of tsRows) console.log(`  ${r.rt.padEnd(10)} line=${JSON.stringify(r.line)} target=${r.tname ?? r.te}`)
   const tsAudit = auditSites(tsRows, tsExpected)
-  console.log(`  scope note: ${JSON.stringify(tsAudit)} — distinct sites unprovable without a line (#825)`)
+  check("typescript-per-call-site", tsAudit.perSite, JSON.stringify(tsAudit))
+  const tsGraph = await graphTraversal(pid, "target", { rootFile: "src/multi.ts", direction: "callers", relationshipTypes: ["calls"] })
+  const tsLines = tsGraph.callers.map(edge => edge.callSite.line).sort((a,b) => (a ?? 0)-(b ?? 0))
+  check("typescript-tool-reports-every-call-site",
+    JSON.stringify(tsLines) === JSON.stringify(tsRows.map(row => row.line).sort((a,b) => (a ?? 0)-(b ?? 0))),
+    `graph sites ${JSON.stringify(tsLines)}`)
 
   // ── SELF-FAIL PROOF: the same predicate, aimed at a collapsed world.
   // If this ever passes, the gate is decoration.
@@ -229,7 +204,7 @@ async function main() {
         question: "4 call sites on 4 lines — does the INDEX keep 4?",
         trueCallSites: { java: javaExpected, typescript: tsExpected },
         java: { rows: javaRows, audit: javaAudit },
-        typescript: { rows: tsRows, audit: tsAudit, scope: "no line emitted by the analyzer yet (#825)" },
+        typescript: { rows: tsRows, audit: tsAudit, scope: "stored and graph call-site lines asserted" },
         predicateCanFail: !collapsedAudit.perSite,
         status: failures === 0 ? "pass" : "fail",
         failures,

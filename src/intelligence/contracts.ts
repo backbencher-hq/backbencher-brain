@@ -360,6 +360,8 @@ export interface GraphEdge {
    *  present only with the `inferredAt` marker the pass writes, and always
    *  annotated as enrichment (never an evidence class). */
   metadata?: {
+    /** Exact analyzer-reported call expression offset in the indexed source, when known. */
+    callSiteStartIndex?: number
     evidenceClass?: string
     method?: "regex"
     enrichment?: {

@@ -20,6 +20,10 @@ import { statSync } from "node:fs"
 import * as path from "node:path"
 import { ASTEngine } from "./engine"
 import { fileClaimForTarget } from "./file-claim"
+import { stablePhpParameterReceivers, type PhpReceiverType } from "./php-receiver-types"
+import { phpSignatureShape, phpSignatureShapeCompatible } from "./php-signature-shape"
+import { phpClassSubtype, phpSignatureVariance } from "./php-signature-variance"
+import { phpTraitComposition } from "./php-trait-composition"
 // The separator a BINDING's target carries, imported from the FAMILY constant rather than
 // re-spelled here: the analyzer writes it, the arbiter checks it, and two copies of a spelling
 // would be two rules (`src/ast/types.ts:190`).
@@ -172,9 +176,9 @@ const PHP_MAGIC_CONSTANTS: ReadonlySet<string> = new Set([
  * with no matching entry in the adjudication set, is not a recorded decision — it is an
  * unexamined claim wearing a disclosure's clothes.
  *
- * ONE COPY, TWO CONSUMERS: the analyzer emits these edges and the differential oracle
- * derives its truth from this SAME function (a rule the truth does not share is a rule
- * that can drift, and the depth draws would read every new edge as analyzer-only).
+ * This is the production derivation. The differential harness uses its separate
+ * derivePhpDeclaredTypeEdgesIndependent walker; callers reusing this helper
+ * establish consistency, rather than independent verification.
  */
 export interface PhpDeclaredTypeRef {
   source: string
@@ -183,10 +187,12 @@ export interface PhpDeclaredTypeRef {
   line: number | null
   relationshipType: "declared_type" | "return_type"
   declaredOn: string
+  typeStart: number
 }
 
 /** The relative types php resolves against the enclosing class (never real symbols). */
 const PHP_RELATIVE_TYPES = new Set(["self", "static", "parent"])
+const PHP_INTERNAL_CLASS_IDENTITIES = new Set([...PHP_INTERNAL_CLASSES].map(name => name.toLowerCase()))
 
 /** Declarations a member's dependency is attributed to. */
 const PHP_TYPE_DECLARATIONS = new Set([
@@ -216,13 +222,13 @@ function phpDeclaredTypeLeafNode(n: Node | null | undefined): Node | null {
  * R9 (#835): the declared-type reference graph of one parsed php file.
  *
  * `resolveParent` supplies the enclosing class's DECLARED base, or undefined when it is
- * not resolvable in this file. The analyzer passes its own `baseByClass`; the oracle
- * passes a map built from the analyzer's class symbols (`metadata.baseClass`), so both
- * sides resolve `parent` from the same published fact rather than from two base rules.
+ * not resolvable in this file. The analyzer supplies a type-site-specific parent
+ * display captured in its lexical frame, so duplicate class leaves in different
+ * namespaces cannot overwrite each other's parent references.
  */
 export function phpDeclaredTypeRefs(
   root: Node,
-  resolveParent?: (ownerType: string) => string | undefined,
+  resolveParent?: (ownerType: string, typeNode?: Node) => string | undefined,
 ): PhpDeclaredTypeRef[] {
   const out: PhpDeclaredTypeRef[] = []
   const emitted = new Set<string>()
@@ -246,8 +252,8 @@ export function phpDeclaredTypeRefs(
    * different thing from the attribution source (measured: conflating them published
    * `copy -> copy` for `function copy(): self`).
    */
-  const leaves = (typeRoot: Node | null | undefined, ownerType: string): { node: Node; target: string }[] => {
-    const acc: { node: Node; target: string }[] = []
+  const leaves = (typeRoot: Node | null | undefined, ownerType: string): { node: Node; target: string; typeStart: number }[] => {
+    const acc: { node: Node; target: string; typeStart: number }[] = []
     const walk = (n: Node | null | undefined): void => {
       if (!n) return
       if (n.type === "primitive_type") return
@@ -255,16 +261,17 @@ export function phpDeclaredTypeRefs(
         const leaf = phpDeclaredTypeLeafNode(n)
         const text = String(leaf?.text ?? "").trim()
         if (!leaf || !text) return
-        if (PHP_RELATIVE_TYPES.has(text)) {
-          if (text === "parent") {
-            const base = ownerType ? resolveParent?.(ownerType) : undefined
-            if (base) acc.push({ node: leaf, target: base })
+        const relative = text.toLowerCase()
+        if (PHP_RELATIVE_TYPES.has(relative)) {
+          if (relative === "parent") {
+            const base = ownerType ? resolveParent?.(ownerType, n) : undefined
+            if (base) acc.push({ node: leaf, target: base, typeStart: n.startIndex })
             return
           }
-          if (ownerType) acc.push({ node: leaf, target: ownerType })
+          if (ownerType) acc.push({ node: leaf, target: ownerType, typeStart: n.startIndex })
           return
         }
-        acc.push({ node: leaf, target: text })
+        acc.push({ node: leaf, target: text, typeStart: n.startIndex })
         return
       }
       // Wrappers (optional_type / union_type / intersection_type) and any other
@@ -288,7 +295,7 @@ export function phpDeclaredTypeRefs(
       const key = `${source}\u0000${leaf.target}\u0000${line}`
       if (emitted.has(key)) continue
       emitted.add(key)
-      out.push({ source, target: leaf.target, line, relationshipType, declaredOn })
+      out.push({ source, target: leaf.target, line, relationshipType, declaredOn, typeStart: leaf.typeStart })
     }
   }
 
@@ -414,27 +421,13 @@ export function phpStaticIncludePath(node: Node): string | undefined {
   return undefined
 }
 
-/**
- * PHP callable-name resolution — ONE rule, TWO consumers (the analyzer's
- * `processFunctionCall` and the differential oracle's truth).
- *
- * A `calls` edge's target is the name of a CALLEE, so it only exists when the
- * callee is spelled as a name. `$callable()` names nothing: `$callable` is a
- * runtime VALUE, and the pre-R10 rule read the callee node's raw text anyway, so
- * the lane published `calls -> $callable` (phpmyadmin tests, `$controller($request)`
- * in LicenseControllerTest.php:23) — a target no php symbol can ever be named,
- * emitted IDENTICALLY by the oracle because its truth came from the same shape.
- * The value the call evaluates IS read, and that read is the variable pass's
- * (`uses -> callable`); publishing it as a callee name fabricated a name and lost
- * the honest edge at the same time.
- *
- * Measured over 400 real php files (phpunit/src, phpmyadmin/src + tests): 1,047
- * `name` callees, and `variable_name` the ONLY non-name shape that reaches this
- * rule (1 site) — so this narrows a fabrication, not a capability.
+/** Static call spellings only; variable callables remain value reads, not named callees.
+ * Namespace-relative, qualified and unqualified spellings publish display leaves;
+ * processFunctionCall preserves their distinct canonical lookup candidates.
  */
 export function phpStaticCallableName(fn: Node | null | undefined): string | undefined {
   if (!fn) return undefined
-  if (fn.type !== "name" && fn.type !== "qualified_name") return undefined
+  if (fn.type !== "name" && fn.type !== "qualified_name" && fn.type !== "relative_name") return undefined
   return phpLeafNameText(fn.text) || undefined
 }
 
@@ -561,6 +554,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   // declarations are encountered; consumed by processObjectCreation to
   // resolve `new parent()` to the superclass.
   private baseByClass = new Map<string, string>()
+  private baseIdentityByClass = new Map<string, string>()
+  private activeNamespace: string | undefined
+  private activeClassAliases: ReadonlyMap<string, string> = new Map()
+  private activeFunctionAliases: ReadonlyMap<string, string> = new Map()
+  private activeReceiverTypes: ReadonlyMap<string, PhpReceiverType> = new Map()
+  private declaredTypeIdentities = new Map<number, Record<string, unknown>>()
+  private declaredParentDisplays = new Map<number, string>()
 
   analyze(
     rootNode: Node,
@@ -576,6 +576,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Per-file resolution state: `new parent()` maps to the base declared in
     // THIS file. Cross-file inheritance is not resolved (honest no-edge).
     this.baseByClass = new Map()
+    this.baseIdentityByClass = new Map()
+    this.activeNamespace = undefined
+    this.activeClassAliases = new Map()
+    this.activeFunctionAliases = new Map()
+    this.activeReceiverTypes = new Map()
+    this.declaredTypeIdentities = new Map()
+    this.declaredParentDisplays = new Map()
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
@@ -635,14 +642,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const constValues = new Set<string>()
     this.collectPhpFileScope(rootNode, fileScope.bound, funcValues, constValues)
     const classAliases = new Map<string, string>()
+    const functionAliases = new Map<string, string>()
     const stack: Frame[] = [{ node: rootNode, owner: undefined, ownerKind: undefined, ns: undefined, inFunction: undefined, scope: fileScope }]
 
     while (stack.length > 0) {
       const { node, owner, ownerKind, ns, inFunction, scope, recoveredFromBody } = stack.pop()!
+      // Body walks are synchronous within this frame. Keep the lexical class
+      // import environment available to receiver extraction as well as heritage.
+      this.activeNamespace = ns
+      this.activeClassAliases = classAliases
+      this.activeFunctionAliases = functionAliases
+      this.activeReceiverTypes = new Map()
       const type = node.type
+      if (type === "named_type") this.recordDeclaredType(node, owner)
 
       if (type === "namespace_definition") {
         classAliases.clear()
+        functionAliases.clear()
         const nameNode = this.findChildByType(node, "namespace_name")
         const nsName = nameNode?.text
         if (nsName) {
@@ -668,33 +684,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChildByType(node, "name")
         const className = nameNode ? nameNode.text : `anonymous_class_${node.startIndex}`
         const baseClause = this.findChildByType(node, "base_clause")
-        // PHPD10: heritage target resolution — never fabricate a self-edge
-        // when a qualified base/interface shares the class's leaf name.
-        // heritageTarget returns the OWN name when qualification cannot
-        // disambiguate (global single-segment base like \\RuntimeException):
-        // emit NO extends for that unresolvable base.
+        // The public target retains the display spelling. Canonical identity
+        // below determines self-inheritance; equal leaves are insufficient.
         // The node that NAMES the extends edge: the first base-clause child (#929).
         const baseNode = baseClause?.namedChild(0) ?? null
         const rawBase = baseNode?.text
         const baseIdentity = rawBase ? this.resolveClassIdentity(rawBase, ns, classAliases) : undefined
+        if (baseIdentity) this.baseIdentityByClass.set([ns, className].filter(Boolean).join("\\").toLowerCase(), baseIdentity)
         const baseName = baseClause ? this.heritageTarget(rawBase ?? "", className) : undefined
-        // PHPD43 (final review): the self-reference test is `baseName === className`, NOT
-        // `rawBase !== baseName && baseName === className`.
-        //
-        // The old form only caught the QUALIFIED route to a self-reference (`extends \\Foo` inside
-        // `Foo`: qualification stripped, leaf is the class's own name) and let the BARE route through
-        // (`extends Foo` inside `Foo`), where `rawBase === baseName` made the guard false and the
-        // analyzer published `extends Foo -> Foo`. Both spellings name the declaration itself — in a
-        // namespace, an unqualified name resolves to the current namespace FIRST, so there is no
-        // second class it could mean — and PHP fatals on both ("cannot extend itself"). The graph
-        // answered each with a confident self-loop.
-        //
-        // The separable case is unaffected, and that is the whole reason this is a ONE-condition rule
-        // rather than "drop heritage when the leaf repeats": `class Forms\\Setup\\FeaturesForm extends
-        // \\Forms\\User\\FeaturesForm` resolves to `Forms\\User\\FeaturesForm`, which is NOT the
-        // declaration's own name, so it survives with its qualification. What is dropped is exactly
-        // what cannot be told apart from the declaration itself.
-        const baseUnresolvable = !!baseName && baseName === className
+        // Display leaves can coincide across namespaces. Reject only a base
+        // whose canonical PHP identity is this declaration itself; for example,
+        // App\\Exception extending \\Exception is real inheritance.
+        const baseUnresolvable = !!baseIdentity && baseIdentity === [ns, className].filter(Boolean).join("\\").toLowerCase()
         const interfaces: string[] = []
         const ifaceClause = this.findChildByType(node, "class_interface_clause")
         if (ifaceClause) {
@@ -705,7 +706,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // PHPD43: a clause that resolves to the class's OWN name is not an interface it implements,
             // in EITHER spelling. See `baseUnresolvable` above for why the bare route is included and
             // why the separable same-leaf case survives.
-            if (ifaceName === className) continue
+            if (this.resolveClassIdentity(iface.text, ns, classAliases) === [ns, className].filter(Boolean).join("\\").toLowerCase()) continue
             interfaces.push(ifaceName)
             relationships.push({
               source: className,
@@ -713,7 +714,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               line_number: this.nodeLine(iface),
-              metadata: { phpSpecific: true },
+              metadata: { phpSpecific: true, ...this.classReference(iface.text, owner) },
             })
           }
         }
@@ -790,6 +791,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             namespace: ns,
             baseClass: baseUnresolvable ? undefined : baseName,
             baseIdentity,
+            phpTraits: phpTraitComposition(node, raw => this.resolveClassIdentity(raw, ns, classAliases)),
+            superTypeIdentities: this.classHeritageIdentities(node, className, ns, classAliases),
             interfaces,
             // The hierarchy the store persists — see `superTypes` above for the mirror rule, the
             // self-loop omission and the trait boundary.
@@ -806,7 +809,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             type: ASTEngine.RelationshipType.Extends,
             confidence: 1.0,
             line_number: this.nodeLine(baseNode),
-            metadata: { phpSpecific: true },
+            metadata: { phpSpecific: true, phpTypeReference: true, targetIdentity: baseIdentity },
           })
           // For `new parent()` resolution: map class -> declared base class
           // (leaf name). Registered at declaration time so any `new parent`
@@ -858,16 +861,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 0; i < baseClause.namedChildCount; i++) {
             const parent = baseClause.namedChild(i)
             if (!parent) continue
-            // PHPD10: same-leaf qualified parents (`interface Exception
-            // extends \PHPUnit\Exception`) must keep qualification — the leaf
-            // would fabricate a self-extends. A qualified parent whose name
-            // still equals the interface after disambiguation (global
-            // single-segment, e.g. `interface Foo extends \Foo`) is
-            // unresolvable in the leaf graph: skip it (no self-loop).
+            // Preserve a qualified display target when the leaf repeats.
+            // Canonical namespace identity below decides whether it is self.
             const parentName = this.heritageTarget(parent.text, ifaceName)
-            // PHPD43: `interface Foo extends Foo` (either spelling) is not an extends edge; see
-            // `baseUnresolvable` in the class branch for the two routes and the surviving control.
-            if (parentName === ifaceName) continue
+            // A global Foo and a namespaced Foo are different declarations.
+            if (this.resolveClassIdentity(parent.text, ns, classAliases) === [ns, ifaceName].filter(Boolean).join("\\").toLowerCase()) continue
             extended.push(parentName)
             relationships.push({
               source: ifaceName,
@@ -875,7 +873,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Extends,
               confidence: 1.0,
               line_number: this.nodeLine(parent),
-              metadata: { phpSpecific: true },
+              metadata: { phpSpecific: true, ...this.classReference(parent.text, owner) },
             })
           }
         }
@@ -897,6 +895,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             fqn: ns ? `${ns}\\${ifaceName}` : ifaceName,
             namespace: ns,
             extendedInterfaces: extended,
+            superTypeIdentities: this.classHeritageIdentities(node, ifaceName, ns, classAliases),
             ...(extended.length ? { superTypes: extended } : {}),
           },
         })
@@ -918,7 +917,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // M60 NAMESPACE CONTAINMENT — see the class_declaration branch.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName, namespace: ns },
+          metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName, namespace: ns,
+            phpTraits: phpTraitComposition(node, raw => this.resolveClassIdentity(raw, ns, classAliases)) },
         })
         const body = this.findChildByType(node, "declaration_list")
         if (body) this.pushMembers(body, stack, traitName, ASTEngine.SymbolKind.Trait, ns, scope)
@@ -951,7 +951,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // the differential's oracle already skips this shape for enums (`heritageOrSkip(c.text,
             // enumCls)`), so the two sides disagreed only on an input the pinned 60-file draws happen
             // never to contain. `validation/m14/fixtures/php/enum-self-heritage.php` is that input.
-            if (ifaceName === enumName) continue
+            if (this.resolveClassIdentity(iface.text, ns, classAliases) === [ns, enumName].filter(Boolean).join("\\").toLowerCase()) continue
             implementedInterfaces.push(ifaceName)
             relationships.push({
               source: enumName,
@@ -959,7 +959,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: ASTEngine.RelationshipType.Implements,
               confidence: 1.0,
               line_number: this.nodeLine(iface),
-              metadata: { phpSpecific: true, isEnumImplements: true },
+              metadata: { phpSpecific: true, isEnumImplements: true, ...this.classReference(iface.text, owner) },
             })
           }
         }
@@ -971,20 +971,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // M60 NAMESPACE CONTAINMENT — see the class_declaration branch.
           ownerName: owner ?? ns,
           ownerKind: owner ? ownerKind : (ns ? ASTEngine.SymbolKind.Namespace : ownerKind),
-          // Same mirror rule as the class and interface branches — the enum's implements edges are
-          // its heritage. NOTE the asymmetry this makes visible rather than creates: the class and
-          // interface branches SKIP a same-leaf parent that qualification cannot separate from the
-          // declaration's own name, and this branch has never had that guard, so an
-          // `enum Foo implements \Foo` would emit a self-implements edge and the payload mirrors
-          // it. NOT fixed here, and the reason is scope rather than doubt: removing an edge is a
-          // differential-visible change (the oracle's side would have to move with it) and needs
-          // its own before/after count over the population, so it is recorded in the lane docs as
-          // an open, unpriced shape instead of being folded into an additive payload change.
+          // Preserve display spellings and canonical parent identities separately.
           metadata: {
             phpSpecific: true,
             fqn: ns ? `${ns}\\${enumName}` : enumName,
             namespace: ns,
             implementedInterfaces,
+            phpTraits: phpTraitComposition(node, raw => this.resolveClassIdentity(raw, ns, classAliases)),
+            superTypeIdentities: this.classHeritageIdentities(node, enumName, ns, classAliases),
             ...(implementedInterfaces.length ? { superTypes: implementedInterfaces } : {}),
           },
         })
@@ -1100,6 +1094,12 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             phpSpecific: true,
             isMethod: true,
+            phpSignatureShape: phpSignatureShape(node, raw => {
+              // Trait self/parent types depend on the consuming class, not the trait declaration.
+              if (ownerKind === ASTEngine.SymbolKind.Trait && ["self", "parent"].includes(raw.toLowerCase())) return `@trait:${raw.toLowerCase()}`
+              const identity = this.classReference(raw, owner).targetIdentity
+              return typeof identity === "string" ? identity : undefined
+            }),
             namespace: ns,
             isMagicMethod: methodName.startsWith("__"),
             isFinal: modifiers.includes("final"),
@@ -1205,7 +1205,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             type: ASTEngine.RelationshipType.MixesIn,
             confidence: 1.0,
             line_number: this.nodeLine(child),
-            metadata: { phpSpecific: true, isTraitUse: true },
+            metadata: { phpSpecific: true, isTraitUse: true, ...this.classReference(child.text, owner) },
           })
           patterns.add("Trait Composition (Mixins)")
         }
@@ -1258,11 +1258,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!groupPrefix) continue
             for (let k = 0; k < child.namedChildCount; k++) {
               const member = child.namedChild(k)
-              if (member && member.type === "namespace_use_clause") this.emitUseClause(member, relationships, imports, detectedFrameworks, groupPrefix, classAliases)
+              if (member && member.type === "namespace_use_clause") this.emitUseClause(member, relationships, imports, detectedFrameworks, groupPrefix, classAliases, functionAliases)
             }
             continue
           }
-          if (child && child.type === "namespace_use_clause") this.emitUseClause(child, relationships, imports, detectedFrameworks, "", classAliases)
+          if (child && child.type === "namespace_use_clause") this.emitUseClause(child, relationships, imports, detectedFrameworks, "", classAliases, functionAliases)
         }
         continue
       }
@@ -1478,16 +1478,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * 2. ALREADY-PUBLISHED NODES ARE SKIPPED BY RANGE, so the escape and this pass cannot both
    *    publish one declaration.
    *
-   * ## What this deliberately does NOT do
-   *
-   * It does not re-walk the nested body. That body has ALREADY been walked by the enclosing
-   * callable's `walkBody`, which is why this pass publishes a symbol and emits no edge of its own —
-   * the alternative would emit every call and read inside the nested function twice, a duplicate no
-   * "at least one" fixture row can see. Known and NOT changed here, because it is an attribution
-   * decision rather than a coverage gap: call/read edges inside a nested function's body are
-   * attributed to the ENCLOSING callable (`calls registerHelper -> decorate`, line 82 of the fixture,
-   * where the call really belongs to `nestedHelper`). The fixture records the current behaviour and
-   * does not pin it as correct.
+   * The publication pass emits no body edges. walkBody enters each nested callable
+   * once with its own name and fresh scope, so call/read sources identify the
+   * nested function rather than the enclosing callable. The fixture pins both
+   * the positive source and absence of the former outer-function attribution.
    */
   private publishNestedNamedFunctions(rootNode: Node, symbols: ASTEngine.UniversalSymbol[]): void {
     const published = new Set<string>()
@@ -1507,7 +1501,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       let childNs = ns
       if (t === "namespace_definition") {
         const nm = this.findChildByType(n, "namespace_name")?.text
-        if (nm && !this.findChildByType(n, "compound_statement")) childNs = nm
+        childNs = nm
       }
       if (t === "program") {
         for (let i = 0; i < n.namedChildCount; i++) {
@@ -1776,10 +1770,40 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // because of how this one frame was built" is not a property a reader can
     // check, and the gate could not tell the two cases apart. The flag says
     // which frame is the entry's, and the escape below reads it directly.
-    const stack: Array<{ n: Node; parent: Node | null; scope: PhpValueScope; entry: boolean }> = [{ n: node, parent: null, scope: seed, entry: true }]
+    const parameterTypes = this.parameterReceiverTypes(node.parent, owner)
+    const firstRelationship = relationships.length
+    const stack: Array<{ n: Node; parent: Node | null; scope: PhpValueScope; entry: boolean; receiverTypes: ReadonlyMap<string, PhpReceiverType> }> = [
+      { n: node, parent: null, scope: seed, entry: true, receiverTypes: parameterTypes },
+    ]
     while (stack.length > 0) {
-      const { n, parent, scope, entry } = stack.pop()!
+      const { n, parent, scope, entry, receiverTypes } = stack.pop()!
+      this.activeReceiverTypes = receiverTypes
       const type = n.type
+      if (type === "named_type") this.recordDeclaredType(n, owner)
+
+      if (type === "method_declaration" || type === "function_definition") {
+        const name = n.childForFieldName("name")?.text
+        if (!name) continue
+        if (type === "method_declaration") {
+          const modifiers = this.extractModifiers(n)
+          symbols.push({
+            name,
+            kind: ASTEngine.SymbolKind.Method,
+            range: this.nodeToRange(n),
+            visibility: modifiers.includes("private") ? "private"
+              : modifiers.includes("protected") ? "protected" : "public",
+            parameters: this.extractParameters(n),
+            returnType: this.extractReturnType(n),
+            metadata: { phpSpecific: true, anonymousClassMember: true },
+          })
+        }
+        const body = n.childForFieldName("body")
+        if (body) this.walkBody(body, symbols, relationships, imports, undefined, ns, name,
+          detectedFrameworks, patterns, scopeCtx)
+        this.walkCallableHeader(n, symbols, relationships, imports, undefined, ns, name,
+          detectedFrameworks, patterns, scopeCtx)
+        continue
+      }
 
       if (type === "function_call_expression") {
         this.processFunctionCall(n, relationships, owner, ns, inFunction, detectedFrameworks, patterns)
@@ -1960,14 +1984,17 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `use`), arrows chain the enclosing frame (implicit capture), named
       // nested functions start fresh (no capture).
       let childScope = scope
+      let childReceiverTypes = receiverTypes
       if (type === "anonymous_function") {
         const fresh: PhpValueScope = { bound: new Set<string>(), parent: null }
         this.collectPhpScopeBinds(n, fresh.bound)
         childScope = fresh
+        childReceiverTypes = this.parameterReceiverTypes(n, owner)
       } else if (type === "arrow_function") {
         const chained: PhpValueScope = { bound: new Set<string>(), parent: scope }
         this.collectPhpScopeBinds(n, chained.bound)
         childScope = chained
+        childReceiverTypes = this.parameterReceiverTypes(n, owner)
       } else if (type === "function_definition" || type === "method_declaration") {
         const freshFn: PhpValueScope = { bound: new Set<string>(), parent: null }
         this.collectPhpScopeBinds(n, freshFn.bound)
@@ -1997,45 +2024,53 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // inside a deeper statement of the same damaged body keeps the old, single walk — that
         // shape is not published by the escape and skipping it here would LOSE its edges.
         if (entry && this.recoveryMisnestedCallable(node, child)) continue
-        stack.push({ n: child, parent: n, scope: childScope, entry: false })
+        stack.push({ n: child, parent: n, scope: childScope, entry: false, receiverTypes: childReceiverTypes })
       }
     }
+    const declaration = node.parent
+    if (declaration && ["function_definition", "method_declaration"].includes(declaration.type)) {
+      for (let index = firstRelationship; index < relationships.length; index++) {
+        const edge = relationships[index]
+        if (edge.source !== inFunction || edge.metadata?.fileLevel) continue
+        edge.metadata ??= {}
+        edge.metadata.sourceStartIndex ??= declaration.startIndex
+      }
+    }
+  }
+
+  /** Ordered PHP function lookup; only unqualified, unimported names fall back globally. */
+  private functionCandidates(raw: string, ns: string | undefined): string[] {
+    if (raw.startsWith("\\")) return [phpStripLeadingBackslashes(raw).toLowerCase()]
+    const parts = raw.split("\\")
+    if (parts[0].toLowerCase() === "namespace") return [[ns, ...parts.slice(1)].filter(Boolean).join("\\").toLowerCase()]
+    if (parts.length > 1) return [this.resolveClassIdentity(raw, ns, this.activeClassAliases)]
+    const imported = this.activeFunctionAliases.get(raw.toLowerCase())
+    if (imported) return [imported.toLowerCase()]
+    const local = [ns, raw].filter(Boolean).join("\\").toLowerCase()
+    return ns ? [local, raw.toLowerCase()] : [local]
   }
 
   private processFunctionCall(
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
     _owner: string | undefined,
-    _ns: string | undefined,
+    ns: string | undefined,
     inFunction: string | undefined,
     detectedFrameworks: Set<string>,
     patterns: Set<string>,
   ): void {
     const nameNode = node.childForFieldName("function")
     if (!nameNode) return
-    // A FULLY-QUALIFIED call spells its name with a leading backslash
-    // (`\is_file(...)`, `\spl_autoload_register(...)` — phpunit's bootstrap and
-    // test-helper files). Taking the raw text broke both halves of this rule
-    // at once: `PHP_BUILTINS` holds BARE names, so `has("\\is_file")` is false
-    // and a builtin escaped the filter, and the edge published a target no
-    // other relationship in this lane can spell — `calls delete_directory ->
-    // \is_file` (targets are bare names everywhere else: `leafName` in
-    // processObjectCreation, the `name` field in the scoped/member calls).
-    // Measured on phpunit FULL EXTENT (2,907 files, 2026-09-22): 12 such
-    // edges, 10 of them builtins the filter should have dropped. The oracle's
-    // rule is leaf-then-builtin (`leafName(fn.text)` then `PHP_BUILTINS`), so
-    // this is the analyzer side converging on the rule both sides state.
-    // R10 (#835): a callee that is not spelled as a name has no callee NAME.
-    // The value is still read (`uses -> callable`, the variable pass owns it),
-    // so this drops a fabricated symbol and keeps the honest edge.
     const callName = phpStaticCallableName(nameNode)
     if (!callName) return
-    if (callName === "add_action" || callName === "add_filter") {
+    const functionCandidates = this.functionCandidates(nameNode.text, ns)
+    // Only a known global builtin is safely omitted. Inside a namespace an
+    // unqualified builtin spelling can name a project function in another file.
+    if (functionCandidates.length === 1 && PHP_BUILTINS.has(functionCandidates[0])) return
+    if (callName.toLowerCase() === "add_action" || callName.toLowerCase() === "add_filter") {
       detectedFrameworks.add("WordPress")
       patterns.add("Event-Driven Architecture (WP Hooks)")
-      return
     }
-    if (PHP_BUILTINS.has(callName)) return
     // PHP-E (first review): first-class callable `foo(...)` never invokes —
     // the sole `...` argument creates a Closure. A tear-off references.
     if (this.isFirstClassTearOff(node)) {
@@ -2045,7 +2080,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.9,
         line_number: this.nodeLine(nameNode),
-        metadata: { phpSpecific: true, isTearOff: true },
+        metadata: { phpSpecific: true, isTearOff: true, phpFunctionReference: true, functionCandidates },
       })
       return
     }
@@ -2055,7 +2090,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       type: ASTEngine.RelationshipType.Calls,
       confidence: 0.9,
       line_number: this.nodeLine(nameNode),
-      metadata: { phpSpecific: true },
+      metadata: { phpSpecific: true, phpFunctionReference: true, functionCandidates },
     })
   }
 
@@ -2103,8 +2138,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * than nothing, because a WRONG owner points a reverse walk at a real method on the WRONG
    * class — that is wrong refactoring advice, not a missing edge:
    *
-   *   (a) a plain-variable receiver (`$obj->m()`) — the class is whatever was assigned; the
-   *       tree does not say. The tempting wrong answer is the enclosing class.
+   *   (a) a plain variable without a stable single-class parameter type. Parameter
+   *       inference declines writes, escapes, captures, and dynamic binding operations.
    *   (b) a chained receiver (`$this->svc->m()`) — the object's type is the PROPERTY's
    *       declared type. This analyzer does not infer property types, so there is nothing to
    *       read.
@@ -2135,23 +2170,32 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     owner: string | undefined,
     receiverField: "object" | "scope" | null,
-  ): string | undefined {
+  ): { owner: string; ownerIdentity: string; receiverTypeEvidence?: string } | undefined {
     const receiver = receiverField === null
       ? (node.namedChildCount > 0 ? node.namedChild(0) : null)
       : node.childForFieldName(receiverField)
     if (!receiver) return undefined
+    if (this.inTraitContext(node) && (receiver.type === "relative_scope" || receiver.text === "$this")) return undefined
+    const ownIdentity = owner ? [this.activeNamespace, owner].filter(Boolean).join("\\").toLowerCase() : undefined
     if (receiver.type === "relative_scope") {
-      const text = receiver.text
-      if (text === "self" || text === "static") return owner
-      if (text === "parent") return owner ? this.baseByClass.get(owner) : undefined
+      const text = receiver.text.toLowerCase()
+      if ((text === "self" || text === "static") && owner && ownIdentity) return { owner, ownerIdentity: ownIdentity }
+      if (text === "parent" && owner && ownIdentity) {
+        const identity = this.baseIdentityByClass.get(ownIdentity)
+        const base = this.baseByClass.get(owner)
+        if (identity && base) return { owner: base, ownerIdentity: identity }
+      }
       return undefined
     }
-    if (receiver.type === "name" || receiver.type === "qualified_name") {
-      return this.leafName(receiver.text)
+    if (receiver.type === "name" || receiver.type === "qualified_name" || receiver.type === "relative_name") {
+      return {
+        owner: this.leafName(receiver.text),
+        ownerIdentity: this.resolveClassIdentity(receiver.text, this.activeNamespace, this.activeClassAliases),
+      }
     }
     if (receiver.type === "variable_name") {
-      // `$this` is the only receiver whose class the tree states outright.
-      return receiver.text === "$this" ? owner : undefined
+      if (receiver.text === "$this") return owner && ownIdentity ? { owner, ownerIdentity: ownIdentity } : undefined
+      return this.activeReceiverTypes.get(receiver.text)
     }
     return undefined
   }
@@ -2165,9 +2209,62 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private withMemberOwner(
     meta: Record<string, unknown>,
-    owner: string | undefined,
+    owner: { owner: string; ownerIdentity: string; receiverTypeEvidence?: string } | undefined,
   ): Record<string, unknown> {
-    return owner === undefined ? meta : { ...meta, owner }
+    return owner === undefined ? { ...meta, phpMemberReference: true } : { ...meta, phpMemberReference: true, ...owner }
+  }
+
+  private parameterReceiverTypes(node: Node | null, owner: string | undefined): ReadonlyMap<string, PhpReceiverType> {
+    return stablePhpParameterReceivers(node, raw => {
+      if (this.inTraitContext(node) && ["self", "parent", "static"].includes(raw.toLowerCase())) return undefined
+      const reference = this.classReference(raw, owner)
+      const identity = reference.targetIdentity
+      return typeof identity === "string" ? { owner: this.leafName(raw), ownerIdentity: identity } : undefined
+    })
+  }
+
+  private inTraitContext(node: Node | null): boolean {
+    for (let current = node; current; current = current.parent) {
+      if (["class_declaration", "trait_declaration", "interface_declaration", "enum_declaration", "anonymous_class"].includes(current.type)) {
+        return current.type === "trait_declaration"
+      }
+    }
+    return false
+  }
+
+  /** Canonical PHP class identities for consumers that must not fall back to a leaf. */
+  private classHeritageIdentities(node: Node, name: string, namespace: string | undefined, aliases: ReadonlyMap<string, string>): string[] {
+    const own = [namespace, name].filter(Boolean).join("\\").toLowerCase()
+    const identities: string[] = []
+    for (const clause of node.namedChildren) {
+      if (!clause || (clause.type !== "base_clause" && clause.type !== "class_interface_clause")) continue
+      for (const parent of clause.namedChildren) {
+        if (!parent) continue
+        const identity = this.resolveClassIdentity(parent.text, namespace, aliases)
+        if (identity !== own && !identities.includes(identity)) identities.push(identity)
+      }
+    }
+    return identities
+  }
+
+  /** Namespace binding of a written class type, separate from its display leaf. */
+  private classReference(raw: string, owner: string | undefined): Record<string, unknown> {
+    const own = owner ? [this.activeNamespace, owner].filter(Boolean).join("\\").toLowerCase() : undefined
+    const relative = raw.toLowerCase()
+    if (relative === "static") return { phpTypeReference: true, lateStaticBinding: true }
+    const targetIdentity = relative === "self" ? own
+      : relative === "parent" ? (own ? this.baseIdentityByClass.get(own) : undefined)
+      : this.resolveClassIdentity(raw, this.activeNamespace, this.activeClassAliases)
+    return { phpTypeReference: true, ...(targetIdentity ? { targetIdentity } : {}) }
+  }
+
+  private recordDeclaredType(node: Node, owner: string | undefined): void {
+    const consumerBound = this.inTraitContext(node) && ["self", "parent"].includes(node.text.toLowerCase())
+    this.declaredTypeIdentities.set(node.startIndex, consumerBound
+      ? { phpTypeReference: true, consumerBoundType: true } : this.classReference(node.text, owner))
+    if (node.text.toLowerCase() !== "parent" || !owner) return
+    const parent = this.baseByClass.get(owner)
+    if (parent) this.declaredParentDisplays.set(node.startIndex, parent)
   }
 
   private processMethodCall(
@@ -2251,7 +2348,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      if (child.type === "name" || child.type === "qualified_name") {
+      if (child.type === "name" || child.type === "qualified_name" || child.type === "relative_name") {
         // Probe-verified 2026-09-01 (pinned grammar): `new self()/parent()/static()`
         // parses as object_creation_expression > name — relative_scope never
         // appears for these. PHP semantics:
@@ -2260,8 +2357,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         //   parent -> the DECLARED base class of owner. Unresolvable (no base,
         //             or owner is not a class) emits NOTHING — a wrong edge
         //             is worse than no edge.
-        if (child.text === "self" || child.text === "static" || child.text === "parent") {
-          if (child.text === "parent") {
+        const relative = child.text.toLowerCase()
+        if (relative === "self" || relative === "static" || relative === "parent") {
+          if (relative === "parent") {
             target = owner ? this.baseByClass.get(owner) : undefined
           } else {
             target = owner
@@ -2279,7 +2377,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         //   parent -> the DECLARED base class of owner. Unresolvable (owner
         //             has no base, or owner is not a class) emits NOTHING —
         //             a wrong edge is worse than no edge.
-        if (child.text === "parent") {
+        if (child.text.toLowerCase() === "parent") {
           target = owner ? this.baseByClass.get(owner) : undefined
         } else {
           target = owner
@@ -2288,14 +2386,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       }
     }
-    if (!target) return
+    const consumerBound = !!targetNode && this.inTraitContext(node) && ["self", "parent", "static"].includes(targetNode.text.toLowerCase())
+    if (consumerBound) target = targetNode!.text
+    if (!target || !targetNode) return
     relationships.push({
       source: inFunction || "global",
       target,
       type: ASTEngine.RelationshipType.Instantiates,
-      confidence: 0.9,
+      confidence: consumerBound || targetNode?.text.toLowerCase() === "static" ? 0.65 : 0.9,
       line_number: this.nodeLine(targetNode),
-      metadata: { phpSpecific: true, isNew: true },
+      metadata: { phpSpecific: true, isNew: true, ...(consumerBound
+        ? { phpTypeReference: true, consumerBoundType: true } : this.classReference(targetNode.text, owner)),
+        ...(!inFunction ? { fileLevel: true } : {}) },
     })
   }
 
@@ -2443,10 +2545,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
   ): number {
-    const members = new Set<string>()
+    const members = new Map<string, Set<string>>()
+    const classes = symbols.filter(s => this.isClassLikeOwnerKind(s.kind))
     for (const s of symbols) {
       if (!s.ownerName || !this.isClassLikeOwnerKind(s.ownerKind)) continue
-      members.add(`${s.ownerName}.${s.name}`)
+      const owners = classes.filter(owner => owner.name === s.ownerName && owner.kind === s.ownerKind &&
+        owner.range.startLine <= s.range.startLine && owner.range.endLine >= s.range.endLine)
+      if (owners.length !== 1) continue
+      const identity = String(owners[0]!.metadata?.fqn ?? owners[0]!.name).toLowerCase()
+      const key = `${identity}.${s.name}`
+      const kinds = members.get(key) ?? new Set<string>()
+      kinds.add(s.kind)
+      members.set(key, kinds)
     }
     if (members.size === 0) return 0
     let n = 0
@@ -2459,12 +2569,22 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // so it was skipped either way — and a non-null assertion here would have hidden the question
       // rather than answered it.
       if (!md) continue
+      // Parameter types infer a receiver declaration. Keep the written member
+      // spelling; this pass reserves qualification for explicit receiver syntax.
+      if (md.receiverTypeEvidence === "stable-parameter") continue
       const owner = md.owner
       if (typeof owner !== "string" || owner.length === 0) continue
+      const identity = typeof md.ownerIdentity === "string" ? md.ownerIdentity : owner.toLowerCase()
       const tgt = String(r.target ?? "")
       if (tgt.length === 0 || tgt.startsWith(`${owner}.`)) continue
       const key = `${owner}.${tgt}`
-      if (!members.has(key)) continue
+      const kinds = members.get(`${identity}.${tgt}`)
+      if (!kinds) continue
+      const matchesKind = r.type === ASTEngine.RelationshipType.Calls || md.isTearOff === true
+        ? kinds.has(ASTEngine.SymbolKind.Method)
+        : md.isConstFetch === true ? kinds.has(ASTEngine.SymbolKind.Constant) || kinds.has(ASTEngine.SymbolKind.EnumMember)
+        : md.isMemberRead === true ? kinds.has(ASTEngine.SymbolKind.Property) : true
+      if (!matchesKind) continue
       r.target = key
       md.resolvedBy = "owner-member-identity"
       n++
@@ -2724,10 +2844,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     patterns: Set<string>,
     scopeCtx: { file: PhpValueScope; funcValues: Set<string>; constValues: Set<string> },
   ): void {
+    const returnType = node.childForFieldName("return_type")
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (c.type !== "formal_parameters" && c.type !== "attribute_list") continue
+      if (c.type !== "formal_parameters" && c.type !== "attribute_list" && c.startIndex !== returnType?.startIndex) continue
       this.walkBody(c, symbols, relationships, imports, owner, ns, fnName, detectedFrameworks, patterns, scopeCtx)
     }
   }
@@ -2760,6 +2881,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     context?: ASTEngine.AnalyzeContext,
   ): void {
+    const typeHierarchy = new Map<string, string[][]>()
+    for (const symbol of symbols) {
+      if (![ASTEngine.SymbolKind.Class, ASTEngine.SymbolKind.Interface, ASTEngine.SymbolKind.Enum].includes(symbol.kind)) continue
+      const identity = String(symbol.metadata?.fqn ?? symbol.name).toLowerCase()
+      const declarations = typeHierarchy.get(identity) ?? []
+      declarations.push(symbol.metadata?.superTypeIdentities ?? [])
+      typeHierarchy.set(identity, declarations)
+    }
+    const variance = (child: any, parent: any, name: string) => phpSignatureVariance(child, parent, name,
+      (sub, sup) => phpClassSubtype(typeHierarchy, sub, sup))
     const classes = new Map<string, ASTEngine.UniversalSymbol>()
     const leafCounts = new Map<string, number>()
     for (const symbol of symbols) {
@@ -2769,10 +2900,12 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       leafCounts.set(leaf, (leafCounts.get(leaf) ?? 0) + 1)
     }
     const methods = new Map<string, Map<string, ASTEngine.UniversalSymbol>>()
+    const duplicateMethods = new Set<string>()
     for (const symbol of symbols) {
       if (symbol.kind !== ASTEngine.SymbolKind.Method || !symbol.ownerName || symbol.ownerKind !== ASTEngine.SymbolKind.Class) continue
       const identity = [symbol.metadata?.namespace, symbol.ownerName].filter(Boolean).join("\\").toLowerCase()
       const members = methods.get(identity) ?? new Map()
+      if (members.has(symbol.name.toLowerCase())) duplicateMethods.add(identity)
       members.set(symbol.name.toLowerCase(), symbol)
       methods.set(identity, members)
     }
@@ -2781,16 +2914,50 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Stored member names are Owner.method. A duplicate owner leaf cannot
       // identify a unique source or destination through that spelling.
       if (!ownerClass || leafCounts.get(ownerClass.name.toLowerCase()) !== 1) continue
+      if (duplicateMethods.has(owner)) continue
+      // Check the whole known ancestry before accepting a nearby declaration.
+      const ancestry = new Set<string>()
+      let ancestor: ASTEngine.UniversalSymbol | undefined = ownerClass
+      while (ancestor && !ancestry.has(String(ancestor.metadata?.fqn ?? ancestor.name).toLowerCase())) {
+        ancestry.add(String(ancestor.metadata?.fqn ?? ancestor.name).toLowerCase())
+        ancestor = classes.get(ancestor.metadata?.baseIdentity)
+      }
+      if (ancestor) continue
       for (const method of members.values()) {
+        if (method.name.toLowerCase() === "__construct") {
+          let contractParent = ownerClass.metadata?.baseIdentity
+          const seenContracts = new Set<string>()
+          let incompatibleContract = false
+          while (contractParent && !seenContracts.has(contractParent)) {
+            seenContracts.add(contractParent)
+            const contract = methods.get(contractParent)?.get("__construct")
+            if (contract?.metadata?.phpSignatureShape?.abstract &&
+                (!phpSignatureShapeCompatible(method.metadata?.phpSignatureShape, contract.metadata.phpSignatureShape, method.name) ||
+                 variance(method.metadata?.phpSignatureShape, contract.metadata.phpSignatureShape, method.name) === false)) {
+              incompatibleContract = true
+              break
+            }
+            contractParent = classes.get(contractParent)?.metadata?.baseIdentity
+          }
+          if (incompatibleContract) continue
+        }
         const visited = new Set([owner])
         let current = ownerClass
         while (current.metadata?.baseIdentity && !visited.has(current.metadata.baseIdentity)) {
           const identity: string = current.metadata.baseIdentity
           visited.add(identity)
           const base = classes.get(identity)
+          if (duplicateMethods.has(identity)) break
           const candidate = methods.get(identity)?.get(method.name.toLowerCase())
+          if (!candidate && base?.metadata?.phpTraits?.length) break
           let target: string | undefined
+          let typeCompatibility: boolean | undefined
           if (base && candidate && candidate.visibility !== "private") {
+            const visibilityRank = (visibility?: string) => visibility === "private" ? 0 : visibility === "protected" ? 1 : 2
+            if (candidate.metadata?.isFinal || !!candidate.isStatic !== !!method.isStatic || visibilityRank(method.visibility) < visibilityRank(candidate.visibility)) break
+            if (!phpSignatureShapeCompatible(method.metadata?.phpSignatureShape, candidate.metadata?.phpSignatureShape, method.name)) break
+            typeCompatibility = variance(method.metadata?.phpSignatureShape, candidate.metadata?.phpSignatureShape, method.name)
+            if (typeCompatibility === false) break
             if (leafCounts.get(base.name.toLowerCase()) === 1) target = `${base.name}.${candidate.name}`
             else break
           } else if (!base) {
@@ -2806,9 +2973,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: `${method.ownerName}.${method.name}`,
               target,
               type: ASTEngine.RelationshipType.Overrides,
-              confidence: base ? 0.95 : 0.65,
+              confidence: base ? 0.85 : 0.65,
               line_number: method.range?.startLine,
-              metadata: { phpSpecific: true, isOverride: true, reasonCode: base ? "in-file-verified" : "companion-index" },
+              metadata: {
+                phpSpecific: true, isOverride: true, evidenceClass: "inferred",
+                reasonCode: base ? "local-declaration-hierarchy" : "companion-index",
+                signatureCompatibility: typeCompatibility === true ? "checked" : "unchecked",
+                signatureShapeChecked: !!method.metadata?.phpSignatureShape && !!candidate?.metadata?.phpSignatureShape,
+              },
             })
             break
           }
@@ -2833,12 +3005,12 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const name = this.variableBareName(varNode)
       if (!name) continue
       const typeNode = child.childForFieldName("type") || this.findTypeChild(child)
-      const defaultValue = this.findDefaultValue(child, varNode)
+      const defaultValue = child.childForFieldName("default_value")?.text
       params.push({
         name,
         type: typeNode?.text,
         defaultValue,
-        isOptional: defaultValue !== undefined || child.type === "property_promotion_parameter",
+        isOptional: defaultValue !== undefined || child.type === "variadic_parameter",
       })
     }
     return params
@@ -2887,22 +3059,6 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  private findDefaultValue(paramNode: Node, varNode: Node): string | undefined {
-    // KAD2 sweep: `child === varNode` never matched fresh wrappers. The
-    // type-based skips masked it, so this is hygiene over semantics — but
-    // the guard must still WORK: span-based self-skip restores the intent
-    // (e.g. a simple `= $x` shape would otherwise return the variable
-    // itself as its own default).
-    for (let i = 0; i < paramNode.namedChildCount; i++) {
-      const child = paramNode.namedChild(i)
-      if (!child) continue
-      if (child.startIndex === varNode.startIndex && child.endIndex === varNode.endIndex) continue
-      if (TYPE_NODES.has(child.type) || child.type === "variable_name" || child.type === "name") continue
-      return child.text
-    }
-    return undefined
-  }
-
   private extractModifiers(node: Node): string[] {
     const mods: string[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -2931,6 +3087,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     detectedFrameworks: Set<string>,
     prefix: string,
     classAliases: Map<string, string>,
+    functionAliases: Map<string, string>,
   ): void {
     let fqn = ""
     let alias: string | undefined
@@ -2946,10 +3103,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (prefix) fqn = `${prefix}\\${fqn}`
     const leaf = this.leafName(fqn)
     const declaration = child.parent?.type === "namespace_use_group" ? child.parent.parent : child.parent
-    const nonClassImport = (node: Node | null) => node?.children.some(part => part?.type === "function" || part?.type === "const")
-    if (!nonClassImport(child) && !nonClassImport(declaration)) {
+    const importKind = (node: Node | null) => node?.children.find(part => part?.type === "function" || part?.type === "const")?.type
+    const kind = importKind(child) ?? importKind(declaration)
+    const classImport = !kind
+    if (classImport) {
       classAliases.set((alias ?? leaf).toLowerCase(), fqn.replace(/^\\/, ""))
     }
+    if (kind === "function") functionAliases.set((alias ?? leaf).toLowerCase(), phpStripLeadingBackslashes(fqn))
     imports.push({
       module: fqn,
       items: [alias || leaf],
@@ -2976,6 +3136,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         aliased: !!alias,
         grouped: !!prefix,
         relationshipType: "use_clause",
+        ...(classImport ? { phpTypeReference: true, targetIdentity: fqn.replace(/^\\/, "").toLowerCase() } : {}),
+        ...(kind === "function" ? { phpFunctionReference: true, functionCandidates: [phpStripLeadingBackslashes(fqn).toLowerCase()] } : {}),
       },
     })
     this.detectFramework(fqn, detectedFrameworks)
@@ -3550,10 +3712,10 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * unqualified names and non-colliding qualified names keep the leaf
    * (unchanged behavior).
    *
-   * A qualified name whose qualification does NOT disambiguate it
-   * (single-segment global: `class InvalidArgumentException extends
-   * \\InvalidArgumentException` — the SPL builtin, phpunit's exception
-   * classes) returns the OWN name unchanged; callers treat that as
+   * A single-segment global target can still share the display leaf.
+   * Callers compare canonical namespace identities separately; this helper
+   * does not establish self-inheritance or semantic class identity.
+   * Historical display-only callers treated that as
    * UNRESOLVABLE and emit NO edge (a self-loop is always fabrication, and a
    * wrong edge is worse than no edge — family precedent: `new parent()`
    * with an unresolvable base).
@@ -3664,16 +3826,16 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // go/c/rust/java/kotlin (see phpDeclaredTypeRefs' header for php's positions, the
     // inherited conventions and the disclosed boundaries). Emitted BEFORE
     // classifyEvidenceTier so these edges carry an evidence class like every other
-    // reference edge, and from the SAME function the differential oracle derives its
-    // truth from. `parent` resolves through this lane's own baseByClass.
-    for (const ref of phpDeclaredTypeRefs(rootNode, (owner) => this.baseByClass.get(owner))) {
+    // reference edge. The oracle has a separate walker and parent derivation.
+    for (const ref of phpDeclaredTypeRefs(rootNode, (_owner, node) => node ? this.declaredParentDisplays.get(node.startIndex) : undefined)) {
       relationships.push({
         source: ref.source,
         target: ref.target,
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         ...(ref.line ? { line_number: ref.line } : {}),
-        metadata: { relationshipType: ref.relationshipType, declaredOn: ref.declaredOn },
+        metadata: { phpSpecific: true, phpTypeReference: true, relationshipType: ref.relationshipType, declaredOn: ref.declaredOn,
+          ...this.declaredTypeIdentities.get(ref.typeStart) },
       })
     }
 
@@ -3792,9 +3954,13 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const r of relationships) {
       const t = (r as { target?: unknown }).target
       if (typeof t !== "string" || t.length === 0) continue
-      const kind = phpInternalKind(t)
+      const typed = r.metadata?.phpTypeReference === true
+      const identity = r.metadata?.targetIdentity
+      const kind = typed
+        ? (typeof identity === "string" && PHP_INTERNAL_CLASS_IDENTITIES.has(identity) ? "php-internal-class" : null)
+        : phpInternalKind(t)
       if (kind === null) continue
-      if (declaredHere.has(t)) {
+      if (!typed && declaredHere.has(t)) {
         // PHP's own resolution: a declaration in this file wins over the global table.
         shadowed++
         continue
@@ -3828,6 +3994,11 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const r of relationships) {
       const type = r.type ?? r.relationshipType ?? ""
       const md: any = r.metadata ?? {}
+      if (md.receiverTypeEvidence === "stable-parameter") {
+        r.confidence = Math.min(r.confidence ?? 0.8, 0.8)
+        md.evidenceClass = "inferred"
+        continue
+      }
       if (type === "contains") { md.evidenceClass = "structural"; continue }
       if (type === "imports" || type === "exports" || type === "references") { md.evidenceClass = "import_based"; continue }
       // `part_of` (relabelled from `imports`, 2026-10-23) IS THE IMPORTS TIER, AND IT IS NOT A
@@ -3850,10 +4021,8 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (type === "overrides") {
-        // M37.10 family contract: verified overrides are structural; a
-        // Pass-3 first-parent guess is only "inferred" (the external base
-        // may not even declare the method).
-        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        // Declaration ancestry plus bounded compatibility is inferred evidence.
+        md.evidenceClass = "inferred"
         continue
       }
       md.evidenceClass = "usage_contextual"

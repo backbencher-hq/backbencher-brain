@@ -554,7 +554,7 @@ function isBound(bindings: Map<number, Set<string>>, scopes: number[], name: str
   return false
 }
 
-export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): RubyTruthEdge[] {
+export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[], filePath?: string): RubyTruthEdge[] {
   const edges: RubyTruthEdge[] = []
   const bindings = collectBindings(root)
 
@@ -563,12 +563,6 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
   /** Members declared by each class in THIS file, for implicit `overrides`. */
   const members = new Map<string, Set<string>>()
 
-  // A bare method name identifies a caller only when it is unique in this file.
-  const methodCounts = new Map<string, number>()
-  for (const declaration of root.descendantsOfType(["method", "singleton_method"])) {
-    const name = declaration?.childForFieldName("name")?.text
-    if (name) methodCounts.set(name, (methodCounts.get(name) ?? 0) + 1)
-  }
   const push = (label: RubyTruthEdge["label"], target: string, line: number, from?: string): void => {
     if (!target || target.length === 0) return
     edges.push(from === undefined ? { label, target, line } : { label, target, from, line })
@@ -582,7 +576,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
     const t = n.type
     const line = n.startPosition.row + 1
     const parent = f.parent
-    const caller = f.methodId && methodCounts.get(f.methodId) === 1 ? f.methodId : undefined
+    const caller = f.methodId
     const callSource = f.methodId ? caller : f.cls ?? "Global"
 
     // ---------------------------------------------------------------- classes
@@ -660,8 +654,8 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       // Inner; end; end` -> `contains:Inner`, and likewise `module M; class C;`.
       // PROBED in both the plain and the module-qualified form. The top-level case
       // emits nothing, which is why this is gated on having an owner at all.
-      if (scopePrefix) push("contains", leafName(clsName ?? scopePrefix), line, undefined)
-      if (clsName && f.cls !== undefined) push("contains", clsName, line, undefined)
+      if (scopePrefix) push("contains", leafName(clsName ?? scopePrefix), line, scopePrefix)
+      if (clsName && f.cls !== undefined) push("contains", clsName, line, f.cls)
 
       // DIRECTION matters: the analyzer's edge is `extends -> <superclass LEAF>`
       // (`class C < A::B` -> `extends -> B`, probed), with the subclass as `from`.
@@ -732,14 +726,16 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       // class" is the only thing that can be said. Probed across plain, inherited,
       // nested, reopened, module-qualified and singleton defs - all `contains:>name`.
       if (name && owner !== undefined) {
-        push("contains", name, line, undefined)
+        push("contains", name, line, owner)
         // Record the member against its OWNING class so implicit `overrides` can
         // be resolved after the walk. `owner` is the lexically enclosing class,
         // which for `class Sub < Base` is `Sub`.
         if (f.cls !== undefined) {
           let set = members.get(f.cls)
           if (!set) { set = new Set<string>(); members.set(f.cls, set) }
-          set.add(name)
+          // Instance and singleton methods inhabit different method tables.
+          const dispatch = t === "singleton_method" || f.selfType === "singleton" ? "singleton" : "instance"
+          set.add(`${dispatch}\0${name}`)
         }
       }
 
@@ -890,7 +886,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         // `f.cls` unconditionally was 626 MISSING `instantiates`, every one of them a
         // collection `.new` in a Rails controller method being reported as an
         // instantiation of the controller.
-        if (recvName) push("instantiates", leafName(recvName), line)
+        if (recvName) push("instantiates", leafName(recvName), line, ["Class", "Struct", "Module", "Data"].includes(leafName(recvName)) ? left.text : callSource)
         // `K = Class.new(Base)` DECLARES a superclass: the analyzer emits `extends:Base` for the
         // factory base when the receiver is `Class` and the first argument is a STATIC constant path
         // (restricted to Class.new — Struct.new/Data.define take MEMBER NAMES there, so a general
@@ -900,7 +896,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
           const args = right ? right.childForFieldName("arguments") : null
           const first = args && args.namedChildCount > 0 ? args.namedChild(0) : null
           const basePath = constantPath(first)
-          if (basePath && basePath.indexOf("(") < 0) push("extends", leafName(basePath), line)
+          if (basePath && basePath.indexOf("(") < 0) push("extends", leafName(basePath), line, left.text)
         }
         // A constant bound to a factory IS a member of the enclosing scope.
         // PROBED across all four factories: `E = Class.new`, `E = Struct.new(:a)`,
@@ -908,7 +904,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         // `contains:E`. This branch `continue`s, so the generic constant-assignment
         // rule below it never ran for factories - the same unreachable-rule shape as
         // the `X = 1` case, and it hid every `SOME_CONSTANT = Something.new` member.
-        if (f.cls !== undefined) push("contains", left.text, line, undefined)
+        if (f.cls !== undefined) push("contains", left.text, line, f.cls)
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (!c) continue
@@ -948,7 +944,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       if (rightIsCall && methodName === "new") {
         // A LOCAL left: the receiver is still instantiated, but nothing is named.
         const recv0 = constantPath(right ? right.childForFieldName("receiver") : null)
-        if (recv0) push("instantiates", leafName(recv0), line)
+        if (recv0) push("instantiates", leafName(recv0), line, callSource)
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (!c) continue
@@ -990,7 +986,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
       // never executed. The same shape as §38's endless-def comment: prose describing
       // behaviour the adjacent code does not have.
       if (left !== null && left.type === "constant" && f.cls !== undefined) {
-        push("contains", left.text, line, undefined)
+        push("contains", left.text, line, f.cls)
       }
       void recv
       void methodName
@@ -1167,8 +1163,8 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         // `current_account.account_notes.new(…)` in the Rails controllers, which
         // builds a collection rather than a class.
         if (!inFactoryAssignment) {
-          if (recv) push("instantiates", leafName(recv), line)
-          else if ((!recvNode || recvNode.type === "self") && f.cls) push("instantiates", f.cls, line)
+          if (recv) push("instantiates", leafName(recv), line, callSource)
+          else if ((!recvNode || recvNode.type === "self") && f.cls) push("instantiates", f.cls, line, callSource)
         }
       }
       if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
@@ -1242,7 +1238,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
                   refusedBecause: composes ? undefined : refusedBecause,
                 })
               }
-              if (composes) push("mixes_in", leafName(cn), line)
+              if (composes) push("mixes_in", leafName(cn), line, f.cls)
             }
           }
         }
@@ -1272,7 +1268,7 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
         const first0 = args0.namedChild(0)
         if (first0 && (first0.type === "simple_symbol" || first0.type === "symbol")) {
           const nm0 = symbolName(first0.text)
-          if (nm0.length > 0) push("contains", nm0, first0.startPosition.row + 1, undefined)
+          if (nm0.length > 0) push("contains", nm0, first0.startPosition.row + 1, f.cls)
         }
       }
     }
@@ -1328,15 +1324,15 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
               // analyzer emits `uses` alone - there is no class for the association
               // to be a member of. That is the namable-owner principle again, and
               // gating on `f.cls` rather than `!== undefined` is what encodes it.
-              if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, undefined)
-              push("uses", name, line, undefined)
+              if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, f.cls)
+              push("uses", name, line, callSource)
             } else {
               // The SAME namable-owner rule as associations: PROBED, a bare
               // `Class.new do attr_reader :site end` publishes `instantiates:Class`
               // and NOTHING else - no `contains:site`. An attribute declared in an
               // anonymous class belongs to a class the graph will not name, so there
               // is no member to attach it to. Only a named owner yields `contains`.
-              if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, undefined)
+              if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, f.cls)
             }
           }
         }
@@ -1534,14 +1530,35 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
     const local = leaf !== cls && baseScopes?.size === 1 && [...baseScopes].some(scope =>
       base.includes("::") ? written === (scope ? `${scope}::${leaf}` : leaf) : !scope || ownerScopes.has(scope))
     if (local) {
-      const inherited = members.get(leaf)
-      for (const method of own) {
-        if (inherited?.has(method)) push("overrides", `${leaf}.${method}`, 0, `${cls}.${method}`)
+      for (const entry of own) {
+        const method = entry.slice(entry.indexOf("\0") + 1)
+        let parent = leaf
+        const visited = new Set([cls])
+        while (!visited.has(parent)) {
+          visited.add(parent)
+          if (members.get(parent)?.has(entry)) {
+            push("overrides", `${parent}.${method}`, 0, `${cls}.${method}`)
+            break
+          }
+          const nextBase = bases.get(parent)
+          if (!nextBase) break
+          const next = leafName(nextBase)
+          const nextScopes = namespaces.get(next)
+          const scopes = namespaces.get(parent)
+          if (nextScopes?.size !== 1 || scopes?.size !== 1) break
+          const scope = [...nextScopes][0]!
+          const matches = nextBase.includes("::")
+            ? nextBase.replace(/^::/, "") === (scope ? `${scope}::${next}` : next)
+            : !scope || scopes.has(scope)
+          if (!matches) break
+          parent = next
+        }
       }
       continue
     }
     // External candidates describe the written base while leaving its member unverified.
-    for (const m of own) {
+    for (const entry of own) {
+      const m = entry.slice(entry.indexOf("\0") + 1)
       edges.push({ label: "overrides", from: `${cls}.${m}`, target: `${base}.${m}`, line: 0, targetUnverified: true })
     }
   }
@@ -1638,7 +1655,9 @@ export function deriveRubyEdges(root: Node, decisions?: RubyMixinDecision[]): Ru
     walkTop(root, 0)
     for (const [name, line] of exportLine) {
       if (privateNames.has(name)) continue
-      push("exports", name, line)
+      const basename = filePath?.split(/[\\/]/).pop()
+      const stem = basename?.replace(/\.[^.]+$/, "").replace(/\./g, "_")
+      push("exports", name, line, stem || undefined)
     }
   }
 

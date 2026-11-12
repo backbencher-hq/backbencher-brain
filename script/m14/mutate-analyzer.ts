@@ -2657,7 +2657,7 @@ export const MUTANTS: Mutant[] = [
   // differential reported a 1.000 — 34 hand-audited facts over 63 lines of
   // fixture, so the lane that had the most fabrication defects measured as
   // perfect. Every mutant below is a faithful revert of one MEASURED defect from
-  // the M60 SQL deep review (fixtures/sql/REVIEW.md, each row carrying its own
+  // the M60 SQL deep review (bb_tests/sql/REVIEW.md, each row carrying its own
   // corpus count), and each is caught by the sql fixture battery.
   //
   // They are reverts of the OUTPUT rather than of the source, which is what the
@@ -11976,11 +11976,11 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "implements" && (x.metadata ?? {}).isEnumImplements)) }),
   },
   {
-    id: "php/emit-wp-hook-calls",
+    id: "php/drop-wp-registrar-calls",
     language: "php",
-    defectClass: "relationship-fabrication",
-    description: "M37.13 regression: removes the add_action/add_filter early return so WP hook registrations re-emit calls edges (pre-fix oracle fabricated calls:add_action/add_filter truth; analyzer never did) — procedural-enum forbid pins catch it",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "global", target: "add_action", isExternal: true, weight: 1, confidence: 0.9 }, { type: "calls", source: "global", target: "add_filter", isExternal: true, weight: 1, confidence: 0.9 }] }),
+    defectClass: "relationship-omission",
+    description: "Drops actual calls to WordPress registrar functions; registering a callback still invokes the registrar. procedural-enum pins the calls, without claiming callback invocation.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && (x.target === "add_action" || x.target === "add_filter"))) }),
   },
   {
     id: "php/symbolize-anon-class-methods",
