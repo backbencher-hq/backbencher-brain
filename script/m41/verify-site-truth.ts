@@ -182,7 +182,9 @@ check("T3: installer is version-less, so installs resolve the newest release", i
 check("T3: install page states the engine version", installHtml.includes(`engine ${version}`))
 check("T3: install page offers the unpinned installer command", installHtml.includes("https://backbencher.cc/install.sh | bash"))
 check("T3: install page states the npm package is unpinned by default", installHtml.includes("npm install -g @backbencher/brain"))
-check("T3: install page states the REAL installer release repo from truth", installRepo !== "" && installHtml.includes(installRepo), installRepo)
+// The page no longer names a repo: the installers resolve the newest release
+// themselves, so a repo string would only go stale. Truth still carries it.
+check("T3: truth names the installer repo", installRepo === "backbencher-hq/backbencher-brain", installRepo)
 check("T3: install page quotes both real installer commands", installHtml.includes("https://backbencher.cc/install.sh | bash") && installHtml.includes("https://backbencher.cc/install.ps1 | iex"))
 check(
   "T3: install page keeps the installer channel distinct from the engine version",

@@ -7,14 +7,14 @@
   "passed": 21,
   "failed": 0,
   "negativeCases": 4,
-  "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
+  "currentCommit": "e629685de03c4cca0b2e3753de718633031e89ad",
   "verifierCommand": "npx tsx script/m41/verify-truth-pipeline.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-11-09T14:39:58.356Z",
+  "generatedAt": "2026-11-15T21:18:18.214Z",
   "truthSummary": {
-    "version": "0.1.0",
+    "version": "0.1.4",
     "tools": 16,
-    "tables": 16,
+    "tables": 18,
     "languages": 53,
     "cliCommands": 14
   },
