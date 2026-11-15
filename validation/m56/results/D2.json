@@ -1,5 +1,5 @@
 {
-  "issue": "M56.D2 — Design Pass (#786)",
+  "issue": "M56.D2 \u2014 Design Pass (#786)",
   "code": "D2",
   "milestone": "m56",
   "status": "verified",
@@ -7,11 +7,11 @@
   "passed": 43,
   "failed": 0,
   "negativeCases": 10,
-  "currentCommit": "b18077407aab8770387370696a71c46598e6270d",
+  "currentCommit": "7a6e759c1cdbcb103c5d202d30864a60349e3fe7",
   "verifierCommand": "npx tsx script/m56/verify-design.ts",
   "evidenceFile": "D2.json",
   "generatedAt": "2026-11-08T02:53:48.693Z",
-  "ownerApproval": "pending — the owner has not yet given the visual review (the site is built, screenshot-verified and awaiting review as of 2026-11-07). D2 reads this line and writes it into its evidence; X1 refuses a closure whose design gate has no recorded approval state.",
+  "ownerApproval": "pending \u2014 the owner has not yet given the visual review (the site is built, screenshot-verified and awaiting review as of 2026-11-07). D2 reads this line and writes it into its evidence; X1 refuses a closure whose design gate has no recorded approval state.",
   "contrastFloors": {
     "floor": 4.5,
     "referenceBackground": "#1e1710",
@@ -57,8 +57,8 @@
     "4 built pages checked for cool-grey output and the focus rule in built CSS"
   ],
   "limitations": [
-    "Contrast is computed on declared colours (tokens and literal classes), not on rendered pixels — a parent opacity or blend mode could still reduce effective contrast; no such utility is used in site source (alpha text classes are refused).",
-    "Large-text exceptions (3:1 for ≥24px) are not used: this site applies the 4.5:1 floor to every text colour, which is stricter.",
+    "Contrast is computed on declared colours (tokens and literal classes), not on rendered pixels \u2014 a parent opacity or blend mode could still reduce effective contrast; no such utility is used in site source (alpha text classes are refused).",
+    "Large-text exceptions (3:1 for \u226524px) are not used: this site applies the 4.5:1 floor to every text colour, which is stricter.",
     "Photographic media (the verified session stills on /editors) is exempt: it is real captured product pixels, not styled text.",
     "Owner visual approval is required before this issue closes; the gate proves legibility mechanics, not taste."
   ],

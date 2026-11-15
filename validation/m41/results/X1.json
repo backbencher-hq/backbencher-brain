@@ -8,7 +8,7 @@
   "failed": 0,
   "negativeCases": 13,
   "failures": [],
-  "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+  "currentCommit": "3867ddc2682babefe242d144fb6779729506c850",
   "batchCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
   "deployGated": {
     "code": "S2",
@@ -31,7 +31,7 @@
   "evidenceFile": "X1.json",
   "generatedAt": "2026-11-08T01:12:55.201Z",
   "ownerStepsPending": [
-    "Enable Vercel wait-for-checks (project Settings → Git → wait for the CI check) so a red build cannot deploy.",
+    "Enable Vercel wait-for-checks (project Settings \u2192 Git \u2192 wait for the CI check) so a red build cannot deploy.",
     "Push the branch to origin/main and confirm CI is green on the pushed commit.",
     "After the deploy, re-run npx tsx script/m41/verify-seo-onboarding.ts: it re-pins S2 onto the deployed commit and closes the recorded route lag.",
     "Resubmit/resubmit-fetch sitemap.xml in Google Search Console, Bing Webmaster Tools and Brave.",

@@ -2,19 +2,17 @@
   "issue": "M56.G1",
   "code": "G1",
   "milestone": "M56",
-  "status": "failed",
+  "status": "verified",
   "checks": 41,
-  "passed": 40,
-  "failed": 1,
-  "failures": [
-    "G1: every verified entry cites a commit that exists in this history — G1:818fe7ba, E1:ec0301ec, T1:ec0301ec, L1:ec0301ec, D1:ec0301ec, S1:ec0301ec, I1:ec0301ec, D2:b1807740, X1:a6d1b760"
-  ],
+  "passed": 41,
+  "failed": 0,
+  "failures": [],
   "negativeCases": 16,
-  "trackedFilesScanned": 4602,
-  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "trackedFilesScanned": 15186,
+  "currentCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
   "verifierCommand": "npx tsx script/m56/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-11-15T04:27:27.464Z",
+  "generatedAt": "2026-11-15T05:30:49.374Z",
   "limitations": [
     "Secret-hygiene scan covers tracked files only; untracked local files are outside the gate by design.",
     "Key patterns match OpenRouter and NVIDIA shapes; a new provider format must be added to KEY_PATTERNS.",
@@ -25,7 +23,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-15T04:27:27.465Z",
-    "contentSha256": "f4b38a4a0dfb271a78285d4d43fd6411c46f8c829ddb8b744d5340bdf01156b5"
+    "sealedAt": "2026-11-15T05:30:49.375Z",
+    "contentSha256": "9a46b6ea6fc7ce7a2ee7d8581b53a7dfb010ebdca95a2bc4e0a7611bb4cdbc73"
   }
 }

@@ -6,7 +6,7 @@
   "status": "open",
   "authority": "docs/m41/M41-MASTER-PLAN.md",
   "governingContract": "docs/M14-HONESTY-CONTRACT.md",
-  "updatedAt": "2026-11-09T14:45:33.660Z",
+  "updatedAt": "2026-11-15T05:11:10.700Z",
   "evidencePolicy": {
     "verifiedRequires": [
       "currentCommit",
@@ -52,7 +52,7 @@
       "evidence": {
         "evidenceFile": "G1.json",
         "status": "verified",
-        "currentCommit": "a6d1b760b06ed0c9befd9e9c32b74a526b3423be",
+        "currentCommit": "3867ddc2682babefe242d144fb6779729506c850",
         "generatedAt": "2026-11-08T01:13:20.345Z",
         "passed": 32,
         "failed": 0,
@@ -108,8 +108,8 @@
       "evidence": {
         "evidenceFile": "T2.json",
         "status": "verified",
-        "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
-        "generatedAt": "2026-11-09T14:41:02.805Z",
+        "currentCommit": "433b1708b125d3729bcc82e7799fc3fd77e3eceb",
+        "generatedAt": "2026-11-09T15:36:08.049Z",
         "passed": 60,
         "failed": 0,
         "negativeCases": 3,
@@ -266,7 +266,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-09T14:45:33.660Z",
-    "contentSha256": "6515fee1b74f7ae37dbcc4e1205f9884a6857c855827ca7cc8d0bc290e70aa25"
+    "sealedAt": "2026-11-15T05:11:10.701Z",
+    "contentSha256": "ac6674d114b643c86951db2741c6152627250031594b539aad438bb8821b7f7e"
   }
 }

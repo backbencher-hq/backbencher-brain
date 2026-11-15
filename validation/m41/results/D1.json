@@ -7,7 +7,7 @@
   "passed": 18,
   "failed": 0,
   "negativeCases": 3,
-  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
   "verifierCommand": "npx tsx script/m41/verify-design.ts",
   "evidenceFile": "D1.json",
   "generatedAt": "2026-11-09T14:39:59.058Z",

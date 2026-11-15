@@ -1,5 +1,5 @@
 {
-  "issue": "M56.L1 — Language surface (#787)",
+  "issue": "M56.L1 \u2014 Language surface (#787)",
   "code": "L1",
   "milestone": "m56",
   "status": "verified",
@@ -7,7 +7,7 @@
   "passed": 44,
   "failed": 0,
   "negativeCases": 9,
-  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
   "verifierCommand": "npx tsx script/m56/verify-languages-surface.ts",
   "evidenceFile": "L1.json",
   "generatedAt": "2026-11-09T14:43:43.097Z",

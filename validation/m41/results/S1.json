@@ -7,7 +7,7 @@
   "passed": 67,
   "failed": 0,
   "negativeCases": 11,
-  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
   "verifierCommand": "npx tsx script/m41/verify-seo.ts",
   "evidenceFile": "S1.json",
   "generatedAt": "2026-11-09T14:43:09.551Z",

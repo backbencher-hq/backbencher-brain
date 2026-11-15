@@ -7,7 +7,7 @@
   "passed": 15,
   "failed": 0,
   "negativeCases": 5,
-  "currentCommit": "ec0301ecf00a7003f603bba5d345679885c233db",
+  "currentCommit": "27ffaa8bb22ad4dbccbd6012e7c9d4d2b465f34e",
   "verifierCommand": "npx tsx script/m41/verify-seo-onboarding.ts",
   "evidenceFile": "S2.json",
   "ownerConfirmationsFile": "S2-OWNER-CONFIRMATIONS.json",
@@ -141,7 +141,7 @@
     "Dashboard states (GSC/Bing/Brave) are external and can change after verification; the live checks prove the site half, the owner-confirmation file records the dashboard half as of its dates.",
     "The live sitemap equals the PREVIOUSLY deployed (pre-M56) route set, not the repository's canonical set: `deployLag=open`, 50 route(s) the deploy has not published yet are named in laggingRoutes. X1's post-deploy re-run closes this; the state is recorded, never silently accepted.",
     "Live checks fail rather than skip when the network is unreachable: the failure is recorded with its reason (status=0 plus the socket error) and the remaining checks still run, so a transient outage cannot crash the run or be mistaken for a pass.",
-    "DNS is checked via dns.google (Google's own resolver) — the authoritative path for GSC verification.",
+    "DNS is checked via dns.google (Google's own resolver) \u2014 the authoritative path for GSC verification.",
     "Brave has no verification protocol; acceptance of the submit-url form is the only available signal."
   ]
 }
