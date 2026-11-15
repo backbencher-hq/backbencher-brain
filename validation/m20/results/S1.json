@@ -2,38 +2,25 @@
   "issue": "M20.S1",
   "code": "S1",
   "milestone": "M20",
-  "status": "known-gap",
+  "status": "verified",
   "checks": 22,
   "passed": 22,
   "failed": 0,
   "negativeCases": 4,
   "negativePassed": 4,
-  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "currentCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
   "sourceFingerprint": "667264e01d1025cd715b16bca0c748f0e6ba65a0ed5cb32143084ee058980a93",
-  "workingTreeRelevantChanges": [
-    "docs/BB_SECURITY.md",
-    "docs/tools/bb_security.md",
-    "script/m15/verify-security-deep.ts",
-    "script/m15/verify-security-precision.ts",
-    "script/m15/verify-security-regressions.ts",
-    "script/m20/verify-security-adversarial.ts",
-    "script/m20/verify-security-flow-boundary.ts",
-    "script/m20/verify-security-history.ts",
-    "src/ast/parallel-indexer.ts",
-    "src/brain/schema-ddl.ts",
-    "src/mcp/tools/bb_security/descriptor.ts",
-    "src/mcp/tools/bb_security/handler.ts"
-  ],
+  "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m20/verify-security-flow-boundary.ts",
   "evidenceFile": "S1.json",
-  "generatedAt": "2026-11-15T04:01:33.686Z",
+  "generatedAt": "2026-11-15T05:32:45.234Z",
   "limitations": [
     "Fixture-level endpoint-state and evidence coverage; static taint remains heuristic and is not a runtime exploit proof.",
     "Real-repository security coverage is measured by the m15 corpus leg and validation/tools/bb_security/REAL-CORPUS.json."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-11-15T04:01:33.687Z",
-    "contentSha256": "8e6f5ca2fc5dc59770da37ce533e5dbc511b3f5b3a08d01ca017c24333187f0f"
+    "sealedAt": "2026-11-15T05:32:45.234Z",
+    "contentSha256": "bac4de82a619aa7ffadcd8db431a7d3b4b7ea454b1e6b94883a4693dde86d216"
   }
 }

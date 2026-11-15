@@ -1,0 +1,91 @@
+{
+  "at": "2026-11-13T21:45:23.854Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/consul",
+  "trackedFiles": 11454,
+  "jsFiles": 1277,
+  "parsedClean": 1272,
+  "labelCounts": {
+    "calls": 19199,
+    "extends": 363,
+    "implements": 0,
+    "uses": 22766,
+    "imports": 3446,
+    "exports": 1082,
+    "contains": 2237,
+    "references": 39,
+    "overrides": 1025,
+    "instantiates": 272,
+    "decorates": 960,
+    "renders": 0,
+    "mixes_in": 11,
+    "part_of": 0
+  },
+  "denominators": {
+    "jsxFiles": 0,
+    "decoratorFiles": 232
+  },
+  "mixesIn": {
+    "rows": 11,
+    "targetDeclaredInSameFile": 0,
+    "targetNotDeclaredHere": 11,
+    "sample": [
+      {
+        "file": "ui/packages/consul-ui/app/routes/application.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/routes/dc/acls/policies/edit.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/routes/dc/acls/policies/index.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/routes/dc/acls/roles/edit.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/routes/dc/acls/roles/index.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/routes/dc/acls/tokens/edit.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/routes/dc/acls/tokens/index.js",
+        "target": "WithBlockingActions",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/serializers/node.js",
+        "target": "EmbeddedRecordsMixin",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/serializers/role.js",
+        "target": "WithPolicies",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/serializers/token.js",
+        "target": "WithPolicies",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/packages/consul-ui/app/serializers/token.js",
+        "target": "WithRoles",
+        "declaredHere": false
+      }
+    ]
+  },
+  "partOfRows": 0,
+  "note": "Whole-population counts for the labels the lane doc reported from a cap-50 triage. The JSX and decorator denominators come from the PARSE TREE (jsx_element / jsx_self_closing_element / decorator nodes), not from a text pattern. mixes_in is split by whether its target is a name the SAME FILE declares, which separates a store-bindable claim from a name no per-file analyzer could bind."
+}

@@ -1,0 +1,96 @@
+{
+  "fixtureId": "cpp/part-of-stem-dedup-965",
+  "language": "cpp",
+  "authoredBeforeAnalyzerRun": true,
+  "rationale": "M65. TWO DEFECTS IN THE `part_of` EMISSION, AND ONE OF THEM WAS INVISIBLE TO EVERY EXISTING FIXTURE. (1) DEDUP KEY vs ROW. The include guard read `referencesSeen.has(includePath)` while the row emits `cppPartSymbol(includePath)` -- two DIFFERENT fields. When two QUOTED includes share a FILE STEM the guard passed where the row repeated, so the file published the same (source,target) row twice. That is the `one edge per pair` contract (D3, #959), broken. It was invisible to the suite because `cpp/one-edge-per-pair-959` contains only ANGLE includes -- there the key and the target are the same string, so the bug cannot fire -- and `cpp/part-of-quoted-include` carries a single quoted include, which cannot collide with itself. Measured on the two-repo M65 corpus: 5 duplicate rows (fmt/src/fmt.cc twice, three nlohmann Fuzzer files). This file writes the colliding shape three times. (2) EVIDENCE CLASS. `classifyEvidenceTier` had arms for contains/exports, imports, references, extends/implements/overrides and instantiates and NONE for `part_of`, so every row fell through to the final `usage_contextual` default -- the tier for a contextual inference, on a row read off a NAMED grammar node (`preproc_include`) whose discriminator is the written form. Measured: 365 of 365 rows carried `usage_contextual` and 0 carried `structural`, while docs/analyzers/cpp.md claimed `structural` for the type. THE THIRD ASSERTION, AND WHY IT IS HERE: `part_of` (QUOTED) and `imports` (ANGLE) are TWO relationship types that can legitimately name the SAME string, and they are two different facts. In fmt's ranges-test.cc, `#include \"fmt/ranges.h\"` yields `part_of -> ranges` and `#include <ranges>` yields `imports -> ranges`; in gtest.h, `\"absl/types/any.h\"` etc. share a stem with `<any>`, `<optional>`, `<string_view>`, `<variant>`. A first cut of this fix keyed the shared set on the TARGET alone and SUPPRESSED 5 real `imports` rows that way -- a regression caught by measuring row counts before and after rather than by reading the code. So this file includes BOTH spellings of `format` and pins BOTH rows, which makes cross-kind suppression fail here. The dedup is per (kind, target): the `imports` array still records every directive, and only the duplicate EDGE is dropped.",
+  "expectSymbols": [
+    { "name": "use_them", "kind": "function", "note": "the one real declaration; the fixture is about edges, not symbols." }
+  ],
+  "expectRelationships": [
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "format",
+      "line_number": 26,
+      "meta.evidenceClass": "structural",
+      "note": "M65 (1)+(2). TWO quoted includes share the stem `format` (`fmt/format.h` at 26 and `format.cc` at 30), and the pair publishes ONE edge, on the FIRST directive's line (26) because the walk is in source order. `evidenceClass: structural` is the second fix: this row is read off a NAMED `preproc_include` node, and the tier said `usage_contextual` on 365 of 365 rows before it."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "format",
+      "line_number": 27,
+      "meta.evidenceClass": "import_based",
+      "note": "M65, THE CROSS-KIND CONTROL. `#include <format>` at 27 names the SAME STRING as the quoted `fmt/format.h`, and it must still publish its own `imports` edge. A dedup keyed on the target alone would have suppressed this row -- exactly the regression the census caught. Two relationship types, two facts, one name."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "vector",
+      "line_number": 28,
+      "note": "an ordinary angle include, unchanged."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "impl",
+      "line_number": 32,
+      "meta.evidenceClass": "structural",
+      "note": "the flat-spelling variant: `detail/impl.h` (32) and `impl.h` (33) both stem `impl`, so one edge on line 32. This is the shape where the two specifiers differ most, so a rule keyed on the specifier rather than the stem would not collapse them."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "args",
+      "line_number": 37,
+      "meta.evidenceClass": "structural",
+      "note": "a THIRD pair with a different name (`core/args.h` + `args.h`), so the assertion is not an artifact of one stem."
+    }
+  ],
+  "expectRelationshipCount": [
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "format",
+      "equals": 1,
+      "note": "M65 (1), and WHY `equals` AND NOT `expectRelationships`. `expectRelationships` means '>= 1 match', so a DUPLICATED edge satisfies it and the whole defect is invisible to it -- the same reason D3's own fixture gained an `equals` block (#959: 'the first version of this fixture passed against the pre-fix analyzer for exactly that reason'). Two quoted includes share the stem `format`; ONE edge. A pre-fix analyzer lands 2 here and fails."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "impl",
+      "equals": 1,
+      "note": "the flat-spelling pair, one edge."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "args",
+      "equals": 1,
+      "note": "the third pair, one edge -- so the exact-count assertion is not specific to one stem."
+    },
+    {
+      "type": "imports",
+      "from": "global",
+      "target": "format",
+      "equals": 1,
+      "note": "M65, THE OTHER DIRECTION. `part_of -> format` and `imports -> format` are two rows, and the `imports` one must survive. A fix that dedups across kinds lands 0 here and fails; the un-fixed analyzer lands 1 here too, so this row alone cannot catch defect (1) -- which is why the `part_of` `equals` block above is the one that does."
+    }
+  ],
+  "forbidRelationships": [
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "format",
+      "line_number": 30,
+      "note": "the SECOND quoted include of the pair must not publish its own edge: `format.cc` at line 30 states the same containment fact as `fmt/format.h` at 26, and the first occurrence wins."
+    },
+    {
+      "type": "part_of",
+      "from": "global",
+      "target": "impl",
+      "line_number": 33,
+      "note": "same for the flat-spelling pair's second directive."
+    }
+  ]
+}

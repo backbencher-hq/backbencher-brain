@@ -1,0 +1,236 @@
+{
+  "at": "2026-11-13T21:45:53.035Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/nomad",
+  "trackedFiles": 6061,
+  "jsFiles": 967,
+  "parsedClean": 957,
+  "labelCounts": {
+    "calls": 27434,
+    "extends": 483,
+    "implements": 0,
+    "uses": 20811,
+    "imports": 4613,
+    "exports": 879,
+    "contains": 3767,
+    "references": 39,
+    "overrides": 1653,
+    "instantiates": 127,
+    "decorates": 2570,
+    "renders": 0,
+    "mixes_in": 70,
+    "part_of": 0
+  },
+  "denominators": {
+    "jsxFiles": 0,
+    "decoratorFiles": 432
+  },
+  "mixesIn": {
+    "rows": 70,
+    "targetDeclaredInSameFile": 0,
+    "targetNotDeclaredHere": 70,
+    "sample": [
+      {
+        "file": "ui/app/components/distribution-bar.js",
+        "target": "WindowResizable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/components/exec-terminal.js",
+        "target": "WindowResizable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/components/gauge-chart.js",
+        "target": "WindowResizable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/components/job-page/parts/children.js",
+        "target": "Sortable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/components/job-page/parts/task-groups.js",
+        "target": "Sortable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/components/streaming-file.js",
+        "target": "WindowResizable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/clients/client/index.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/clients/index.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/allocations.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/allocations.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/clients.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/clients.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/definition.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/deployments.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/evaluations.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/index.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/services/index.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/task-group.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/task-group.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/jobs/job/versions.js",
+        "target": "WithNamespaceResetting",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/optimize.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/storage/plugins/index.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/controllers/topology.js",
+        "target": "Searchable",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration.js",
+        "target": "withForbiddenState",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration.js",
+        "target": "WithModelErrorHandling",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/namespaces/acl-namespace.js",
+        "target": "withForbiddenState",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/namespaces/acl-namespace.js",
+        "target": "WithModelErrorHandling",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/policies/policy.js",
+        "target": "withForbiddenState",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/policies/policy.js",
+        "target": "WithModelErrorHandling",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/roles/role.js",
+        "target": "withForbiddenState",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/roles/role.js",
+        "target": "WithModelErrorHandling",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/tokens/token.js",
+        "target": "withForbiddenState",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/administration/tokens/token.js",
+        "target": "WithModelErrorHandling",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/allocations/allocation.js",
+        "target": "WithWatchers",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/clients.js",
+        "target": "WithForbiddenState",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/clients/client/index.js",
+        "target": "WithWatchers",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/clients/index.js",
+        "target": "WithWatchers",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/exec.js",
+        "target": "WithWatchers",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/jobs/index.js",
+        "target": "WithWatchers",
+        "declaredHere": false
+      },
+      {
+        "file": "ui/app/routes/jobs/index.js",
+        "target": "WithForbiddenState",
+        "declaredHere": false
+      }
+    ]
+  },
+  "partOfRows": 0,
+  "note": "Whole-population counts for the labels the lane doc reported from a cap-50 triage. The JSX and decorator denominators come from the PARSE TREE (jsx_element / jsx_self_closing_element / decorator nodes), not from a text pattern. mixes_in is split by whether its target is a name the SAME FILE declares, which separates a store-bindable claim from a name no per-file analyzer could bind."
+}

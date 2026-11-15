@@ -1,8 +1,8 @@
 {
   "bbSeal": {
     "alg": "sha256",
-    "contentSha256": "6e1e1c161d19f4bb79aa8e46ba7f82e1e3e22bf78f288adfbf9658a9bf970260",
-    "sealedAt": "2026-11-12T19:36:23.000Z"
+    "contentSha256": "20161f61856d98db0c5dbcbe76cb51f3dfaa7aaf6a1a6678d335c1793d2953a5",
+    "sealedAt": "2026-11-15T04:33:45.000Z"
   },
   "checks": [
     {
@@ -85,7 +85,7 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "57/57 fixtures pass",
+      "detail": "58/58 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
@@ -307,8 +307,8 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
-  "committedAt": "2026-11-12T14:36:23-05:00",
+  "commit": "f5325a90939a3d80a3d400b7465e141837fcddda",
+  "committedAt": "2026-11-14T23:33:45-05:00",
   "data": {
     "details": [
       {
@@ -4603,6 +4603,11 @@
       },
       {
         "fixture": "cpp/part-of-quoted-include",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/part-of-stem-dedup-965",
         "ok": true,
         "problems": []
       },
@@ -9271,7 +9276,7 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 57
+        "pass": 58
       },
       "csharp": {
         "fail": 0,
@@ -9468,8 +9473,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-11-12T14:36:23-05:00",
-  "regeneratedAtCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "regeneratedAt": "2026-11-14T23:33:45-05:00",
+  "regeneratedAtCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"

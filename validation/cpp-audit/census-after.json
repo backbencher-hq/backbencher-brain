@@ -1,0 +1,356 @@
+{
+  "corpus": {
+    "roots": [
+      ".cpp-corpus/fmt (fmtlib/fmt @ 10.2.1)",
+      ".cpp-corpus/nlohmann-json (nlohmann/json @ v3.11.3)"
+    ],
+    "candidateFiles": 524,
+    "admittedCpp": 523,
+    "byLanguage": {
+      "cpp": 523,
+      "c": 1
+    },
+    "parseFailures": 0,
+    "failureSample": [],
+    "parseMs": 23134
+  },
+  "totals": {
+    "symbols": 17597,
+    "relationships": 78081,
+    "kinds": {
+      "constant": 810,
+      "class": 1582,
+      "function": 4140,
+      "variable": 594,
+      "method": 4222,
+      "property": 1677,
+      "enum_member": 491,
+      "type": 1512,
+      "namespace": 357,
+      "constructor": 912,
+      "enum": 89,
+      "macro": 1211
+    }
+  },
+  "perType": {
+    "calls": {
+      "rows": 59374,
+      "files": 429,
+      "distinctPairs": 13602,
+      "duplicatePairsVsRows": 45772,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "usage_contextual": 59374
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "59374/59374",
+      "targetResolved": "45967/59374",
+      "sub1WithoutReasonCode": 0
+    },
+    "contains": {
+      "rows": 10660,
+      "files": 180,
+      "distinctPairs": 8196,
+      "duplicatePairsVsRows": 2464,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "structural": 10660
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "10657/10660",
+      "targetResolved": "10660/10660",
+      "sub1WithoutReasonCode": 0
+    },
+    "uses": {
+      "rows": 4580,
+      "files": 162,
+      "distinctPairs": 3469,
+      "duplicatePairsVsRows": 1111,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        0.9,
+        1
+      ],
+      "evidenceClass": {
+        "usage_contextual": 4580
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "4580/4580",
+      "targetResolved": "4351/4580",
+      "sub1WithoutReasonCode": 0
+    },
+    "imports": {
+      "rows": 1963,
+      "files": 493,
+      "distinctPairs": 207,
+      "duplicatePairsVsRows": 1756,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "import_based": 1963
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "1963/1963",
+      "targetResolved": "203/1963",
+      "sub1WithoutReasonCode": 0
+    },
+    "extends": {
+      "rows": 478,
+      "files": 50,
+      "distinctPairs": 300,
+      "duplicatePairsVsRows": 178,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "structural": 478
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "478/478",
+      "targetResolved": "435/478",
+      "sub1WithoutReasonCode": 0
+    },
+    "part_of": {
+      "rows": 358,
+      "files": 173,
+      "distinctPairs": 55,
+      "duplicatePairsVsRows": 303,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "structural": 358
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "358/358",
+      "targetResolved": "62/358",
+      "sub1WithoutReasonCode": 0
+    },
+    "references": {
+      "rows": 206,
+      "files": 133,
+      "distinctPairs": 60,
+      "duplicatePairsVsRows": 146,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        0.9
+      ],
+      "evidenceClass": {
+        "import_based": 206
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "206/206",
+      "targetResolved": "76/206",
+      "sub1WithoutReasonCode": 0
+    },
+    "instantiates": {
+      "rows": 182,
+      "files": 23,
+      "distinctPairs": 157,
+      "duplicatePairsVsRows": 25,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "structural": 182
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "182/182",
+      "targetResolved": "167/182",
+      "sub1WithoutReasonCode": 0
+    },
+    "overrides": {
+      "rows": 134,
+      "files": 12,
+      "distinctPairs": 128,
+      "duplicatePairsVsRows": 6,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        0.9,
+        1
+      ],
+      "evidenceClass": {
+        "usage_contextual": 69,
+        "structural": 65
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "134/134",
+      "targetResolved": "134/134",
+      "sub1WithoutReasonCode": 0
+    },
+    "exports": {
+      "rows": 112,
+      "files": 7,
+      "distinctPairs": 105,
+      "duplicatePairsVsRows": 7,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "structural": 112
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "112/112",
+      "targetResolved": "112/112",
+      "sub1WithoutReasonCode": 0
+    },
+    "implements": {
+      "rows": 34,
+      "files": 9,
+      "distinctPairs": 28,
+      "duplicatePairsVsRows": 6,
+      "confidenceMissing": 0,
+      "confidenceValues": [
+        1
+      ],
+      "evidenceClass": {
+        "structural": 34
+      },
+      "lineNumberMissing": 0,
+      "emptyEndpoint": 0,
+      "sourceResolved": "34/34",
+      "targetResolved": "34/34",
+      "sub1WithoutReasonCode": 0
+    }
+  },
+  "findings": [
+    {
+      "check": "D1 keyword target (calls/uses/instantiates)",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "D1 keyword SYMBOL name",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "D2 self-extends",
+      "type": "extends",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "D3 duplicate (source,target) pairs IN ONE FILE",
+      "type": "contains",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "D3 duplicate (source,target) pairs IN ONE FILE",
+      "type": "references",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "D3 duplicate (source,target) pairs IN ONE FILE",
+      "type": "imports",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "D3 duplicate (source,target) pairs IN ONE FILE",
+      "type": "part_of",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "V3 unpublished-shape symbol name (ws/<>/{}/() unless operator), macro-headings excluded as designed",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "R7 placeholder endpoint literal (anonymous/unknown/empty, `global` handled separately)",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "SENTINEL COLLISION: a TARGET spelled `global` (real `std::locale::global`, ambiguous with the lane's file-scope SOURCE sentinel)",
+      "count": 6,
+      "sample": [
+        "calls TEST(chrono_test, weekday) -> global (metadata.qualified=\"std::locale::global\")",
+        "calls TEST(ostream_test, unlocalized) -> global (metadata.qualified=\"std::locale::global\")",
+        "calls TEST(locale_test, chrono_weekday) -> global (metadata.qualified=\"std::locale::global\")",
+        "calls TEST(locale_test, chrono_weekday) -> global (metadata.qualified=\"std::locale::global\")",
+        "calls TEST_CASE(\"regression tests 1\") -> global (metadata.qualified=\"std::locale::global\")",
+        "calls TEST_CASE(\"regression tests 1\") -> global (metadata.qualified=\"std::locale::global\")"
+      ]
+    },
+    {
+      "check": "overrides SOURCE spelled `Derived.method` (dot is not C++ scope syntax and the string resolves to no symbol)",
+      "type": "overrides",
+      "count": 0,
+      "sample": [
+        "sources resolving against the in-output index: 134/134"
+      ]
+    },
+    {
+      "check": "overrides target spelling",
+      "type": "overrides",
+      "count": 0,
+      "sample": [
+        "dotted targets (0) = unresolvable-by-name; leaf targets (134); rows carrying metadata.overriddenOwner (134)"
+      ]
+    },
+    {
+      "check": "part_of target is a PATH (unresolvable) rather than a symbol stem",
+      "type": "part_of",
+      "count": 0,
+      "sample": []
+    },
+    {
+      "check": "target unresolved against in-output index",
+      "type": "imports",
+      "count": 1760,
+      "sample": [
+        "functional",
+        "memory",
+        "vector",
+        "algorithm",
+        "chrono",
+        "cmath"
+      ]
+    },
+    {
+      "check": "target unresolved against in-output index",
+      "type": "references",
+      "count": 130,
+      "sample": [
+        "std::get",
+        "fmt::runtime",
+        "testing::Contains",
+        "fmt::string_view",
+        "fmt::detail::buffer",
+        "testing::_"
+      ]
+    },
+    {
+      "check": "target unresolved against in-output index",
+      "type": "exports",
+      "count": 0,
+      "sample": []
+    }
+  ]
+}

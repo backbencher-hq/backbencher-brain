@@ -1,0 +1,35 @@
+{
+  "at": "2026-11-13T21:40:25.316Z",
+  "repo": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "trackedFiles": 8981,
+  "jsFiles": 3383,
+  "parsedClean": 3383,
+  "labelCounts": {
+    "calls": 31039,
+    "extends": 15,
+    "implements": 1,
+    "uses": 31563,
+    "imports": 7138,
+    "exports": 4778,
+    "contains": 638,
+    "references": 24,
+    "overrides": 52,
+    "instantiates": 142,
+    "decorates": 0,
+    "renders": 0,
+    "mixes_in": 0,
+    "part_of": 0
+  },
+  "denominators": {
+    "jsxFiles": 0,
+    "decoratorFiles": 0
+  },
+  "mixesIn": {
+    "rows": 0,
+    "targetDeclaredInSameFile": 0,
+    "targetNotDeclaredHere": 0,
+    "sample": []
+  },
+  "partOfRows": 0,
+  "note": "Whole-population counts for the labels the lane doc reported from a cap-50 triage. The JSX and decorator denominators come from the PARSE TREE (jsx_element / jsx_self_closing_element / decorator nodes), not from a text pattern. mixes_in is split by whether its target is a name the SAME FILE declares, which separates a store-bindable claim from a name no per-file analyzer could bind."
+}

@@ -1,0 +1,508 @@
+{
+  "at": "2026-11-13T21:14:45.556Z",
+  "tag": "svelte-600",
+  "corpus": "/home/ishaq2321/bb_tests/repositories/svelte",
+  "corpusCommit": "26786e92985842a6d563c67049a43bc5857bf792",
+  "instrument": {
+    "comparedLabels": [
+      "extends",
+      "implements",
+      "instantiates",
+      "overrides",
+      "calls",
+      "uses",
+      "contains",
+      "exports",
+      "references",
+      "imports"
+    ],
+    "comparisonRule": "verbatim from script/m14/differential.ts: analyzer side filtered to the compared labels and collapsed to one row per (label,target); truth side drops empty targets; covered = same label + normTarget equal; explained = same label + truth target equals OR CONTAINS the analyzer target; fabrication = unexplained at confidence >= 0.7; heuristic = unexplained below it.",
+    "oraclesImported": [
+      "deriveTreeEdges(root,'javascript')",
+      "deriveJavaScriptEdges",
+      "deriveJavaScriptImportEdges",
+      "deriveJavaScriptExtends",
+      "deriveJavaScriptOverrides",
+      "deriveJavaScriptImplements"
+    ],
+    "limits": [
+      "matching is LABEL + TARGET only, never SOURCE — a mis-attributed source is invisible to this instrument and to the differential alike",
+      "both walkers read the SAME pinned grammar (wasm/tree-sitter-javascript.wasm), so a grammar bug shared by analyzer and oracle is invisible to both",
+      "this is an ATTRIBUTE of the published comparison rule, not a reimplementation of it: the rule is copied verbatim from differential.ts:23440-23510 and its oracle functions are imported, not reimplemented"
+    ]
+  },
+  "run": {
+    "files": 600,
+    "admitted": 3383,
+    "errorFiles": 0
+  },
+  "labels": {
+    "extends": {
+      "truth": 26,
+      "analyzer": 14,
+      "covered": 25,
+      "missing": 1,
+      "explained": 14,
+      "fabrication": 0,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 1,
+      "missingExamples": [
+        "packages/svelte/src/legacy/legacy-client.js extends (class) -> Svelte4Component"
+      ],
+      "fabricationExamples": [],
+      "confidence": {
+        "1": 14
+      },
+      "truthOnly": [
+        "(class)->Svelte4Component"
+      ],
+      "analyzerOnly": [],
+      "missingUnexplainedExamples": [
+        "packages/svelte/src/legacy/legacy-client.js extends (class) -> Svelte4Component"
+      ]
+    },
+    "implements": {
+      "truth": 1,
+      "analyzer": 1,
+      "covered": 1,
+      "missing": 0,
+      "explained": 1,
+      "fabrication": 0,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 0,
+      "missingExamples": [],
+      "fabricationExamples": [],
+      "confidence": {
+        "1": 1
+      },
+      "truthOnly": [],
+      "analyzerOnly": [],
+      "missingUnexplainedExamples": []
+    },
+    "instantiates": {
+      "truth": 64,
+      "analyzer": 64,
+      "covered": 63,
+      "missing": 1,
+      "explained": 63,
+      "fabrication": 1,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 1,
+      "missingExamples": [
+        "packages/svelte/src/internal/client/dev/hmr.js instantiates (expr) -> component"
+      ],
+      "fabricationExamples": [
+        "packages/svelte/src/internal/client/dev/hmr.js instantiates wrapper -> wrapper\u0000component @0.95"
+      ],
+      "confidence": {
+        "0.95": 64
+      },
+      "truthOnly": [
+        "(expr)->component"
+      ],
+      "analyzerOnly": [
+        "wrapper->wrapper\u0000component@0.95"
+      ],
+      "missingUnexplainedExamples": [
+        "packages/svelte/src/internal/client/dev/hmr.js instantiates (expr) -> component"
+      ]
+    },
+    "overrides": {
+      "truth": 52,
+      "analyzer": 52,
+      "covered": 49,
+      "missing": 3,
+      "explained": 52,
+      "fabrication": 0,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 3,
+      "missingExamples": [
+        "packages/svelte/src/reactivity/map.js overrides SvelteMap.[Symbol.iterator] -> Map.[Symbol.iterator]",
+        "packages/svelte/src/reactivity/set.js overrides SvelteSet.[Symbol.iterator] -> Set.[Symbol.iterator]",
+        "packages/svelte/src/reactivity/url-search-params.js overrides SvelteURLSearchParams.[Symbol.iterator] -> URLSearchParams.[Symbol.iterator]"
+      ],
+      "fabricationExamples": [],
+      "confidence": {
+        "0.5": 52
+      },
+      "truthOnly": [
+        "SvelteMap.[Symbol.iterator]->Map.[Symbol.iterator]",
+        "SvelteSet.[Symbol.iterator]->Set.[Symbol.iterator]",
+        "SvelteURLSearchParams.[Symbol.iterator]->URLSearchParams.[Symbol.iterator]"
+      ],
+      "analyzerOnly": [],
+      "missingUnexplainedExamples": [
+        "packages/svelte/src/reactivity/map.js overrides SvelteMap.[Symbol.iterator] -> Map.[Symbol.iterator]",
+        "packages/svelte/src/reactivity/set.js overrides SvelteSet.[Symbol.iterator] -> Set.[Symbol.iterator]",
+        "packages/svelte/src/reactivity/url-search-params.js overrides SvelteURLSearchParams.[Symbol.iterator] -> URLSearchParams.[Symbol.iterator]"
+      ]
+    },
+    "calls": {
+      "truth": 5527,
+      "analyzer": 5714,
+      "covered": 5242,
+      "missing": 285,
+      "explained": 5242,
+      "fabrication": 472,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 285,
+      "missingExamples": [
+        "benchmarking/benchmarks/reactivity/sbench.js calls (expr) -> destroy",
+        "benchmarking/benchmarks/reactivity/sbench.js calls (expr) -> fn",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> destroy_owned",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> destroy",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> run",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> setup"
+      ],
+      "fabricationExamples": [
+        "benchmarking/benchmarks/reactivity/sbench.js calls create_sbench_test -> create_sbench_test\u0000fn @0.9",
+        "benchmarking/benchmarks/reactivity/sbench.js calls create_sbench_test -> create_sbench_test\u0000destroy @0.9",
+        "benchmarking/benchmarks/reactivity/util.js calls create_test -> create_test\u0000setup @0.9",
+        "benchmarking/benchmarks/reactivity/util.js calls create_test -> create_test\u0000run @0.9",
+        "benchmarking/benchmarks/reactivity/util.js calls create_test -> create_test\u0000destroy @0.9",
+        "benchmarking/benchmarks/reactivity/util.js calls create_test -> create_test\u0000destroy_owned @0.9"
+      ],
+      "confidence": {
+        "0.9": 5714
+      },
+      "truthOnly": [
+        "(expr)->destroy",
+        "(expr)->fn",
+        "(expr)->destroy_owned",
+        "(expr)->destroy",
+        "(expr)->run",
+        "(expr)->setup",
+        "(expr)->pad_left",
+        "(expr)->pad_right",
+        "(expr)->run_benchmark",
+        "(expr)->fulfil",
+        "(expr)->reject",
+        "(expr)->fulfil",
+        "(expr)->reject",
+        "(expr)->fulfil",
+        "(expr)->write",
+        "(expr)->fn",
+        "(expr)->get_inclusive_count",
+        "(expr)->visit",
+        "(expr)->emit",
+        "(expr)->add_member",
+        "(expr)->handle",
+        "(expr)->transform",
+        "(expr)->duration",
+        "(expr)->update",
+        "(expr)->fn",
+        "(expr)->action",
+        "(expr)->visit",
+        "(expr)->next",
+        "(expr)->add_comments",
+        "(expr)->next",
+        "(expr)->clean",
+        "(expr)->next",
+        "(expr)->visit",
+        "(expr)->check_rune_binding",
+        "(expr)->create_selector",
+        "(expr)->finished",
+        "(expr)->flush",
+        "(expr)->done",
+        "(expr)->walk_children",
+        "(expr)->add_declaration"
+      ],
+      "analyzerOnly": [
+        "create_sbench_test->create_sbench_test\u0000fn@0.9",
+        "create_sbench_test->create_sbench_test\u0000destroy@0.9",
+        "create_test->create_test\u0000setup@0.9",
+        "create_test->create_test\u0000run@0.9",
+        "create_test->create_test\u0000destroy@0.9",
+        "create_test->create_test\u0000destroy_owned@0.9",
+        "run_benchmark->run_benchmark\u0000reject@0.9",
+        "run_benchmark->run_benchmark\u0000fulfil@0.9",
+        "run->run\u0000pad_right@0.9",
+        "run->run\u0000pad_left@0.9",
+        "run->run\u0000run_benchmark@0.9",
+        "runner->runner\u0000reject@0.9",
+        "runner->runner\u0000fulfil@0.9",
+        "index->index\u0000fulfil@0.9",
+        "generate_report->generate_report\u0000write@0.9",
+        "track->track\u0000fn@0.9",
+        "get_inclusive_count->get_inclusive_count\u0000get_inclusive_count@0.9",
+        "profile_to_markdown->profile_to_markdown\u0000get_inclusive_count@0.9",
+        "with_cpu_profile->with_cpu_profile\u0000fn@0.9",
+        "build_detection_maps->build_detection_maps\u0000add_member@0.9",
+        "visit->visit\u0000emit@0.9",
+        "walk_source->walk_source\u0000visit@0.9",
+        "bundle_code->bundle_code\u0000handle@0.9",
+        "run->run\u0000transform@0.9",
+        "flip->flip\u0000duration@0.9",
+        "fromAction->fromAction\u0000action@0.9",
+        "fromAction->fromAction\u0000fn@0.9",
+        "fromAction->fromAction\u0000update@0.9",
+        "_->_\u0000next@0.9",
+        "Root->Root\u0000visit@0.9",
+        "AwaitBlock->AwaitBlock\u0000visit@0.9",
+        "ComplexSelector->ComplexSelector\u0000next@0.9",
+        "Component->Component\u0000visit@0.9",
+        "KeyBlock->KeyBlock\u0000visit@0.9",
+        "EachBlock->EachBlock\u0000visit@0.9",
+        "IfBlock->IfBlock\u0000visit@0.9",
+        "SnippetBlock->SnippetBlock\u0000visit@0.9",
+        "SvelteBoundary->SvelteBoundary\u0000visit@0.9",
+        "RegularElement->RegularElement\u0000visit@0.9",
+        "SlotElement->SlotElement\u0000visit@0.9"
+      ],
+      "missingUnexplainedExamples": [
+        "benchmarking/benchmarks/reactivity/sbench.js calls (expr) -> destroy",
+        "benchmarking/benchmarks/reactivity/sbench.js calls (expr) -> fn",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> destroy_owned",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> destroy",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> run",
+        "benchmarking/benchmarks/reactivity/util.js calls (expr) -> setup"
+      ]
+    },
+    "uses": {
+      "truth": 10312,
+      "analyzer": 13845,
+      "covered": 5953,
+      "missing": 4359,
+      "explained": 5953,
+      "fabrication": 377,
+      "heuristic": 7515,
+      "missingFilterDeleted": 212,
+      "missingUnexplained": 4147,
+      "missingExamples": [
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> source",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> j",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> i",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> sources",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> n",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> sum"
+      ],
+      "fabricationExamples": [
+        "benchmarking/benchmarks/reactivity/util.js uses create_test -> create_test\u0000label @0.85",
+        "benchmarking/compare/profile-diff.mjs uses read_profile -> read_profile\u0000bench @0.85",
+        "benchmarking/compare/profile-diff.mjs uses read_profile -> read_profile\u0000function_name @0.85",
+        "benchmarking/compare/profile-diff.mjs uses read_profile -> read_profile\u0000line @0.85",
+        "benchmarking/compare/profile-diff.mjs uses profile-diff -> profile-diff\u0000sign @0.85",
+        "benchmarking/run.js uses run_benchmark -> run_benchmark\u0000code @0.85"
+      ],
+      "confidence": {
+        "0.6": 13437,
+        "0.85": 408
+      },
+      "truthOnly": [
+        "(expr)->source",
+        "(expr)->j",
+        "(expr)->i",
+        "(expr)->sources",
+        "(expr)->n",
+        "(expr)->sum",
+        "(expr)->offset",
+        "(expr)->num_sources",
+        "(expr)->count",
+        "(expr)->computed5",
+        "(expr)->i",
+        "(expr)->head",
+        "(expr)->computed4",
+        "(expr)->computed3",
+        "(expr)->computed2",
+        "(expr)->computed1",
+        "(expr)->unowned",
+        "(expr)->owned",
+        "(expr)->module",
+        "(expr)->name",
+        "(expr)->counter",
+        "(expr)->i",
+        "(expr)->last",
+        "(expr)->head",
+        "(expr)->current2",
+        "(expr)->current",
+        "(expr)->i",
+        "(expr)->total",
+        "(expr)->b",
+        "(expr)->a",
+        "(expr)->counter",
+        "(expr)->i",
+        "(expr)->last",
+        "(expr)->head",
+        "(expr)->current2",
+        "(expr)->current",
+        "(expr)->i",
+        "(expr)->splited",
+        "(expr)->heads",
+        "(expr)->x"
+      ],
+      "analyzerOnly": [
+        "create_test->create_test\u0000label@0.85",
+        "read_profile->read_profile\u0000bench@0.85",
+        "read_profile->read_profile\u0000function_name@0.85",
+        "read_profile->read_profile\u0000line@0.85",
+        "profile-diff->profile-diff\u0000sign@0.85",
+        "run_benchmark->run_benchmark\u0000code@0.85",
+        "runner->runner\u0000code@0.85",
+        "generate_report->generate_report\u0000min_index@0.85",
+        "generate_report->generate_report\u0000n@0.85",
+        "profile_to_markdown->profile_to_markdown\u0000selfPct@0.85",
+        "profile_to_markdown->profile_to_markdown\u0000inclusivePct@0.85",
+        "profile_to_markdown->profile_to_markdown\u0000parentId@0.85",
+        "with_cpu_profile->with_cpu_profile\u0000safe_profile_name@0.85",
+        "check-treeshakeability->check-treeshakeability\u0000resolved@0.85",
+        "check-treeshakeability->check-treeshakeability\u0000subpackage@0.85",
+        "check_bundle->check_bundle\u0000case_name@0.85",
+        "transform->transform\u0000name@0.85",
+        "transform->transform\u0000block@0.85",
+        "flip->flip\u0000x@0.85",
+        "flip->flip\u0000y@0.85",
+        "get_comment_handlers->get_comment_handlers\u0000indentation@0.85",
+        "options_invalid_value->options_invalid_value\u0000details@0.85",
+        "options_removed->options_removed\u0000details@0.85",
+        "options_unrecognised->options_unrecognised\u0000keypath@0.85",
+        "constant_assignment->constant_assignment\u0000thing@0.85",
+        "constant_binding->constant_binding\u0000thing@0.85",
+        "declaration_duplicate->declaration_duplicate\u0000name@0.85",
+        "duplicate_class_field->duplicate_class_field\u0000name@0.85",
+        "export_undefined->export_undefined\u0000name@0.85",
+        "global_reference_invalid->global_reference_invalid\u0000name@0.85",
+        "props_duplicate->props_duplicate\u0000rune@0.85",
+        "reactive_declaration_cycle->reactive_declaration_cycle\u0000cycle@0.85",
+        "rune_invalid_arguments->rune_invalid_arguments\u0000rune@0.85",
+        "rune_invalid_arguments_length->rune_invalid_arguments_length\u0000rune@0.85",
+        "rune_invalid_arguments_length->rune_invalid_arguments_length\u0000args@0.85",
+        "rune_invalid_name->rune_invalid_name\u0000name@0.85",
+        "rune_invalid_spread->rune_invalid_spread\u0000rune@0.85",
+        "rune_invalid_usage->rune_invalid_usage\u0000rune@0.85",
+        "rune_removed->rune_removed\u0000name@0.85",
+        "rune_renamed->rune_renamed\u0000name@0.85"
+      ],
+      "missingUnexplainedExamples": [
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> source",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> j",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> i",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> sources",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> n",
+        "benchmarking/benchmarks/reactivity/sbench.js uses (expr) -> sum"
+      ]
+    },
+    "contains": {
+      "truth": 561,
+      "analyzer": 555,
+      "covered": 555,
+      "missing": 6,
+      "explained": 555,
+      "fabrication": 0,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 6,
+      "missingExamples": [
+        "packages/svelte/src/internal/client/constants.js contains (expr) -> message",
+        "packages/svelte/src/internal/client/constants.js contains (expr) -> name",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> current",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> constructor",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> #update",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> #dpr"
+      ],
+      "fabricationExamples": [],
+      "confidence": {
+        "1": 555
+      },
+      "truthOnly": [
+        "(expr)->message",
+        "(expr)->name",
+        "(expr)->current",
+        "(expr)->constructor",
+        "(expr)->#update",
+        "(expr)->#dpr"
+      ],
+      "analyzerOnly": [],
+      "missingUnexplainedExamples": [
+        "packages/svelte/src/internal/client/constants.js contains (expr) -> message",
+        "packages/svelte/src/internal/client/constants.js contains (expr) -> name",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> current",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> constructor",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> #update",
+        "packages/svelte/src/reactivity/window/index.js contains (expr) -> #dpr"
+      ]
+    },
+    "exports": {
+      "truth": 1953,
+      "analyzer": 1952,
+      "covered": 1952,
+      "missing": 1,
+      "explained": 1952,
+      "fabrication": 0,
+      "heuristic": 0,
+      "missingFilterDeleted": 1,
+      "missingUnexplained": 0,
+      "missingExamples": [
+        "packages/svelte/src/internal/client/index.js exports (expr) -> text"
+      ],
+      "fabricationExamples": [],
+      "confidence": {
+        "1": 1952
+      },
+      "truthOnly": [
+        "(expr)->text"
+      ],
+      "analyzerOnly": [],
+      "missingUnexplainedExamples": []
+    },
+    "references": {
+      "truth": 21,
+      "analyzer": 16,
+      "covered": 20,
+      "missing": 1,
+      "explained": 15,
+      "fabrication": 1,
+      "heuristic": 0,
+      "missingFilterDeleted": 0,
+      "missingUnexplained": 1,
+      "missingExamples": [
+        "packages/svelte/src/compiler/phases/scope.js references binary -> right"
+      ],
+      "fabricationExamples": [
+        "packages/svelte/src/compiler/phases/scope.js references binary -> binary\u0000right @0.95"
+      ],
+      "confidence": {
+        "0.95": 16
+      },
+      "truthOnly": [
+        "binary->right"
+      ],
+      "analyzerOnly": [
+        "binary->binary\u0000right@0.95"
+      ],
+      "missingUnexplainedExamples": [
+        "packages/svelte/src/compiler/phases/scope.js references binary -> right"
+      ]
+    },
+    "imports": {
+      "truth": 2836,
+      "analyzer": 2836,
+      "covered": 2834,
+      "missing": 2,
+      "explained": 2834,
+      "fabrication": 0,
+      "heuristic": 2,
+      "missingFilterDeleted": 2,
+      "missingUnexplained": 0,
+      "missingExamples": [
+        "packages/svelte/src/compiler/phases/1-parse/state/fragment.js imports (module) -> ./text.js:text",
+        "packages/svelte/src/internal/client/index.js imports (module) -> ./dom/template.js:text"
+      ],
+      "fabricationExamples": [],
+      "confidence": {
+        "1": 2569,
+        "0.6": 267
+      },
+      "truthOnly": [
+        "(module)->./text.js:text",
+        "(module)->./dom/template.js:text"
+      ],
+      "analyzerOnly": [],
+      "missingUnexplainedExamples": []
+    }
+  }
+}

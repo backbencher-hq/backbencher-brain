@@ -25,10 +25,10 @@
       "caught": true
     }
   ],
-  "currentCommit": "bdc5c6d9ddfb93681281b0afdee00ce7a7975505",
+  "currentCommit": "f5325a90939a3d80a3d400b7465e141837fcddda",
   "verifierCommand": "npx tsx script/m33/verify-man-page.ts",
   "evidenceFile": "S3.json",
-  "generatedAt": "2026-11-15T04:14:07.930Z",
+  "generatedAt": "2026-11-15T05:20:14.108Z",
   "limitations": [
     "Rendering is checked with groff -man -Tascii -ww and man -l (both present in this environment); a CI host without groff would surface the B checks as failures, not silent passes.",
     "The command list pinned here is duplicated from src/cli/index.ts by hand; S4's parity gate derives the list from the built binary, so drift between page, help, and code fails at least one gate.",
